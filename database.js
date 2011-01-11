@@ -1,9 +1,7 @@
 var Client = require('mysql').Client;
 var client = new Client();
-client.user = 'skeisvangmoodle3';
-client.password = 'Bodric78?';
-client.database = 'skeisvangmoodle3';
-client.host = 'skeisvangmoodle3.mysql.domeneshop.no';
+var creds = require('./creds');
+creds.setup(client);
 
 var julian = require('./julian');
 
@@ -15,7 +13,7 @@ var db = {
   ,course     : []    // array of coursenames [ '1MAP5', '3INF5' ... ] - used by autocomplete
   ,freedays   : {}    // hash of juliandaynumber:freedays { 2347889:"Xmas", 2347890:"Xmas" ... }
   ,heldag     : {}    // hash of { 2345556:{"3inf5":"Exam", ... } }
-  ,prover     : {}    // hash of { 2345556:{"3inf5_3304":"3,4,5", ... } }
+  ,prover     : {}    // hash of { 2345556:[ {shortname:"3inf5_3304",value::"3,4,5",username:"haau6257" } ... ], ... }
   ,yearplan   : {}    // hash of { 2345556:["info om valg", 2345557:"Exam", ...], ...  }
   ,groups     : []    // array of groups
   ,memlist    : {}    // hash of { "3inf5":[234,45,454],"2inf5":[23, ...], ... }  -- groups with stud-members
@@ -158,19 +156,35 @@ getBasicData = function(client) {
                     console.log("ERROR: " + err.message);
                     throw err;
                   }
+                  var blokkgr = {};
+                  var blokkmem = {};  // used to prevent duplicates
                   for (var i=0,k=results.length; i<k; i++) {
                     var amem = results[i];
-                    if (!db.memlist[amem.shortname]) {
-                      db.memlist[amem.shortname] = [];
+                    var elm = amem.shortname.split('_');
+                    var cname = elm[0];
+                    var group = elm[1];
+                    // build group: studentlist
+                    if (!db.memlist[group]) {
+                      db.memlist[group] = [];
+                      blokkmem[group] = {}
                     }
-                    db.memlist[amem.shortname].push(amem.userid);
+                    if (! blokkmem[group][amem.userid]) {
+                      db.memlist[group].push(amem.userid);
+                      blokkmem[group][amem.userid] = 1;
+                    }
 
+                    // build student: grouplist
                     if (!db.memgr[amem.userid]) {
                       db.memgr[amem.userid] = [];
+                      blokkgr[amem.userid] = {};
                     }
-                    db.memgr[amem.userid].push(amem.shortname);
+                    if (! blokkgr[amem.userid][group]) {
+                      db.memgr[amem.userid].push(group);
+                      blokkgr[amem.userid][group] = 1;
+                    }
                   }
-                  //console.log(db.coursesgr);
+                  //console.log(db.memgr);
+                  //console.log(db.memlist);
               });
       });
   client.query(

@@ -217,13 +217,12 @@ var prevtitle;
 
 function getusers() {
     // henter alle prøver for hele skolen
-    userinfo = database.userinfo;
+    userinfo = database.userinfo || { firstname:"", lastname:"", department:"", isadmin:false };
     fullname = userinfo.firstname + " " + userinfo.lastname;
     isteach = (userinfo.department == 'Undervisning');
     isadmin = userinfo.isadmin;
     memberlist = database.memlist;
     memgr = database.memgr;
-    alleprover = database.prover;
     heldag = database.heldag;
     category = database.category;
     fagautocomp = database.course;
@@ -309,17 +308,6 @@ $j(document).ready(function() {
            }
            getusers();
          });
-    /*
-    $j.getJSON( "aarsplan/php/getyearplan.php",{ navn:user }, 
-          function(data) {
-            database = data;
-            userinfo = data.userinfo;
-            if (action == 'default') {
-                show_thisweek();
-            }
-            getusers();
-          });
-          */
     $j("#yearplan").click(function(event) {
         event.preventDefault();
         show_all(0);
@@ -336,10 +324,17 @@ $j(document).ready(function() {
         event.preventDefault();
         show_heldag();
     });
-    $j("#alleprover").click(function(event) {
-        event.preventDefault();
-        show_alleprover();
-    });
+    $j("#alleprover").addClass("disabled");
+    // this is disabled until we have loaded all tests
+    // will only show if response from mysql is slow
+    $j.getJSON( "/alltests", 
+         function(data) {
+            alleprover = data;
+            $j("#alleprover").click(function(event) {
+                event.preventDefault();
+                show_alleprover();
+            }).removeClass("disabled");
+         });
     $j("#prover").click(function(event) {
         event.preventDefault();
         show_prover();

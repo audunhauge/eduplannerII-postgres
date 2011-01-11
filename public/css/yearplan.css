@@ -9,6 +9,10 @@
   background: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#AFC4E3), to(#FFFFFF), color-stop(.4,#E0E9FC));
 }
 
+.disabled {
+  color:#bbb !important;
+}
+
 .centered {
   margin-right:auto;
   margin-left:auto;

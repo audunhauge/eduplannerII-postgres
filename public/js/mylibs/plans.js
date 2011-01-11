@@ -37,17 +37,12 @@ function show_alleprover() {
       s += "<tr>";
       s += "<th>"+julian.week(jd)+"</th>";
       for (j=0;j<5;j++) {
-        var pr = alleprover[jd+j];
-        var hd = heldag[jd+j];
-        var hd_txt = Url.decode(e.hd[j]);
-        var pr_txt = '';
-        var pr = Url.decode(e.pr[j]);
-        var prover = pr.split('zz');
-        for (var k=0; k< prover.length; k++) {
-            var pro = prover[k];
-            if (pro == '') continue;
-            var elm = pro.split('|');
-            var faggruppe = elm[0].split('_');
+        var pr = alleprover[jd+j] || [];
+        //var hd = heldag[jd+j];
+        var proveliste = '';
+        for (var k=0; k< pr.length; k++) {
+            var pro = pr[k];
+            var faggruppe = pro.shortname.split('_');
             var fag = faggruppe[0];
             var gruppe = faggruppe[1];
             var members = fag + " " + gruppe;
@@ -55,12 +50,13 @@ function show_alleprover() {
                 // show members as a list (on hover)
                 var userlist = memberlist[gruppe];
                 var antall = userlist.length;
-                members = makepop(members,userlist,gruppe,'','','<span class="proveinfo">'+elm[2] + " " +elm[1]+" ("+antall+' elever)</span>');
+                members = makepop(members,userlist,gruppe,'','','<span class="proveinfo">'+ pro.username 
+                           + " " +pro.value+" ("+antall+' elever)</span>');
                 members = '<ul class="nav alleprover">' + members + '</ul>';
             }
-            pr_txt += '<span class="pro klasse'+pro[0]+' cat'+category[fag]+'">' + members + '</span>';
+            proveliste += '<span class="pro klasse'+fag[0]+' cat'+category[fag]+'">' + members + '</span>';
         }
-        s += "<td>" + hd_txt + pr_txt + "</td>";
+        s += "<td>" + proveliste + "</td>";
       }
       s += "</tr>";
     }

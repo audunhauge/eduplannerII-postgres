@@ -208,6 +208,12 @@ app.get('/login',requiresLogin, function(req, res) {
 	res.render('yearplan/index', locals);
 });
 
+app.get('/alltests', function(req, res) {
+        database.getAllTests(function(prover) {
+            res.send(prover);
+          });
+});
+
 app.get('/yearplan', function(req, res) {
 	var locals = { 'key': 'value' };
 	locals = dummyHelper.add_overlay(app, req, locals);
@@ -230,10 +236,7 @@ app.get('/basic', function(req, res) {
         db.enddate = julian.jdtogregorian(db.startjd+6);
         db.week = julian.week(db.startjd);
         var db_copy = db;
-        database.getAllTests(function(prover) {
-            db_copy.prover = prover;
-            console.log(db_copy.prover);
-          });
+        db_copy.userinfo = null;
         if (req.query.navn) {
           var username = req.query.navn;
           username = username.replace(/æ/g,'e').replace(/Æ/g,'E').replace(/ø/g,'o');

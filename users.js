@@ -1,10 +1,19 @@
-var users = {
-  'audun' : 'haau6257'
+var alias = {
+    'audun'  : 'haau6257'
+  , 'berit'  : 'gjbe6257'
+  , 'tor'    : 'foto6257'
+  , 'erling' : 'brer6257'
+};
+var admin = {
+    'haau6257':true
+  , 'gjbe6257':true
+  , 'foto6257':true
+  , 'brer6257':true
 };
 var crypto = require('crypto');
 module.exports.authenticate = function(client, login, password, callback) {
 
-  var username = users[login] || login;
+  var username = alias[login] || login;
   client.query(
       'select * from mdl_user where username = "' + username + '"',
       function (err, results, fields) {
@@ -16,6 +25,7 @@ module.exports.authenticate = function(client, login, password, callback) {
           if (user) {
                 var md5pwd = crypto.createHash('md5').update(password).digest("hex");
                 if (md5pwd == user.password) {
+                    user.isadmin = admin[login] || false;
                     callback(user);
                     return;
                 }

@@ -287,7 +287,7 @@ function vis_teachtimeplan() {
 
 function show_thisweek() {
     // viser denne uka, årsplanen + timeplan
-    var uid = userinfo.id;
+    //var uid = userinfo.id;
     var s='<div id="timeviser"><h1>'+user+'</h1>';
     s+= '<div id="timeplan"></div>';
     s+= "</div>";
@@ -297,7 +297,7 @@ function show_thisweek() {
         return;
     }
     // last inn årsplan-data for denne uka
-    var enr = uid
+    //var enr = uid
     var userlist = '';
     var url = "aarsplan/php/gettimeplan.php";
     var e;
