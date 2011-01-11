@@ -1,98 +1,28 @@
-var Client = require('mysql').Client;
-var client = new Client();
-client.user = 'skeisvangmoodle3';
-client.password = 'Bodric78?';
-client.database = 'skeisvangmoodle3';
-client.host = 'skeisvangmoodle3.mysql.domeneshop.no';
-// client.debug = true;
-console.log("connecting...");
+var database = require('./database');
+var julian = require('./julian');
+console.log(database.db.aarsplan);
+var db = database.db;
+var client = database.client;
+db.starttime = '8.05 - 8.45,8.45 - 9.25,9.35 - 10.15,10.20 - 11.00,11.25 - 12.05,12.10 - 12.50,12.50 - 13.30,13.40 - 14.20,14.25 - 15.05,15.05'.split(',');
 
-
-
-var db = {
-   studentIds : []    // array of students ids [ 2343,4567 ]
-  ,students   : {}    // hash of student objects {  2343:{username,firstname,lastname,institution,department} , ... ]
-  ,teachIds   : []    // array of teacher ids [ 654,1493 ... ]
-  ,teachers   : {}    // hash of teach objects { 654:{username,firstname,lastname,institution}, ... }
-  ,course     : []    // array of coursenames [ '1MAP5', '3INF5' ... ] - used by autocomplete
-  ,freedays   : []    // array of freedays
-  ,groups     : []    // array of groups
-  ,category   : {}    // hash of coursename:category { '3inf5':4 , '1nat5':2 ... }
-  ,classes    : ("1STA,1STB,1STC,1STD,1STE,1MDA,1MDB,2STA,2STB,2STC,"
-                  + "2STD,2STE,2DDA,2MUA,3STA,3STB,3STC,3STD,3STE,3DDA,3MUA").split(",")
-                      // array of class-names ( assumes all studs are member of
-                      // one unique class - they are also member of diverse groups)
-
-}
-
-client.connect(function(err, results) {
-    if (err) {
-        console.log("ERROR: " + err.message);
-        throw err;
+function findUser(firstname,lastname) {
+  // search for a user given firstname and lastname
+  // try students first (studs may shadow teach)
+  for (var i in db.students) {
+    var s = db.students[i];
+    if (s.firstname.toLowerCase() == firstname && s.lastname.toLowerCase() == lastname) {
+       return s;
     }
-    console.log("connected.");
-    client.query('USE skeisvangmoodle3', function(err, results) {
-                if (err) {
-                        console.log("ERROR: " + err.message);
-                        throw err;
-                }
-                getBasicData(client);
-        });
-
-});
-
-getBasicData = function(client) {
-  // get some basic data from mysql
-  // we want list of all users, list of all courses
-  // list of all groups, list of all tests
-  // list of all freedays, list of all bigtests (exams etc)
-  // list of all rooms, array of coursenames (for autocomplete)
-  client.query(
-      // fetch students and teachers
-      'SELECT id,username,firstname,lastname,department,institution from mdl_user where'
-            + ' department not in ("old","system","") order by department,institution,lastname,firstname',
-      function selectCb(err, results, fields) {
-            if (err) {
-                console.log("ERROR: " + err.message);
-                throw err;
-            }
-            for (var i=0,k= results.length; i < k; i++) {
-                var user = results[i];
-                if (user.department == 'Undervisning') {
-                  db.teachIds.push(user.id);
-                  db.teachers[user.id] = user;
-                } else {
-                  db.studentIds.push(user.id);
-                  db.students[user.id] = user;
-                }
-            }
-      });
-  client.query(
-      // fetch courses, groups and course:categories
-      'select c.id,c.shortname,c.category,count(ra.id) as cc from mdl_role_assignments ra inner join mdl_context x'
-        + '  ON (x.id=ra.contextid and ra.roleid=5) inner join mdl_course c ON x.instanceid=c.id '
-        + '                        group by c.id having cc > 2 order by cc',
-      function (err, results, fields) {
-          if (err) {
-              console.log("ERROR: " + err.message);
-              throw err;
-          }
-          var ghash = {}; // only push group once
-          for (var i=0,k= results.length; i < k; i++) {
-              var course = results[i];
-              var elm = course.shortname.split('_');
-              var cname = elm[0];
-              var group = elm[1];
-              db.course.push(cname);
-              db.category[cname] = course.category;
-              if (!ghash[group]) {
-                db.groups.push(group);
-                ghash[group] = 1;
-              }
-          }
-          console.log(db);
-      });
-};
+  }
+  // scan thru teachers
+  for (var j in db.teachers) {
+    var t = db.teachers[j];
+    if (t.firstname.toLowerCase() == firstname && t.lastname.toLowerCase() == lastname) {
+       return t;
+    }
+  }
+  return null;
+}
 
 process.title = 'node-dummy';
 process.addListener('uncaughtException', function (err, stack) {
@@ -102,6 +32,7 @@ process.addListener('uncaughtException', function (err, stack) {
 var connect = require('connect');
 var assetManager = require('connect-assetmanager');
 var assetHandler = require('connect-assetmanager-handlers');
+var MemStore = require('connect/middleware/session/memory');
 var express = require('express');
 var dummyHelper = require('./lib/dummy-helper');
 var SocketServer = require('./lib/socket-server');
@@ -185,6 +116,15 @@ var assets = assetManager({
 var port = 3000;
 var app = module.exports = express.createServer();
 
+function requiresLogin(req, res, next) {
+  if (req.session.user) {
+    next();
+  } else {
+    res.redirect('/sessions/new?redir=' + req.url);
+  }
+};
+
+
 app.configure(function() {
 	//app.set('view engine', 'ejs');
 	app.set('view engine', 'jade');
@@ -195,6 +135,10 @@ app.configure(function() {
 	app.use(connect.conditionalGet());
 	app.use(connect.bodyDecoder());
 	app.use(connect.logger({ format: ':req[x-real-ip]\t:status\t:method\t:url\t' }));
+        app.use(express.cookieDecoder());
+        app.use(express.session({store: MemStore( {
+            reapInterval: 60000 * 10
+          })}));
 	app.use(assets);
 	app.use(connect.staticProvider(__dirname + '/public'));
 });
@@ -202,7 +146,17 @@ app.configure(function() {
 app.dynamicHelpers({
 	'cacheTimeStamps': function(req, res) {
 		return assets.cacheTimestamps;
-	}
+	},
+        'session': function(req, res) {
+                return req.session;
+        },
+        'userinfo': function(req, res) {
+                return req.userinfo;
+        },
+      
+        'flash': function(req, res) {
+                return req.flash();
+        }
 });
 
 //setup the errors
@@ -222,13 +176,79 @@ app.get('/', function(req, res) {
 	locals = dummyHelper.add_overlay(app, req, locals);
 	res.render('index', locals);
 });
+
+var users = require('./users');
+
+app.get('/sessions/new', function(req, res) {
+  res.render('sessions/new', {locals: {
+    redir: req.query.redir
+  }});
+});
+
+app.post('/sessions', function(req, res) {
+  users.authenticate(client,req.body.login, req.body.password, function(user) {
+    if (user) {
+      req.session.user = user;
+      res.redirect(req.body.redir || '/');
+    } else {
+      req.flash('warn', 'Login failed');
+      res.render('sessions/new', {locals: {redir: req.body.redir}});
+    }
+  });
+});
+
+app.get('/sessions/destroy', function(req, res) {
+  delete req.session.user;
+  res.redirect('/sessions/new');
+});
+
+app.get('/login',requiresLogin, function(req, res) {
+	var locals = { 'key': 'value' };
+	locals = dummyHelper.add_overlay(app, req, locals);
+	res.render('yearplan/index', locals);
+});
+
 app.get('/yearplan', function(req, res) {
 	var locals = { 'key': 'value' };
 	locals = dummyHelper.add_overlay(app, req, locals);
 	res.render('yearplan/index', locals);
 });
-app.get('/userlist', function(req, res) {
-        res.send(userlist);
+app.get('/basic', function(req, res) {
+        var admins = { "haau6257":1, "gjbe6257":1, "brer6257":1, "kvru6257":1 };
+        // get some date info
+        // this is done in database.js - but needs redoing here in case
+        // the server has been running for more than one day
+        // Some returned data will need to be filtered on date
+        // The server should be restarted once every day.:w
+        var today = new Date();
+        var month = today.getMonth()+1; var day = today.getDate(); var year = today.getFullYear();
+        db.firstweek = (month >8) ? julian.w2j(year,33) : julian.w2j(year-1,33)
+        db.lastweek  = (month >8) ? julian.w2j(year+1,26) : julian.w2j(year,26)
+        // info about this week
+        db.startjd = 7 * Math.floor(julian.greg2jul(month,day,year ) / 7);
+        db.startdate = julian.jdtogregorian(db.startjd);
+        db.enddate = julian.jdtogregorian(db.startjd+6);
+        db.week = julian.week(db.startjd);
+        var db_copy = db;
+        database.getAllTests(function(prover) {
+            db_copy.prover = prover;
+            console.log(db_copy.prover);
+          });
+        if (req.query.navn) {
+          var username = req.query.navn;
+          username = username.replace(/æ/g,'e').replace(/Æ/g,'E').replace(/ø/g,'o');
+          username = username.replace(/Ø/g,'O').replace(/å/g,'a').replace(/Å/g,'A');
+          username = username.toLowerCase();
+          var nameparts = username.split(" ");
+          var ln = nameparts.pop();
+          var fn = nameparts.join(' ');
+          db_copy.userinfo = findUser(fn,ln);
+          if (db_copy.userinfo) {
+            db_copy.userinfo.isadmin = (admins[db_copy.userinfo.username] && admins[db_copy.userinfo.username] == 1) ? true : false;
+          }
+          req.userinfo = db_copy.userinfo; 
+        }
+        res.send(db_copy);
 });
 
 // Keep this just above .listen()

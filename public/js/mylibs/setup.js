@@ -217,28 +217,19 @@ var prevtitle;
 
 function getusers() {
     // henter alle prøver for hele skolen
-    $j.getJSON( "aarsplan/php/getusers.php", 
-         function(data) {
-            brukerliste["elev"] = data.elev;
-            brukerliste["teach"] = data.teach;
-            brukerliste["klasse"] = data.klasser;
-            brukerliste["gruppe"] = data.grupper;
-            fullname = data.fullname;
-            isteach = (data.isteach == 'y');
-            isadmin = (data.isadmin == 'y');
-            memberlist = data.memlist;
-            memgr = data.memgr;
-            category = data.category;
-            fagautocomp = data.fagauto;
-            id2elev = data.id2elev;
-            take_action();
-         });
-    var url = 'aarsplan/php/getalleprover.php';
-    $j.getJSON( url, function(data) {
-            alleprover = data;
-    });
+    userinfo = database.userinfo;
+    fullname = userinfo.firstname + " " + userinfo.lastname;
+    isteach = (userinfo.department == 'Undervisning');
+    isadmin = userinfo.isadmin;
+    memberlist = database.memlist;
+    memgr = database.memgr;
+    alleprover = database.prover;
+    heldag = database.heldag;
+    category = database.category;
+    fagautocomp = database.course;
+    id2elev = database.students;
+    take_action();
     prevtitle = $j("#htitle").html();
-    $j("#htitle").html("henter alle fagplaner");
     var url = 'aarsplan/php/getandrefagplaner.php';
     $j.getJSON( url, { "user":userinfo.uid },
     function(data) {
@@ -309,6 +300,16 @@ $j(document).ready(function() {
         });
     
     }
+    $j.getJSON( "/basic",{ navn:user }, 
+         function(data) {
+           database = data;
+           userinfo = data.userinfo;
+           if (action == 'default') {
+             show_thisweek();
+           }
+           getusers();
+         });
+    /*
     $j.getJSON( "aarsplan/php/getyearplan.php",{ navn:user }, 
           function(data) {
             database = data;
@@ -318,6 +319,7 @@ $j(document).ready(function() {
             }
             getusers();
           });
+          */
     $j("#yearplan").click(function(event) {
         event.preventDefault();
         show_all(0);

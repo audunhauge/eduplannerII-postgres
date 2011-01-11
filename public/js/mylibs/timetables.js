@@ -287,7 +287,7 @@ function vis_teachtimeplan() {
 
 function show_thisweek() {
     // viser denne uka, årsplanen + timeplan
-    var uid = userinfo.uid;
+    var uid = userinfo.id;
     var s='<div id="timeviser"><h1>'+user+'</h1>';
     s+= '<div id="timeplan"></div>';
     s+= "</div>";
@@ -302,23 +302,20 @@ function show_thisweek() {
     var url = "aarsplan/php/gettimeplan.php";
     var e;
     var events = database.aarsplan;
-    var thisweek = database.thisweek;
-    if (database.ymd.y == database.ymd2.y) {
-        var dato = "" + database.ymd.d + "." + database.ymd.m + "-" + database.ymd2.d + "." + database.ymd2.m + " " + database.ymd2.y;
+    var thisweek = database.startjd;
+    if (database.startdate.year = database.enddate.year) {
+        var dato = "" + database.startdate.day + "." + database.startdate.month 
+            + "-" + database.enddate.day + "." + database.enddate.month + " " + database.startdate.year;
     } else {
-        var dato = "" + database.ymd.d + "." + database.ymd.m + "." + database.ymd.y + " - "
-                  + database.ymd2.d + "." + database.ymd2.m + "." + database.ymd2.y;
+        var dato = "" + database.startdate.day + "." + database.startdate.month + "." + database.startdate.year + " - "
+                  + database.enddate.day + "." + database.enddate.month + "." + database.enddate.year;
     }
     s = '<table class="timeplan" >';
     var header = [];
-    for (var i= 0; i < database.antall; i++) {
-      e = events[i];
-      if (e.julday < thisweek) continue;
-      if (e.julday > thisweek) break;
-      s += "<caption>Uke "+e.week+" "+dato+" Julday:"+thisweek+"</caption>";
-      for (var j=0;j<6;j++) {
-          header[j] = Url.decode(e.days[j][0]);
-      }
+    e = database.yearplan[Math.floor(thisweek/7)] || {} ;
+    s += "<caption>Uke "+e.week+" "+dato+" Julday:"+thisweek+"</caption>";
+    for (var j=0;j<6;j++) {
+        header[j] = e.days[j] || '';
     }
     s += "<tr>";
     for (i=0;i<5;i++) {
@@ -330,7 +327,9 @@ function show_thisweek() {
         s += "<th class=\"dayinfo\">" + header[i] + "</th>";
     }
     s += "</tr></table>";
+    $j("#timeplan").html(s);
     // hent timeplan og fagplan for denne uka
+    /*
     $j("#timeplan").html("Henter timeplan ... ");
     $j.getJSON( url, { "user":enr,"username":user, "userlist":userlist },
                 function(data) {
@@ -340,6 +339,7 @@ function show_thisweek() {
                     $j("#timeplan").html(s);
                     updateFagplanMenu(data.fag);
                 });
+    */
 }
 
 

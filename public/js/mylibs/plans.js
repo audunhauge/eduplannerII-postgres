@@ -26,33 +26,19 @@ function vis_fagplaner(data) {
 }
 
 function show_alleprover() {
-    // viser alle prøver for alle elever på hele skolen
-    // bør det være en meny hvor du velger alle,1sta ... 3ste ?
-    if (!alleprover) {
-        var url = 'aarsplan/php/getalleprover.php';
-        $j.getJSON( url, function(data) {
-            alleprover = data;
-            show_alleprover_already();
-          });
-        return;  
-    }
-    show_alleprover_already();
-}
-
-function show_alleprover_already() {
-    var events = alleprover.alleprover;
-    var thisweek = database.thisweek;
+    var thisweek = database.startjd;
     var s = "<table class=\"heldag\">";
     s += "<tr><th>Uke</th><th>Man</th><th>Tir</th><th>Ons</th>";
     s += "<th>Tor</th><th>Fre</th></tr>";
     var i,j;
     var e;
-    for (i= 0; i < events.length; i++) {
-      e = events[i];
-      if (e.julday < thisweek) continue;
+    for (jd = database.firstweek; jd < database.lastweek; jd += 7 ) {
+      if (jd < thisweek) continue;
       s += "<tr>";
-      s += "<th>"+e.week+"</th>";
+      s += "<th>"+julian.week(jd)+"</th>";
       for (j=0;j<5;j++) {
+        var pr = alleprover[jd+j];
+        var hd = heldag[jd+j];
         var hd_txt = Url.decode(e.hd[j]);
         var pr_txt = '';
         var pr = Url.decode(e.pr[j]);
@@ -250,28 +236,27 @@ function vis_andreplaner() {
 
 function show_next4() {
     // vis neste fire uker
-    var events = database.aarsplan;
-    var thisweek = database.thisweek;
+    var events = database.yearplan;
+    var thisweek = database.startjd;
     var s = "<table class=\"uke next\">";
     s += "<tr><th>Uke</th><th>Man</th><th>Tir</th><th>Ons</th>";
     s += "<th>Tor</th><th>Fre</th><th>Merknad</th></tr>";
-    var i,j;
+    var i,j,k;
     var e;
     var jdclass;
-    for (i= 0; i < database.antall; i++) {
-      e = events[i];
-      if (e.julday < thisweek) continue;
-      if (e.julday > thisweek+21) break;
+    for (i=thisweek; i < thisweek+22; i+= 7) {
+      e = events[Math.floor(i/7)] || {pr:[],days:[]};
       s += "<tr>";
       s += "<th>"+e.week+"</th>";
       for (j=0;j<6;j++) {
-          txt = Url.decode(e.pr[j]);
+          txt = e.pr[j] || " ";
           if (txt != " ") {
             txt = "<span class=\"prove\">" + txt + "</span>";
           } else {
             txt = "";
           }
-          s += "<td class=\"edit\">" + Url.decode(e.days[j][0]) + txt + "</td>";
+          txt += e.days[j] || "";
+          s += "<td>" + txt + "</td>";
       }
       s += "</tr>";
     }
@@ -282,18 +267,18 @@ function show_next4() {
 
 function show_info() {
     // vis merknadsfeltet fra årsplanen
-    var events = database.aarsplan;
-    var thisweek = database.thisweek;
+    var events = database.yearplan;
+    var thisweek = database.startjd;
     var s = "<table class=\"info\" border='2'>";
     s += "<tr><th>Uke</th><th>Merknad</th></tr>";
-    var i,j;
+    var i,j,weeknum;
     var e;
-    for (i= 0; i < database.antall; i++) {
-      e = events[i];
-      if (e.julday < thisweek) continue;
+    for (i = database.firstweek; i<database.lastweek; i += 7 ) {
+      e = events[Math.floor(i/7)] || { pr:[],days:[]};
       s += "<tr>";
-      s += "<th>"+e.week+"</th>";
-      s += "<td>" + Url.decode(e.days[5][0]) + "</td>";
+      s += "<th>"+julian.week(i)+"</th>";
+      var txt = e.days[5] || "";
+      s += "<td>" + txt + "</td>";
       s += "</tr>";
     }
     s += "</table>";

@@ -1,0 +1,228 @@
+var Client = require('mysql').Client;
+var client = new Client();
+client.user = 'skeisvangmoodle3';
+client.password = 'Bodric78?';
+client.database = 'skeisvangmoodle3';
+client.host = 'skeisvangmoodle3.mysql.domeneshop.no';
+
+var julian = require('./julian');
+
+var db = {
+   studentIds : []    // array of students ids [ 2343,4567 ]
+  ,students   : {}    // hash of student objects {  2343:{username,firstname,lastname,institution,department} , ... ]
+  ,teachIds   : []    // array of teacher ids [ 654,1493 ... ]
+  ,teachers   : {}    // hash of teach objects { 654:{username,firstname,lastname,institution}, ... }
+  ,course     : []    // array of coursenames [ '1MAP5', '3INF5' ... ] - used by autocomplete
+  ,freedays   : {}    // hash of juliandaynumber:freedays { 2347889:"Xmas", 2347890:"Xmas" ... }
+  ,heldag     : {}    // hash of { 2345556:{"3inf5":"Exam", ... } }
+  ,prover     : {}    // hash of { 2345556:{"3inf5_3304":"3,4,5", ... } }
+  ,yearplan   : {}    // hash of { 2345556:["info om valg", 2345557:"Exam", ...], ...  }
+  ,groups     : []    // array of groups
+  ,memlist    : {}    // hash of { "3inf5":[234,45,454],"2inf5":[23, ...], ... }  -- groups with stud-members
+  ,grcourses  : {}    // hash of { "3304":[ "3inf5" ] , ... }  -- courses connected to a group
+  ,coursesgr  : {}    // hash of { "3inf5":[ "3304" ] , ... }  -- groups connected to a course
+  ,memgr      : {}    // hash of { 234:["3inf5","2inf5", ..], ... }  --- groups stud is member of
+  ,category   : {}    // hash of coursename:category { '3inf5':4 , '1nat5':2 ... }
+  ,classes    : ("1STA,1STB,1STC,1STD,1STE,1MDA,1MDB,2STA,2STB,2STC,"
+                  + "2STD,2STE,2DDA,2MUA,3STA,3STB,3STC,3STD,3STE,3DDA,3MUA").split(",")
+                      // array of class-names ( assumes all studs are member of
+                      // one unique class - they are also member of diverse groups)
+
+}
+
+// get some date info
+var today = new Date();
+var month = today.getMonth()+1; var day = today.getDate(); var year = today.getFullYear();
+db.firstweek = (month >8) ? julian.w2j(year,33) : julian.w2j(year-1,33)
+db.lastweek  = (month >8) ? julian.w2j(year+1,26) : julian.w2j(year,26)
+// info about this week
+db.startjd = 7 * Math.floor(julian.greg2jul(month,day,year ) / 7);
+db.startdate = julian.jdtogregorian(db.startjd);
+db.enddate = julian.jdtogregorian(db.startjd+6);
+db.week = julian.week(db.startjd);
+
+
+client.connect(function(err, results) {
+    if (err) {
+        console.log("ERROR: " + err.message);
+        throw err;
+    }
+    console.log("connected.");
+    client.query('USE skeisvangmoodle3', function(err, results) {
+                if (err) {
+                        console.log("ERROR: " + err.message);
+                        throw err;
+                }
+                getBasicData(client);
+        });
+
+});
+
+var getAllTests = function(callback) {
+  // returns a hash of all tests --- same as db.prover, 
+  // used to populate db.prover
+  // assumes you give it a callback that assigns the hash
+  client.query(
+      // fetch all tests
+       'SELECT julday,shortname,cl.value, u.username FROM mdl_bookings_calendar cl '
+       + '      INNER JOIN mdl_course c ON (c.id = cl.courseid) '
+       + '      INNER JOIN mdl_user u ON (u.id = cl.userid) '
+       + '      WHERE eventtype = "prove" and julday >= ' + db.startjd + ' ORDER BY julday,value,shortname',
+      function (err, results, fields) {
+          if (err) {
+              console.log("ERROR: " + err.message);
+              throw err;
+          }
+          var prover = {};
+          for (var i=0,k= results.length; i < k; i++) {
+              var prove = results[i];
+              var julday = prove.julday;
+              delete prove.julday;   // save some space
+              if (!prover[julday]) {
+                prover[julday] = [];
+              }
+              prover[julday].push(prove);
+          }
+          callback(prover);
+      });
+}
+
+getBasicData = function(client) {
+  // get some basic data from mysql
+  // we want list of all users, list of all courses
+  // list of all groups, list of all tests
+  // list of all freedays, list of all bigtests (exams etc)
+  // list of all rooms, array of coursenames (for autocomplete)
+  client.query(
+      // fetch students and teachers
+      'SELECT id,username,firstname,lastname,department,institution from mdl_user where'
+            + ' department not in ("old","system","") order by department,institution,lastname,firstname',
+      function selectCb(err, results, fields) {
+            if (err) {
+                console.log("ERROR: " + err.message);
+                throw err;
+            }
+            for (var i=0,k= results.length; i < k; i++) {
+                var user = results[i];
+                if (user.department == 'Undervisning') {
+                  db.teachIds.push(user.id);
+                  db.teachers[user.id] = user;
+                } else {
+                  db.studentIds.push(user.id);
+                  db.students[user.id] = user;
+                }
+            }
+      });
+  client.query(
+      // fetch courses, groups and course:categories
+      'select c.id,c.shortname,c.category,count(ra.id) as cc from mdl_role_assignments ra inner join mdl_context x'
+        + '  ON (x.id=ra.contextid and ra.roleid=5) inner join mdl_course c ON x.instanceid=c.id '
+        + '                        group by c.id having cc > 2 order by cc',
+      function (err, results, fields) {
+          if (err) {
+              console.log("ERROR: " + err.message);
+              throw err;
+          }
+          var ghash = {}; // only push group once
+          var courselist = []; 
+          for (var i=0,k= results.length; i < k; i++) {
+              var course = results[i];
+              courselist.push(course.id);
+              var elm = course.shortname.split('_');
+              var cname = elm[0];
+              var group = elm[1];
+              db.course.push(cname);
+              db.category[cname] = course.category;
+              if (!ghash[group]) {
+                db.groups.push(group);
+                ghash[group] = 1;
+              }
+
+              if (!db.grcourses[group]) {
+                db.grcourses[group] = [];
+              }
+              db.grcourses[group].push(cname);
+
+              if (!db.coursesgr[cname]) {
+                db.coursesgr[cname] = [];
+              }
+              db.coursesgr[cname].push(group);
+          }
+          var str_courselist = courselist.join(',');
+          client.query(
+              // fetch memberlist for all courses
+              'select c.shortname,ra.userid from mdl_role_assignments ra inner join mdl_context x ON (x.id=ra.contextid and ra.roleid=5) inner join '
+                   + ' mdl_course c ON x.instanceid=c.id where c.id in ( ' + str_courselist + ' )',
+              function (err, results, fields) {
+                  if (err) {
+                    console.log("ERROR: " + err.message);
+                    throw err;
+                  }
+                  for (var i=0,k=results.length; i<k; i++) {
+                    var amem = results[i];
+                    if (!db.memlist[amem.shortname]) {
+                      db.memlist[amem.shortname] = [];
+                    }
+                    db.memlist[amem.shortname].push(amem.userid);
+
+                    if (!db.memgr[amem.userid]) {
+                      db.memgr[amem.userid] = [];
+                    }
+                    db.memgr[amem.userid].push(amem.shortname);
+                  }
+                  //console.log(db.coursesgr);
+              });
+      });
+  client.query(
+      // fetch free-days
+      'select * from mdl_bookings_calendar where eventtype="fridager"',
+      function (err, results, fields) {
+          if (err) {
+              console.log("ERROR: " + err.message);
+              throw err;
+          }
+          for (var i=0,k= results.length; i < k; i++) {
+              var free = results[i];
+              db.freedays[free.julday] = free.value;
+          }
+      });
+  client.query(
+      // fetch free-days
+      'select id,julday,value from mdl_bookings_calendar where eventtype="aarsplan"',
+      function (err, results, fields) {
+          if (err) {
+              console.log("ERROR: " + err.message);
+              throw err;
+          }
+          for (var i=0,k= results.length; i < k; i++) {
+              var plan = results[i];
+              if (!db.yearplan[Math.floor(plan.julday/7)]) {
+                db.yearplan[Math.floor(plan.julday/7)] = { week:julian.week(plan.julday), pr:[], days:[] };
+              }
+              db.yearplan[Math.floor(plan.julday/7)].days[Math.floor(plan.julday%7)] =  plan.value;
+          }
+          //console.log(db.yearplan);
+      });
+  client.query(
+      // fetch big tests (exams and other big tests - they block a whold day )
+      'select id,julday,name,value from mdl_bookings_calendar where eventtype="heldag"',
+      function (err, results, fields) {
+          if (err) {
+              console.log("ERROR: " + err.message);
+              throw err;
+          }
+          for (var i=0,k= results.length; i < k; i++) {
+              var free = results[i];
+              if (!db.heldag[free.julday]) {
+                db.heldag[free.julday] = {};
+              }
+              db.heldag[free.julday][free.name] = free.value;
+          }
+          //console.log(db.heldag);
+      });
+};
+
+
+module.exports.db = db;
+module.exports.client = client;
+module.exports.getAllTests = getAllTests;
