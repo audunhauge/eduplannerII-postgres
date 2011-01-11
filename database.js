@@ -85,6 +85,52 @@ var getAllTests = function(callback) {
       });
 }
 
+var getTimetables = function(callback) {
+  // fetch all timetable data
+  // returns a hash { course: {"3inf5_3304":[ [1,2,"R210" ], ... ] , ... } , 
+  //                  room:{ "r210":[ [1,2,"3inf5_3304" ..
+  //                  group:{ "3304":[ [1,2,"3inf5_3304","r210"], ..],  "3sta":[... ] ... }
+  //                }
+  // the inner array is [day,slot,room]
+  // assumes you give it a callback that assigns the hash
+  client.query(
+      'select cal.day,cal.slot,r.name as room,cal.name from mdl_bookings_calendar cal inner join mdl_bookings_item r '
+       +     ' on cal.itemid = r. id where eventtype = "timetable" order by cal.name,day,slot',
+      function (err, results, fields) {
+          if (err) {
+              console.log("ERROR: " + err.message);
+              throw err;
+          }
+          var coursetimetable = {};
+          var roomtimetable = {};
+          var grouptimetable = {};
+          for (var i=0,k= results.length; i < k; i++) {
+              var lesson = results[i];
+              var course = lesson.name;
+              var room = lesson.room;
+              var elm = course.split('_');
+              var fag = elm[0];
+              var group = elm[1];
+
+              if (!grouptimetable[group]) {
+                grouptimetable[group] = [];
+              }
+              grouptimetable[group].push([lesson.day, lesson.slot, course, room]);
+
+              if (!roomtimetable[room]) {
+                roomtimetable[room] = [];
+              }
+              roomtimetable[room].push([lesson.day, lesson.slot, course]);
+
+              if (!coursetimetable[course]) {
+                coursetimetable[course] = [];
+              }
+              coursetimetable[course].push([lesson.day, lesson.slot, room]);
+          }
+          callback( { course:coursetimetable, room:roomtimetable, group:grouptimetable  } );
+      });
+}
+
 getBasicData = function(client) {
   // get some basic data from mysql
   // we want list of all users, list of all courses
@@ -240,3 +286,4 @@ getBasicData = function(client) {
 module.exports.db = db;
 module.exports.client = client;
 module.exports.getAllTests = getAllTests;
+module.exports.getTimetables = getTimetables;

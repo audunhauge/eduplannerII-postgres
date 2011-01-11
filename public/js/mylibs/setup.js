@@ -16,6 +16,7 @@ var showplan  = gup("plan") || '';         // dersom ?plan=3it5_3402 da vises de
 var dager = "Man Tir Ons Tor Fre Merknad".split(" ");
 var eier;               // eier av siste timeplan (navn osv)
 
+var timetables = {};
 var timeregister = {};
 // timeregister lagrer timeplaner slik at de kan vises
 // samlet. Alle timeplanvisere kan push/pop på denne

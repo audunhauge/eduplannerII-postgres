@@ -328,6 +328,15 @@ function show_thisweek() {
     }
     s += "</tr></table>";
     $j("#timeplan").html(s);
+    if (timetables.course) {
+        // s += vistimeplan(userplan,user,'');
+        $j("#timeplan").append("her er timeplanen");
+    } else $j.getJSON( "/timetables", 
+        function(data) {
+            timetables = data;
+            // s += vistimeplan(userplan,user,'');
+            $j("#timeplan").append("her er timeplanen");
+        });
     // hent timeplan og fagplan for denne uka
     /*
     $j("#timeplan").html("Henter timeplan ... ");
@@ -343,6 +352,17 @@ function show_thisweek() {
 }
 
 
+function getuserplan(user) {
+  // assume timetables is valid
+  // use memgr to pick out all groups
+  // build up a timetable from timetables for each group
+  //
+  var usergr = memgr[user] || null;
+  if (usergr) {
+  } else {
+    return [];
+  }
+}
 
 
 

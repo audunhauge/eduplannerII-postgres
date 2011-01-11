@@ -214,11 +214,18 @@ app.get('/alltests', function(req, res) {
           });
 });
 
+app.get('/timetables', function(req, res) {
+        database.getTimetables(function(timtab) {
+            res.send(timtab);
+          });
+});
+
 app.get('/yearplan', function(req, res) {
 	var locals = { 'key': 'value' };
 	locals = dummyHelper.add_overlay(app, req, locals);
 	res.render('yearplan/index', locals);
 });
+
 app.get('/basic', function(req, res) {
         var admins = { "haau6257":1, "gjbe6257":1, "brer6257":1, "kvru6257":1 };
         // get some date info
