@@ -209,14 +209,19 @@ app.get('/login',requiresLogin, function(req, res) {
 });
 
 app.get('/alltests', function(req, res) {
+    // always query the dbase to get new tests
         database.getAllTests(function(prover) {
             res.send(prover);
           });
 });
 
 app.get('/timetables', function(req, res) {
-        database.getTimetables(function(timtab) {
-            res.send(timtab);
+    // timetables dont change much - reuse value
+    if (db.timetable) {
+      res.send(db.timetable);
+    } else database.getTimetables(function(timtab) {
+            db.timetable = timtab;
+            res.send(db.timetable);
           });
 });
 

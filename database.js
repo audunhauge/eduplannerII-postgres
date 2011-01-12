@@ -6,22 +6,23 @@ creds.setup(client);
 var julian = require('./julian');
 
 var db = {
-   studentIds : []    // array of students ids [ 2343,4567 ]
-  ,students   : {}    // hash of student objects {  2343:{username,firstname,lastname,institution,department} , ... ]
-  ,teachIds   : []    // array of teacher ids [ 654,1493 ... ]
-  ,teachers   : {}    // hash of teach objects { 654:{username,firstname,lastname,institution}, ... }
-  ,course     : []    // array of coursenames [ '1MAP5', '3INF5' ... ] - used by autocomplete
-  ,freedays   : {}    // hash of juliandaynumber:freedays { 2347889:"Xmas", 2347890:"Xmas" ... }
-  ,heldag     : {}    // hash of { 2345556:{"3inf5":"Exam", ... } }
-  ,prover     : {}    // hash of { 2345556:[ {shortname:"3inf5_3304",value::"3,4,5",username:"haau6257" } ... ], ... }
-  ,yearplan   : {}    // hash of { 2345556:["info om valg", 2345557:"Exam", ...], ...  }
-  ,groups     : []    // array of groups
-  ,memlist    : {}    // hash of { "3inf5":[234,45,454],"2inf5":[23, ...], ... }  -- groups with stud-members
-  ,grcourses  : {}    // hash of { "3304":[ "3inf5" ] , ... }  -- courses connected to a group
-  ,coursesgr  : {}    // hash of { "3inf5":[ "3304" ] , ... }  -- groups connected to a course
-  ,memgr      : {}    // hash of { 234:["3inf5","2inf5", ..], ... }  --- groups stud is member of
-  ,category   : {}    // hash of coursename:category { '3inf5':4 , '1nat5':2 ... }
-  ,classes    : ("1STA,1STB,1STC,1STD,1STE,1MDA,1MDB,2STA,2STB,2STC,"
+   studentIds  : []    // array of students ids [ 2343,4567 ]
+  ,students    : {}    // hash of student objects {  2343:{username,firstname,lastname,institution,department} , ... ]
+  ,teachIds    : []    // array of teacher ids [ 654,1493 ... ]
+  ,teachers    : {}    // hash of teach objects { 654:{username,firstname,lastname,institution}, ... }
+  ,course      : []    // array of coursenames [ '1MAP5', '3INF5' ... ] - used by autocomplete
+  ,freedays    : {}    // hash of juliandaynumber:freedays { 2347889:"Xmas", 2347890:"Xmas" ... }
+  ,heldag      : {}    // hash of { 2345556:{"3inf5":"Exam", ... } }
+  ,prover      : {}    // hash of { 2345556:[ {shortname:"3inf5_3304",value::"3,4,5",username:"haau6257" } ... ], ... }
+  ,yearplan    : {}    // hash of { 2345556:["info om valg", 2345557:"Exam", ...], ...  }
+  ,groups      : []    // array of groups
+  ,memlist     : {}    // hash of { "3304":[234,45,454],"2303":[23, ...], ... }  -- group -> studs
+  ,courseteach : {}    // hash of { "3inf5_3304":[654],"2inf5":[654,1363]," ... }  -- group -> teachers
+  ,grcourses   : {}    // hash of { "3304":[ "3inf5" ] , ... }  -- courses connected to a group
+  ,coursesgr   : {}    // hash of { "3inf5":[ "3304" ] , ... }  -- groups connected to a course
+  ,memgr       : {}    // hash of { 234:["3304","2303","3sta" ..], ... }  --- groups stud is member of
+  ,category    : {}    // hash of coursename:category { '3inf5':4 , '1nat5':2 ... }
+  ,classes     : ("1STA,1STB,1STC,1STD,1STE,1MDA,1MDB,2STA,2STB,2STC,"
                   + "2STD,2STE,2DDA,2MUA,3STA,3STB,3STC,3STD,3STE,3DDA,3MUA").split(",")
                       // array of class-names ( assumes all studs are member of
                       // one unique class - they are also member of diverse groups)
@@ -94,7 +95,7 @@ var getTimetables = function(callback) {
   // the inner array is [day,slot,room]
   // assumes you give it a callback that assigns the hash
   client.query(
-      'select cal.day,cal.slot,r.name as room,cal.name from mdl_bookings_calendar cal inner join mdl_bookings_item r '
+      'select userid,cal.day,cal.slot,r.name as room,cal.name from mdl_bookings_calendar cal inner join mdl_bookings_item r '
        +     ' on cal.itemid = r. id where eventtype = "timetable" order by cal.name,day,slot',
       function (err, results, fields) {
           if (err) {
@@ -104,6 +105,7 @@ var getTimetables = function(callback) {
           var coursetimetable = {};
           var roomtimetable = {};
           var grouptimetable = {};
+          var teachtimetable = {};
           for (var i=0,k= results.length; i < k; i++) {
               var lesson = results[i];
               var course = lesson.name;
@@ -111,23 +113,34 @@ var getTimetables = function(callback) {
               var elm = course.split('_');
               var fag = elm[0];
               var group = elm[1];
+              var uid = lesson.userid;
 
+              // indexd by teach id
+              if (!teachtimetable[uid]) {
+                teachtimetable[uid] = [];
+              }
+              teachtimetable[uid].push([lesson.day, lesson.slot, course, room]);
+
+              // indexed by group name
               if (!grouptimetable[group]) {
                 grouptimetable[group] = [];
               }
               grouptimetable[group].push([lesson.day, lesson.slot, course, room]);
 
+              // indexed by room name
               if (!roomtimetable[room]) {
                 roomtimetable[room] = [];
               }
-              roomtimetable[room].push([lesson.day, lesson.slot, course]);
+              roomtimetable[room].push([lesson.day, lesson.slot, course, room]);
 
+              // indexed by coursename (course_group)
               if (!coursetimetable[course]) {
                 coursetimetable[course] = [];
               }
-              coursetimetable[course].push([lesson.day, lesson.slot, room]);
+              coursetimetable[course].push([lesson.day, lesson.slot, course, room]);
           }
-          callback( { course:coursetimetable, room:roomtimetable, group:grouptimetable  } );
+          console.log(teachtimetable);
+          callback( { course:coursetimetable, room:roomtimetable, group:grouptimetable, teach:teachtimetable  } );
       });
 }
 
@@ -160,7 +173,7 @@ getBasicData = function(client) {
   client.query(
       // fetch courses, groups and course:categories
       'select c.id,c.shortname,c.category,count(ra.id) as cc from mdl_role_assignments ra inner join mdl_context x'
-        + '  ON (x.id=ra.contextid and ra.roleid=5) inner join mdl_course c ON x.instanceid=c.id '
+        + '  ON (x.id=ra.contextid and ra.roleid  = 5) inner join mdl_course c ON x.instanceid=c.id '
         + '                        group by c.id having cc > 2 order by cc',
       function (err, results, fields) {
           if (err) {
@@ -195,7 +208,8 @@ getBasicData = function(client) {
           var str_courselist = courselist.join(',');
           client.query(
               // fetch memberlist for all courses
-              'select c.shortname,ra.userid from mdl_role_assignments ra inner join mdl_context x ON (x.id=ra.contextid and ra.roleid=5) inner join '
+              'select c.shortname,ra.userid,ra.roleid as role from mdl_role_assignments ra inner join mdl_context x '
+                   + ' ON (x.id=ra.contextid and ra.roleid in (3,5)) inner join '
                    + ' mdl_course c ON x.instanceid=c.id where c.id in ( ' + str_courselist + ' )',
               function (err, results, fields) {
                   if (err) {
@@ -210,27 +224,38 @@ getBasicData = function(client) {
                     var cname = elm[0];
                     var group = elm[1];
                     // build group: studentlist
-                    if (!db.memlist[group]) {
-                      db.memlist[group] = [];
-                      blokkmem[group] = {}
-                    }
-                    if (! blokkmem[group][amem.userid]) {
-                      db.memlist[group].push(amem.userid);
-                      blokkmem[group][amem.userid] = 1;
-                    }
+                      if (!db.memlist[group]) {
+                        db.memlist[group] = [];
+                        blokkmem[group] = {}
+                      }
+                      // only students in memlist
+                      if (amem.role == 5 && ! blokkmem[group][amem.userid]) {
+                        db.memlist[group].push(amem.userid);
+                        blokkmem[group][amem.userid] = 1;
+                      } 
 
-                    // build student: grouplist
-                    if (!db.memgr[amem.userid]) {
-                      db.memgr[amem.userid] = [];
-                      blokkgr[amem.userid] = {};
-                    }
-                    if (! blokkgr[amem.userid][group]) {
-                      db.memgr[amem.userid].push(group);
-                      blokkgr[amem.userid][group] = 1;
+                    // build courseteach
+                      if (!db.courseteach[group]) {
+                        db.courseteach[group] = [];
+                      }
+                      // only teachers in courseteach
+                      if (amem.role == 3) {
+                        db.courseteach[group].push(amem.userid);
+                      } 
+
+                    // build person : grouplist
+                      if (!db.memgr[amem.userid]) {
+                        db.memgr[amem.userid] = [];
+                        blokkgr[amem.userid] = {};
+                      }
+                      if (! blokkgr[amem.userid][group]) {
+                        db.memgr[amem.userid].push(group);
+                        blokkgr[amem.userid][group] = 1;
                     }
                   }
                   //console.log(db.memgr);
                   //console.log(db.memlist);
+                  //console.log(db.courseteach);
               });
       });
   client.query(

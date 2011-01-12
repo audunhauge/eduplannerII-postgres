@@ -60,15 +60,16 @@ function build_timetable(timeplan,plan,filter,planspan) {
      for (i=0; i< plan.length;i++) {
         spa = spanstart; sto = spanend;
         var pt = plan[i];
-        var cell = pt.value.replace(' ','_');
-        if (!timeplan[pt.slot]) {
-            timeplan[pt.slot] = {};
+        var cell = pt[2].replace(' ','_');
+        if (!timeplan[pt[1]]) {
+            timeplan[pt[1]] = {};
         }
-        if (!timeplan[pt.slot][pt.day]) {
-             timeplan[pt.slot][pt.day] = '';
+        if (!timeplan[pt[1]][pt[0]]) {
+             timeplan[pt[1]][pt[0]] = '';
         }
-        var room = (pt.nuroom && filter != 'RAD' ) ? "&nbsp;<span class=\"rombytte\">=&gt;&nbsp;" + pt.nuroom + "</span>" : '&nbsp;'+pt.room ;
+        var room = (pt[4] && filter != 'RAD' ) ? "&nbsp;<span class=\"rombytte\">=&gt;&nbsp;" + pt[4] + "</span>" : '&nbsp;'+pt[3] ;
         cell += room;
+        /*
         if (pt.pr == "y" && filter != 'RAD' ) {
           if (spanstart) {
             spa = '<span class="'+planspan+' timeprove">';
@@ -77,7 +78,8 @@ function build_timetable(timeplan,plan,filter,planspan) {
             sto = '</span>';
           }
         }
-        timeplan[pt.slot][pt.day] += spa + cell + sto; 
+        */
+        timeplan[pt[1]][pt[0]] += spa + cell + sto; 
      }
      return timeplan;
 }
@@ -329,8 +331,9 @@ function show_thisweek() {
     s += "</tr></table>";
     $j("#timeplan").html(s);
     if (timetables.course) {
-        // s += vistimeplan(userplan,user,'');
-        $j("#timeplan").append("her er timeplanen");
+        var userplan = getuserplan(user);
+        s = vistimeplan(userplan,user,'');
+        $j("#timeplan").append(s);
     } else $j.getJSON( "/timetables", 
         function(data) {
             timetables = data;
@@ -357,11 +360,16 @@ function getuserplan(user) {
   // use memgr to pick out all groups
   // build up a timetable from timetables for each group
   //
-  var usergr = memgr[user] || null;
-  if (usergr) {
+  var uid = database.userinfo.id || 0;
+  if (timetables.teach[uid]) {
+    // we have a teach - just pick out timetable.
+    return {plan:timetables.teach[uid]};
   } else {
-    return [];
+    var usergr = memgr[uid] || null;
+    if (usergr) {
+    } 
   }
+  return [];
 }
 
 
