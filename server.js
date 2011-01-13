@@ -237,7 +237,7 @@ app.get('/basic', function(req, res) {
         // this is done in database.js - but needs redoing here in case
         // the server has been running for more than one day
         // Some returned data will need to be filtered on date
-        // The server should be restarted once every day.:w
+        // The server should be restarted once every day.
         var today = new Date();
         var month = today.getMonth()+1; var day = today.getDate(); var year = today.getFullYear();
         db.firstweek = (month >8) ? julian.w2j(year,33) : julian.w2j(year-1,33)
@@ -266,13 +266,14 @@ app.get('/basic', function(req, res) {
         res.send(db_copy);
 });
 
-// Keep this just above .listen()
-var dummyTimestamps = new dummyHelper.DummyHelper(app);
 
 //The 404 route (ALWAYS keep this as the last route)
 app.get('/*', function (req, res) {
     res.render('404');
 });
+
+// Keep this just above .listen()
+var dummyTimestamps = new dummyHelper.DummyHelper(app);
 
 app.listen(port, null);
 new SocketServer(app);

@@ -337,8 +337,9 @@ function show_thisweek() {
     } else $j.getJSON( "/timetables", 
         function(data) {
             timetables = data;
-            // s += vistimeplan(userplan,user,'');
-            $j("#timeplan").append("her er timeplanen");
+            var userplan = getuserplan(user);
+            s = vistimeplan(userplan,user,'');
+            $j("#timeplan").append(s);
         });
     // hent timeplan og fagplan for denne uka
     /*
@@ -367,6 +368,14 @@ function getuserplan(user) {
   } else {
     var usergr = memgr[uid] || null;
     if (usergr) {
+      var myplan = [];
+      for (var i in usergr) {
+        var group = usergr[i];
+        for (var j in timetables.group[group]) {
+          myplan.push(timetables.group[group][j]);
+        }
+      }
+      return { plan:myplan };
     } 
   }
   return [];
