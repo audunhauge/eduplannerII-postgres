@@ -111,7 +111,10 @@ function visEnPlan(fagnavn,plandata,datoliste,egne) {
           + ' <span id="editmsg">Du kan redigere planen ved å klikke på en rute</span>';
     }
     s += '<div class="button float gui" id="toot">Hele</div><div  class="button float gui" id="forste">Første</div>'
-      + '<div  class="button float gui" id="andre">Andre</div><div class="clear"></div>'
+      + '<div  class="button float gui" id="andre">Andre</div>'
+      + '<div  class="button float gui" id="copy">Ta kopi</div>'
+      + '<div  class="button float gui" id="paste">Lim inn</div>'
+      + '<div class="clear"></div>'
       + '<div id="planviser"></div>'
       + '</div>';
     $j("#main").html(s);

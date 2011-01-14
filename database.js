@@ -88,9 +88,10 @@ var getAllTests = function(callback) {
 
 var getTimetables = function(callback) {
   // fetch all timetable data
-  // returns a hash { course: {"3inf5_3304":[ [1,2,"R210" ], ... ] , ... } , 
-  //                  room:{ "r210":[ [1,2,"3inf5_3304" ..
-  //                  group:{ "3304":[ [1,2,"3inf5_3304","r210"], ..],  "3sta":[... ] ... }
+  // returns a hash { course: {"3inf5_3304":[ [1,2,"3inf5_3304","R210",654 ], ... ] , ... } , 
+  //                  room:{ "r210":[ [1,2,"3inf5_3304",654 ..
+  //                  group:{ "3304":[ [1,2,"3inf5_3304","r210",654], ..],  "3sta":[... ] ... }
+  //                  teach:{ "654":[ [1,2,"3inf5_3304","r210",654], ..],  "1312":[... ] ... }
   //                }
   // the inner array is [day,slot,room]
   // assumes you give it a callback that assigns the hash
@@ -119,27 +120,27 @@ var getTimetables = function(callback) {
               if (!teachtimetable[uid]) {
                 teachtimetable[uid] = [];
               }
-              teachtimetable[uid].push([lesson.day, lesson.slot, course, room]);
+              teachtimetable[uid].push([lesson.day, lesson.slot, course, room, uid]);
 
               // indexed by group name
               if (!grouptimetable[group]) {
                 grouptimetable[group] = [];
               }
-              grouptimetable[group].push([lesson.day, lesson.slot, course, room]);
+              grouptimetable[group].push([lesson.day, lesson.slot, course, room, uid]);
 
               // indexed by room name
               if (!roomtimetable[room]) {
                 roomtimetable[room] = [];
               }
-              roomtimetable[room].push([lesson.day, lesson.slot, course, room]);
+              roomtimetable[room].push([lesson.day, lesson.slot, course, room, uid]);
 
               // indexed by coursename (course_group)
               if (!coursetimetable[course]) {
                 coursetimetable[course] = [];
               }
-              coursetimetable[course].push([lesson.day, lesson.slot, course, room]);
+              coursetimetable[course].push([lesson.day, lesson.slot, course, room, uid]);
           }
-          console.log(teachtimetable);
+          //console.log(teachtimetable);
           callback( { course:coursetimetable, room:roomtimetable, group:grouptimetable, teach:teachtimetable  } );
       });
 }
