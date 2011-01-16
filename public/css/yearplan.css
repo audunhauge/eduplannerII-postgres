@@ -9,8 +9,21 @@
   background: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#AFC4E3), to(#FFFFFF), color-stop(.4,#E0E9FC));
 }
 
+.gradbackgreen {
+  background: -moz-linear-gradient(left,#58A60A,#224A20);
+  background: -webkit-gradient(linear, 0% 0%, 100% 0%, from(#58A60A), to(#224A20));
+}
+.gradbackgray {
+  background: -moz-linear-gradient(left,#a6A6a6,#224A20);
+  background: -webkit-gradient(linear, 0% 0%, 100% 0%, from(#a6A6a6), to(#224A20));
+}
+
 .disabled {
   color:#bbb !important;
+}
+
+.textcenter {
+  text-align:center;
 }
 
 .centered {
@@ -34,6 +47,8 @@
 th.time { width:3em; }
 
 td.oversikt { width:7em; }
+
+td.romres { font-size:0.9em; white-space:nowrap; }
 
 span.error { color:red; }
 span.uheader { font-size:1.2em; color:blue; }

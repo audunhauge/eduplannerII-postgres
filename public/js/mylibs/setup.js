@@ -26,6 +26,8 @@ var memberlist;         // liste over medlemmer i hver gruppe
 var memgr;              // liste over grupper en elev er medlem av
 
 var teachers;
+var students;
+var reservations;       // all reservations (future) for rooms
 var id2elev;            // konverterer fra id til elevinfo
 var isteach = false;    // a flag to decide if we should
   // bother displaying extra menues for a _presumed_ teacher -
@@ -118,9 +120,11 @@ function setup_teach() {
     var romliste = { "A0":("A001,A002,A003,A004,A005,A006".split(',')),
                      "A1":("A101,A102,A103,A104,A105,A106,A107".split(',')),
                      "M0":("M001,M002,M003,M004,M005,M006".split(',')),
-                     "M1":("M101,M102,M103,M104,M105,M106,M107,M108,M109,M110,M111,M112,M113,M114,M115,M116,M117,M118,M119".split(',')),
+                     "M10":("M101,M102,M103,M104,M105,M106,M107,M108,M109".split(',')),
+                     "M11":("M110,M111,M112,M113,M114,M115,M116,M117,M118,M119".split(',')),
                      "R0":("R001,R002,R003,R004,R005,R006,R007,R008".split(',')),
-                     "R1":("R101,R102,R103,R104,R105,R106,R107,R108,R109,R110,R111,R112,R113,R114,R115,R116,R117,R118,R119,R120,R121,R122,R123".split(',')),
+                     "R10":("R101,R102,R103,R104,R105,R106,R107,R108,R109".split(',')),
+                     "R11":("R110,R111,R112,R113,R114,R115,R116,R117,R118,R119,R120,R121,R122,R123".split(',')),
                      "R2":("R201,R202,R203,R204,R205,R206,R207,R208,R209,R210,R211,R212,R213,R214,R215,R216".split(',')) };
     var romvalg = '<ul>';                     
     var linktilrom = [];
@@ -150,15 +154,20 @@ function setup_teach() {
     } else {
         $j("#login").html('Teach');
     }
-    $j("#nav").append(s);
     // legg inn clickhandler for alle rom
-    for (var k=0; k < linktilrom.length; k++) {
-        var rom = linktilrom[k];
-        $j("#rom"+rom).click(function() {
-            var idd = $j(this).attr("id");
-            rom_reservering(idd.substr(3));
-        } );
-    }
+    // hent reserveringer for rommene
+    $j.getJSON( "/reserv", 
+         function(data) {
+            $j("#nav").append(s);
+            reservations = data;
+            for (var k=0; k < linktilrom.length; k++) {
+                var rom = linktilrom[k];
+                $j("#rom"+rom).click(function() {
+                    var idd = $j(this).attr("id");
+                    rom_reservering(idd.substr(3));
+                } );
+            }
+         });
     $j("#edfridager").click(function(event) {
         event.preventDefault();
         edit_fridager();
@@ -230,6 +239,8 @@ function getusers() {
     fagautocomp = database.course;
     id2elev = database.students;
     teachers = database.teachers;
+    students = database.students;
+    studentIds = database.studentIds;
     take_action();
     prevtitle = $j("#htitle").html();
     var url = 'aarsplan/php/getandrefagplaner.php';

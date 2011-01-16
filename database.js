@@ -57,6 +57,31 @@ client.connect(function(err, results) {
 
 });
 
+var getReservations = function(callback) {
+  // returns a hash of all reservations 
+  client.query(
+      'select userid,day,slot,itemid,name,value,julday from mdl_bookings_calendar cal '
+       + '      WHERE eventtype = "reservation" and julday >= ' + db.startjd ,
+      function (err, results, fields) {
+          if (err) {
+              console.log("ERROR: " + err.message);
+              throw err;
+          }
+          var reservations = {};
+          for (var i=0,k= results.length; i < k; i++) {
+              var res = results[i];
+              var julday = res.julday;
+              delete res.julday;   // save some space
+              if (!reservations[julday]) {
+                reservations[julday] = [];
+              }
+              reservations[julday].push(res);
+          }
+          callback(reservations);
+          //console.log(reservations);
+      });
+}
+
 var getAllTests = function(callback) {
   // returns a hash of all tests --- same as db.prover, 
   // used to populate db.prover
@@ -88,10 +113,10 @@ var getAllTests = function(callback) {
 
 var getTimetables = function(callback) {
   // fetch all timetable data
-  // returns a hash { course: {"3inf5_3304":[ [1,2,"3inf5_3304","R210",654 ], ... ] , ... } , 
+  // returns a hash { course: {"3inf5_3304":[ [1,2,"3inf5_3304","R210",'',654 ], ... ] , ... } , 
   //                  room:{ "r210":[ [1,2,"3inf5_3304",654 ..
-  //                  group:{ "3304":[ [1,2,"3inf5_3304","r210",654], ..],  "3sta":[... ] ... }
-  //                  teach:{ "654":[ [1,2,"3inf5_3304","r210",654], ..],  "1312":[... ] ... }
+  //                  group:{ "3304":[ [1,2,"3inf5_3304","r210",'',654], ..],  "3sta":[... ] ... }
+  //                  teach:{ "654":[ [1,2,"3inf5_3304","r210",'',654], ..],  "1312":[... ] ... }
   //                }
   // the inner array is [day,slot,room]
   // assumes you give it a callback that assigns the hash
@@ -120,25 +145,25 @@ var getTimetables = function(callback) {
               if (!teachtimetable[uid]) {
                 teachtimetable[uid] = [];
               }
-              teachtimetable[uid].push([lesson.day, lesson.slot, course, room, uid]);
+              teachtimetable[uid].push([lesson.day, lesson.slot, course, room, '',uid]);
 
               // indexed by group name
               if (!grouptimetable[group]) {
                 grouptimetable[group] = [];
               }
-              grouptimetable[group].push([lesson.day, lesson.slot, course, room, uid]);
+              grouptimetable[group].push([lesson.day, lesson.slot, course, room,'', uid]);
 
               // indexed by room name
               if (!roomtimetable[room]) {
                 roomtimetable[room] = [];
               }
-              roomtimetable[room].push([lesson.day, lesson.slot, course, room, uid]);
+              roomtimetable[room].push([lesson.day, lesson.slot, course, room,'', uid]);
 
               // indexed by coursename (course_group)
               if (!coursetimetable[course]) {
                 coursetimetable[course] = [];
               }
-              coursetimetable[course].push([lesson.day, lesson.slot, course, room, uid]);
+              coursetimetable[course].push([lesson.day, lesson.slot, course, room,'', uid]);
           }
           //console.log(teachtimetable);
           callback( { course:coursetimetable, room:roomtimetable, group:grouptimetable, teach:teachtimetable  } );
@@ -312,4 +337,5 @@ getBasicData = function(client) {
 module.exports.db = db;
 module.exports.client = client;
 module.exports.getAllTests = getAllTests;
+module.exports.getReservations = getReservations;
 module.exports.getTimetables = getTimetables;

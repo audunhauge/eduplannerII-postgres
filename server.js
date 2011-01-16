@@ -215,6 +215,13 @@ app.get('/alltests', function(req, res) {
           });
 });
 
+app.get('/reserv', function(req, res) {
+    // always query the dbase to get new tests
+        database.getReservations(function(data) {
+            res.send(data);
+          });
+});
+
 app.get('/timetables', function(req, res) {
     // timetables dont change much - reuse value
     if (db.timetable) {
