@@ -49,6 +49,7 @@ var alleprover;         // lagrer data om alle prøver for alle elever
 var fullname;           // lagrer fagnavn delen av gruppenavnet - fullname["3403"] = "3inf5"
 var category;           // 3inf5:4, 2SCD5:10  - kategori for faget 2=vg1,3=vg2,4=vg3,10=mdd
 var fagautocomp;        // liste over alle gyldige fagnavn - brukes til autocomplete
+var linktilrom = [];    // liste over alle rom
   
 
 function take_action() {
@@ -117,17 +118,15 @@ function take_action() {
 
 function setup_teach() {
     $j("#htitle").html("Velkommen "+user);
-    var romliste = { "A0":("A001,A002,A003,A004,A005,A006".split(',')),
-                     "A1":("A101,A102,A103,A104,A105,A106,A107".split(',')),
+    var romliste = { "A":("A001,A002,A003,A004,A005,A006,A107".split(',')),
                      "M0":("M001,M002,M003,M004,M005,M006".split(',')),
                      "M10":("M101,M102,M103,M104,M105,M106,M107,M108,M109".split(',')),
                      "M11":("M110,M111,M112,M113,M114,M115,M116,M117,M118,M119".split(',')),
                      "R0":("R001,R002,R003,R004,R005,R006,R007,R008".split(',')),
-                     "R10":("R101,R102,R103,R104,R105,R106,R107,R108,R109".split(',')),
-                     "R11":("R110,R111,R112,R113,R114,R115,R116,R117,R118,R119,R120,R121,R122,R123".split(',')),
-                     "R2":("R201,R202,R203,R204,R205,R206,R207,R208,R209,R210,R211,R212,R213,R214,R215,R216".split(',')) };
+                     "R1":("R105,R106,R107,R110,R112,R113".split(',')),
+                     "R2":("R201,R202,R203,R204,R205,R206,R207,R208,R210,R211,R212,R213,R214,R215,R216".split(',')) };
     var romvalg = '<ul>';                     
-    var linktilrom = [];
+    romvalg += '<li><a id="ledigrom" href="#">Finn ledigt rom</a></li>'; 
     for (var i in romliste) {
         var etasje = romliste[i];
         romvalg += '<li><a href="#">' + i + 'xx</a><ul>'; 
@@ -159,6 +158,9 @@ function setup_teach() {
     $j.getJSON( "/reserv", 
          function(data) {
             $j("#nav").append(s);
+            $j("#ledigrom").click(function() {
+                findfree();
+            } );
             reservations = data;
             for (var k=0; k < linktilrom.length; k++) {
                 var rom = linktilrom[k];
