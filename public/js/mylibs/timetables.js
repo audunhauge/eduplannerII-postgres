@@ -1,4 +1,59 @@
 //show timetables
+function show_thisweek() {
+    // viser denne uka, årsplanen + timeplan
+    //var uid = userinfo.id;
+    var uid = database.userinfo.id || 0;
+    var s='<div id="timeviser"><h1>'+user+'</h1>';
+    s+= '<div id="timeplan"></div>';
+    s+= "</div>";
+    $j("#main").html(s);
+    if (memothisweek) {
+        $j("#timeplan").html(memothisweek);
+        return;
+    }
+    // last inn årsplan-data for denne uka
+    //var enr = uid
+    var userlist = '';
+    var e;
+    var events = database.aarsplan;
+    var thisweek = database.startjd;
+    if (database.startdate.year = database.enddate.year) {
+        var dato = "" + database.startdate.day + "." + database.startdate.month 
+            + "-" + database.enddate.day + "." + database.enddate.month + " " + database.startdate.year;
+    } else {
+        var dato = "" + database.startdate.day + "." + database.startdate.month + "." + database.startdate.year + " - "
+                  + database.enddate.day + "." + database.enddate.month + "." + database.enddate.year;
+    }
+    s = '<table class="timeplan" >';
+    var header = [];
+    e = database.yearplan[Math.floor(thisweek/7)] || {} ;
+    s += "<caption>Uke "+e.week+" "+dato+" Julday:"+thisweek+"</caption>";
+    for (var j=0;j<6;j++) {
+        header[j] = e.days[j] || '';
+    }
+    s += "<tr>";
+    for (i=0;i<5;i++) {
+        s += "<th>" + dager[i] + "</th>";
+    }
+    s += "</tr>";
+    s += "<tr>";
+    for (i=0;i<5;i++) {
+        s += "<th class=\"dayinfo\">" + header[i] + "</th>";
+    }
+    s += "</tr></table>";
+    $j("#timeplan").html(s);
+    if (timetables.course) {
+        var userplan = getuserplan(uid);
+        s = vistimeplan(userplan,uid,'');
+        $j("#timeplan").append(s);
+    } else $j.getJSON( "/timetables", 
+        function(data) {
+            timetables = data;
+            var userplan = getuserplan(uid);
+            s = vistimeplan(userplan,uid,'');
+            $j("#timeplan").append(s);
+        });
+}
 
 function makepop(cell,userlist,username,gruppe,filter,heading) {
     // lag en css:hover som viser elever i en gruppe
@@ -86,7 +141,7 @@ function build_plantable(username,timeplan,xtraplan,filter) {
         // show members as a list in caption (on hover)
         var userlist = memberlist[username];
         members = makepop(members,userlist,username,'','');
-        members = '<ul id="members" class="nav">' + members + '</ul>';
+        members = '<ul id="members" class="gui nav">' + members + '</ul>';
     }
     var i,j;
     var s = '<table class="timeplan">';
@@ -190,7 +245,7 @@ function build_plantable(username,timeplan,xtraplan,filter) {
         // show members as a list in caption (on hover)
         var userlist = memberlist[username];
         members = makepop(members,userlist,username,'','');
-        members = '<ul id="members" class="nav">' + members + '</ul>';
+        members = '<ul id="members" class="gui nav">' + members + '</ul>';
     }
     var i,j;
     var s = '<table class="timeplan">';
@@ -360,62 +415,6 @@ function vis_teachtimeplan() {
 
 
 
-function show_thisweek() {
-    // viser denne uka, årsplanen + timeplan
-    //var uid = userinfo.id;
-    var uid = database.userinfo.id || 0;
-    var s='<div id="timeviser"><h1>'+user+'</h1>';
-    s+= '<div id="timeplan"></div>';
-    s+= "</div>";
-    $j("#main").html(s);
-    if (memothisweek) {
-        $j("#timeplan").html(memothisweek);
-        return;
-    }
-    // last inn årsplan-data for denne uka
-    //var enr = uid
-    var userlist = '';
-    var url = "aarsplan/php/gettimeplan.php";
-    var e;
-    var events = database.aarsplan;
-    var thisweek = database.startjd;
-    if (database.startdate.year = database.enddate.year) {
-        var dato = "" + database.startdate.day + "." + database.startdate.month 
-            + "-" + database.enddate.day + "." + database.enddate.month + " " + database.startdate.year;
-    } else {
-        var dato = "" + database.startdate.day + "." + database.startdate.month + "." + database.startdate.year + " - "
-                  + database.enddate.day + "." + database.enddate.month + "." + database.enddate.year;
-    }
-    s = '<table class="timeplan" >';
-    var header = [];
-    e = database.yearplan[Math.floor(thisweek/7)] || {} ;
-    s += "<caption>Uke "+e.week+" "+dato+" Julday:"+thisweek+"</caption>";
-    for (var j=0;j<6;j++) {
-        header[j] = e.days[j] || '';
-    }
-    s += "<tr>";
-    for (i=0;i<5;i++) {
-        s += "<th>" + dager[i] + "</th>";
-    }
-    s += "</tr>";
-    s += "<tr>";
-    for (i=0;i<5;i++) {
-        s += "<th class=\"dayinfo\">" + header[i] + "</th>";
-    }
-    s += "</tr></table>";
-    $j("#timeplan").html(s);
-    if (timetables.course) {
-        var userplan = getuserplan(user);
-        s = vistimeplan(userplan,user,'');
-        $j("#timeplan").append(s);
-    } else $j.getJSON( "/timetables", 
-        function(data) {
-            timetables = data;
-            var userplan = getuserplan(uid);
-            s = vistimeplan(userplan,uid,'');
-            $j("#timeplan").append(s);
-        });
-}
 
 
 function getuserplan(uid) {
@@ -627,62 +626,6 @@ function vis_teachtimeplan() {
 
 
 
-function show_thisweek() {
-    // viser denne uka, årsplanen + timeplan
-    //var uid = userinfo.id;
-    var uid = database.userinfo.id || 0;
-    var s='<div id="timeviser"><h1>'+user+'</h1>';
-    s+= '<div id="timeplan"></div>';
-    s+= "</div>";
-    $j("#main").html(s);
-    if (memothisweek) {
-        $j("#timeplan").html(memothisweek);
-        return;
-    }
-    // last inn årsplan-data for denne uka
-    //var enr = uid
-    var userlist = '';
-    var url = "aarsplan/php/gettimeplan.php";
-    var e;
-    var events = database.aarsplan;
-    var thisweek = database.startjd;
-    if (database.startdate.year = database.enddate.year) {
-        var dato = "" + database.startdate.day + "." + database.startdate.month 
-            + "-" + database.enddate.day + "." + database.enddate.month + " " + database.startdate.year;
-    } else {
-        var dato = "" + database.startdate.day + "." + database.startdate.month + "." + database.startdate.year + " - "
-                  + database.enddate.day + "." + database.enddate.month + "." + database.enddate.year;
-    }
-    s = '<table class="timeplan" >';
-    var header = [];
-    e = database.yearplan[Math.floor(thisweek/7)] || {} ;
-    s += "<caption>Uke "+e.week+" "+dato+" Julday:"+thisweek+"</caption>";
-    for (var j=0;j<6;j++) {
-        header[j] = e.days[j] || '';
-    }
-    s += "<tr>";
-    for (i=0;i<5;i++) {
-        s += "<th>" + dager[i] + "</th>";
-    }
-    s += "</tr>";
-    s += "<tr>";
-    for (i=0;i<5;i++) {
-        s += "<th class=\"dayinfo\">" + header[i] + "</th>";
-    }
-    s += "</tr></table>";
-    $j("#timeplan").html(s);
-    if (timetables.course) {
-        var userplan = getuserplan(user);
-        s = vistimeplan(userplan,user,'');
-        $j("#timeplan").append(s);
-    } else $j.getJSON( "/timetables", 
-        function(data) {
-            timetables = data;
-            var userplan = getuserplan(uid);
-            s = vistimeplan(userplan,uid,'');
-            $j("#timeplan").append(s);
-        });
-}
 
 
 function getuserplan(uid) {

@@ -14,6 +14,7 @@ a { color: #333; }
      .gui { display:none; }
     .page-break  { display:block; page-break-before:always; }
     div.gui { display:none; }
+    .gui { display:none; }
 }
 
 @media screen {

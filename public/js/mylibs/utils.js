@@ -1,5 +1,24 @@
 // some utility functions
-// utility functions
+
+
+function formatweekdate(jd) {
+    // given a julian day will return 3.4 - 9.4 
+    var greg = julian.jdtogregorian(jd);
+    var d1 = new Date(greg.year, greg.month, greg.day);
+    greg = julian.jdtogregorian(jd+4);
+    var d2 = new Date(greg.year, greg.month, greg.day);
+    return "" + d1.getDate() + '.' + (d1.getMonth()+1) + '-'+d2.getDate()+ '.'  + (d2.getMonth()+1);
+}    
+
+function countme(obj) {
+  var count = 0;
+  for (var k in obj) {
+      if (obj.hasOwnProperty(k)) {
+         ++count;
+      }
+  }
+  return count;
+}
 
 function gup( name ) {
     // get url parameter from location href

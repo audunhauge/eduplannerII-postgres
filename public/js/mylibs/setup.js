@@ -126,7 +126,7 @@ function setup_teach() {
                      "R1":("R105,R106,R107,R110,R112,R113".split(',')),
                      "R2":("R201,R202,R203,R204,R205,R206,R207,R208,R210,R211,R212,R213,R214,R215,R216".split(',')) };
     var romvalg = '<ul>';                     
-    romvalg += '<li><a id="ledigrom" href="#">Finn ledigt rom</a></li>'; 
+    romvalg += '<li><a id="ledigrom" href="#">Finn ledig rom</a></li>'; 
     for (var i in romliste) {
         var etasje = romliste[i];
         romvalg += '<li><a href="#">' + i + 'xx</a><ul>'; 
@@ -326,15 +326,15 @@ $j(document).ready(function() {
          });
     $j("#yearplan").click(function(event) {
         event.preventDefault();
-        show_all(0);
+        show_all(database.firstweek);
     });
     $j("#resten").click(function(event) {
         event.preventDefault();
-        show_all(database.thisweek);
+        show_all(database.startjd);
     });
     $j("#hele").click(function(event) {
         event.preventDefault();
-        show_all(0);
+        show_all(database.firstweek);
     });
     $j("#heldag").click(function(event) {
         event.preventDefault();
@@ -358,10 +358,6 @@ $j(document).ready(function() {
     $j("#neste").click(function(event) {
         event.preventDefault();
         show_next4();
-    });
-    $j("#info").click(function(event) {
-        event.preventDefault();
-        show_info();
     });
     $j("#denne").click(function(event) {
         event.preventDefault();

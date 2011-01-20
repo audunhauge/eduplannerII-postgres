@@ -21,6 +21,7 @@ var db = {
   ,grcourses   : {}    // hash of { "3304":[ "3inf5" ] , ... }  -- courses connected to a group
   ,coursesgr   : {}    // hash of { "3inf5":[ "3304" ] , ... }  -- groups connected to a course
   ,memgr       : {}    // hash of { 234:["3304","2303","3sta" ..], ... }  --- groups stud is member of
+  ,teachcourse : []    // array of courses the teacher teaches (inverse of courseteach)
   ,category    : {}    // hash of coursename:category { '3inf5':4 , '1nat5':2 ... }
   ,classes     : ("1STA,1STB,1STC,1STD,1STE,1MDA,1MDB,2STA,2STB,2STC,"
                   + "2STD,2STE,2DDA,2MUA,3STA,3STB,3STC,3STD,3STE,3DDA,3MUA").split(",")
@@ -261,11 +262,16 @@ getBasicData = function(client) {
                       } 
 
                     // build courseteach
-                      if (!db.courseteach[group]) {
-                        db.courseteach[group] = [];
-                      }
+                    // and teachcourse
                       // only teachers in courseteach
                       if (amem.role == 3) {
+                        if (!db.courseteach[group]) {
+                          db.courseteach[group] = [];
+                        }
+                        if (!db.teachcourse[amem.userid]) {
+                          db.teachcourse[amem.userid] = [];
+                        }
+                        db.teachcourse[amem.userid].push(amem.shortname);
                         db.courseteach[group].push(amem.userid);
                       } 
 
