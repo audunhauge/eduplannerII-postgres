@@ -118,15 +118,14 @@ function take_action() {
 
 function setup_teach() {
     $j("#htitle").html("Velkommen "+user);
-    var romliste = { "A":("A001,A002,A003,A004,A005,A006,A107".split(',')),
+    var romliste = { "A":("A001,A002,A003,A004,A005,A006,A102,A107".split(',')),
                      "M0":("M001,M002,M003,M004,M005,M006".split(',')),
-                     "M10":("M101,M102,M103,M104,M105,M106,M107,M108,M109".split(',')),
-                     "M11":("M110,M111,M112,M113,M114,M115,M116,M117,M118,M119".split(',')),
-                     "R0":("R001,R002,R003,R004,R005,R006,R007,R008".split(',')),
-                     "R1":("R105,R106,R107,R110,R112,R113".split(',')),
+                     "M1":("M106,M109,M110,M111,M112,M113,M117,M118,M119,B001,B002".split(',')),
+                     "R0":("R001,R002,R003,R004,R005,R008".split(',')),
+                     "R1":("R105,R106,R107,R110,R111,R112,R113".split(',')),
                      "R2":("R201,R202,R203,R204,R205,R206,R207,R208,R210,R211,R212,R213,R214,R215,R216".split(',')) };
     var romvalg = '<ul>';                     
-    romvalg += '<li><a id="ledigrom" href="#">Finn ledigt rom</a></li>'; 
+    romvalg += '<li><a id="ledigrom" href="#">Finn ledig rom</a></li>'; 
     for (var i in romliste) {
         var etasje = romliste[i];
         romvalg += '<li><a href="#">' + i + 'xx</a><ul>'; 
