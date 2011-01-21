@@ -201,14 +201,7 @@ function show_all(thisweek) {
       s += "</tr>";
     }
     s += "</table>";
-    //s += '<div class="gui gradback rcorner centered textcenter rcorner infobox" >Hei</div>';
-    s += '<div id="dialog" class="gui" title="Fargekoder">'
-        + '<table><tr><td class="hd">Heldag</td><td class="pr">Prøve</td><td class="hdpr">Heldag + Prøve</td></tr></table>'
-        + 'Sett markøren over prøve/heldag for å se info.</div>';
     $j("#main").html(s);
-    $j("#dialog").dialog().fadeTo(3000,0.4,function () {
-           $j(this).dialog('close');
-        });
 }
 
 

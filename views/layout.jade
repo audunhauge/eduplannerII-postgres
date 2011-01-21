@@ -17,10 +17,10 @@ html.no-js(lang="en")
     header
       - if (flash.warn)
         p#warn= flash.warn
-      - if (session.user)
-        p#greet= 'heisan ' + session.user.username
-      - if (userinfo)
-        p#greet= 'heisan ' + userinfo.username
+      //- if (session.user)
+      //  p#greet= 'heisan ' + session.user.username
+      //- if (userinfo)
+      //  p#greet= 'heisan ' + userinfo.username
     #container
       body!= body
     footer

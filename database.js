@@ -58,6 +58,65 @@ client.connect(function(err, results) {
 
 });
 
+var getCoursePlans = function(callback) {
+  client.query(
+            'SELECT distinct concat(u.id,c.id,s.section) as idd, u.id as uid, u.username, c.id, u.institution'
+          + ' ,c.startdate,c.shortname,c.numsections,s.section,s.summary '
+          + '   FROM mdl_role_assignments ra '
+          + '        INNER JOIN mdl_user u ON u.id=ra.userid '
+          + '        INNER JOIN mdl_context x ON x.id=ra.contextid '
+          + '        INNER JOIN mdl_course c ON x.instanceid=c.id '
+          + '        LEFT OUTER JOIN mdl_course_sections s ON s.course=c.id'
+          + '   WHERE c.category in (2,3,4,6,10) '
+          + '        AND ra.roleid = 3 '
+          + '        AND s.section != 0 '
+          + '        AND (isnull(s.summary) OR ( s.section < 50 AND s.section > 0)) '
+          + '        AND u.department="Undervisning" '
+          + '   ORDER BY u.institution,u.username,c.shortname,s.section ' ,
+      function (err, results, fields) {
+          if (err) {
+              console.log("ERROR: " + err.message);
+              throw err;
+          }
+          var fliste = {}; 
+          var compliance = {};  // is this a compliant teacher?
+          var startdate   = 0;
+          var numsections = 0;
+          for (var i=0,k= results.length; i < k; i++) {
+            fag = results[i];
+            summary = (fag.summary) ? fag.summary : '';
+            summary = summary.replace("\n",'<br>');
+            summary = summary.replace("\r",'<br>');
+            section = (fag.section) ? fag.section : '0';
+            shortname = fag.shortname;
+            username = fag.username;
+            institution = fag.institution;
+            if (startdate == 0) startdate = fag.startdate;
+            if (numsections == 0) numsections = fag.numsections;
+            if (!compliance[username]) {
+                compliance[username] = {};
+            }
+            if (!compliance[username][shortname]) {
+                compliance[username][shortname] = 0;
+            }
+            if (!fliste[institution]) {
+                fliste[institution] = {};
+            }
+            if (!fliste[institution][username]) {
+                fliste[institution][username] = {};
+            }
+            if (!fliste[institution][username][shortname]) {
+                fliste[institution][username][shortname] = {};
+            }
+            fliste[institution][username][shortname][section] = summary;
+            compliance[username][shortname] += summary.length;
+          }
+          var allplans = { courseplans:fliste, compliance:compliance, startdate:startdate, numsections:numsections };
+          callback(allplans);
+          //console.log(reservations);
+      });
+}
+
 var getReservations = function(callback) {
   // returns a hash of all reservations 
   client.query(
@@ -179,7 +238,7 @@ getBasicData = function(client) {
   // list of all rooms, array of coursenames (for autocomplete)
   client.query(
       // fetch students and teachers
-      'SELECT id,username,firstname,lastname,department,institution from mdl_user where'
+      'SELECT id,username,firstname,lastname,department,institution,skype from mdl_user where'
             + ' department not in ("old","system","") order by department,institution,lastname,firstname',
       function selectCb(err, results, fields) {
             if (err) {
@@ -345,3 +404,4 @@ module.exports.client = client;
 module.exports.getAllTests = getAllTests;
 module.exports.getReservations = getReservations;
 module.exports.getTimetables = getTimetables;
+module.exports.getCoursePlans = getCoursePlans;

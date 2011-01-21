@@ -1,11 +1,52 @@
-h1 Login
-form(action='/sessions', method='POST')
-  input(type='hidden', name='redir', value=redir)
-  p
-    label(for='login') Login:
-    input(type='text', name='login', id='login')
-  p
-    label(for='password') Password:
-    input(type='password', name='password', id='password')
-  p
-    input(type='submit')
+#header
+  h1#htitle Årsplan for Skeisvang
+ul#nav 
+  li.current 
+    a#login(href="#") Login
+  li 
+    a#yearplan(href="#") Årsplan
+    ul 
+      li 
+        a#denne(href="#") Denne uka
+      li 
+        a#neste(href="#") Neste 4 uker
+      li 
+        a#resten(href="#") Resten av året
+      li 
+        a#hele(href="#") Hele året
+      li 
+        a#prover(href="#") Mine prøver
+      li 
+        a#heldag(href="#") Heldag
+      li 
+        a#alleprover(href="#") Alle prøver
+  li
+    a#fagplaner(href="#") Fagplaner
+    ul 
+      li#teachmenu
+        a#mineplaner(href="#") Mine fagplaner</a>    </li> 
+      li
+        a#andreplaner(href="#") Andre fagplaner</a>   </li> 
+  li
+    a#timeplaner(href="#") Timeplaner 
+    ul 
+      li
+        a#timeplanteach(href="#") Lærere
+      li
+        a#timeplanelev(href="#") Elever
+      li
+        a(href="#") Grupperinger
+        ul
+          li
+            a#timeplanklasse(href="#") Klasser
+          li
+            a#timeplangruppe(href="#") Grupper
+          li
+            a#timeplanfag(href="#") Fag
+          li
+            a#timeplanrom(href="#") Rom
+        li
+          a#timeplansamling(href="#") Sammenstilling
+p 
+  #main
+    #timeplan Henter planer ...
