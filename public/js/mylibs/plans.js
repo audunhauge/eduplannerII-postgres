@@ -25,7 +25,11 @@ function vis_fagplaner(data) {
      return '';
 }
 
-function show_alleprover() {
+function show_alleprover(filter,faggrupper) {
+    // filter lar deg velge fra [heldag,prøve]
+    // faggrupper  { "3inf5":1,"3304":1,"3nor6":1 }
+    //   bare vis prøver/heldag for fag/grupper
+    filter = typeof(filter) != 'undefined' ? filter : '';
     var thisweek = database.startjd;
     var s = "<table class=\"heldag\">";
     s += "<tr><th>Uke</th><th>Man</th><th>Tir</th><th>Ons</th>";
@@ -35,28 +39,42 @@ function show_alleprover() {
     for (jd = database.firstweek; jd < database.lastweek; jd += 7 ) {
       if (jd < thisweek) continue;
       s += "<tr>";
-      s += "<th>"+julian.week(jd)+"</th>";
+      s += '<th><div class="weeknum">'+julian.week(jd)+'</div><br class="clear" /><div class="date">' + formatweekdate(jd) + "</div></th>";
       for (j=0;j<5;j++) {
-        var pr = alleprover[jd+j] || [];
-        //var hd = heldag[jd+j];
         var proveliste = '';
-        for (var k=0; k< pr.length; k++) {
-            var pro = pr[k];
-            var faggruppe = pro.shortname.split('_');
-            var fag = faggruppe[0];
-            var gruppe = faggruppe[1];
-            var members = fag + " " + gruppe;
-            if (memberlist && memberlist[gruppe]) {
-                // show members as a list (on hover)
-                var userlist = memberlist[gruppe];
-                var antall = userlist.length;
-                members = makepop(members,userlist,gruppe,'','','<span class="proveinfo">'+ pro.username 
-                           + " " +pro.value+" ("+antall+' elever)</span>');
-                members = '<ul class="nav alleprover">' + members + '</ul>';
-            }
-            proveliste += '<span class="pro klasse'+fag[0]+' cat'+category[fag]+'">' + members + '</span>';
+        var tdclass = '';
+        if (database.freedays[jd+j]) {
+          proveliste = database.freedays[jd+j];
+          tdclass = ' class="fridag"';
+        } else {
+          var pr =  (!filter || filter.indexOf("prove") >= 0 ) ? alleprover[jd+j] || [] : [];
+          var hd =  (!filter || filter.indexOf("heldag") >= 0 ) ? database.heldag[jd+j] || {} : {};
+          for (fag in hd) {
+              if (!faggrupper || faggrupper[fag]) {
+                var cat = category[fag] || 0;
+                proveliste += '<span class="heldag klasse' + fag.substr(0,1) + ' cat' + cat  + '">' + fag + ' ' + hd[fag] + '</span>';
+              }
+          } 
+          for (var k=0; k< pr.length; k++) {
+              var pro = pr[k];
+              var faggruppe = pro.shortname.split('_');
+              var fag = faggruppe[0];
+              var gruppe = faggruppe[1];
+              if (!faggrupper || faggrupper[gruppe] || faggrupper[pro.shortname] ) {
+                var members = fag + " " + gruppe;
+                if (memberlist && memberlist[gruppe]) {
+                    // show members as a list (on hover)
+                    var userlist = memberlist[gruppe];
+                    var antall = userlist.length;
+                    members = makepop(members,userlist,gruppe,'','','<span class="proveinfo">'+ pro.username 
+                               + " " +pro.value+" ("+antall+' elever)</span>');
+                    members = '<ul class="nav gui alleprover">' + members + '</ul>';
+                }
+                proveliste += '<span class="pro klasse'+fag[0]+' cat'+category[fag]+'">' + members + '</span>';
+              }
+          }
         }
-        s += "<td>" + proveliste + "</td>";
+        s += '<td'+tdclass+'>' + proveliste + "</td>";
       }
       s += "</tr>";
     }
@@ -65,109 +83,120 @@ function show_alleprover() {
 }    
 
 function show_heldag() {
-    // viser alle heldager
-    // mine heldager bør framheves?
-    var events = database.aarsplan;
-    var thisweek = database.thisweek;
-    var s = "<table class=\"heldag\">";
-    s += "<tr><th>Uke</th><th>Man</th><th>Tir</th><th>Ons</th>";
-    s += "<th>Tor</th><th>Fre</th></tr>";
-    var i,j;
-    var e;
-    var txt;
-    var thclass;
-    var cc;
-    for (i= 0; i < database.antall; i++) {
-      e = events[i];
-      if (e.julday < thisweek) continue;
-      s += "<tr>";
-      s += "<th>"+e.week+"</th>";
-      for (j=0;j<5;j++) {
-        txt = Url.decode(e.hd[j]);
-        s += '<td class="heldag">' + txt + "</td>";
-      }
-      s += "</tr>";
-    }
-    s += "</table>";
-    $j("#main").html(s);
+  show_alleprover("heldag");
 }
 
 function show_prover() {
     // viser prøver for gjeldende bruker
     // bør kunne velge bruker
-    var events = database.aarsplan;
-    var thisweek = database.thisweek;
-    var s = "<table class=\"prover\">";
-    s += "<tr><th>Uke</th><th>Man</th><th>Tir</th><th>Ons</th>";
-    s += "<th>Tor</th><th>Fre</th><th>Merknad</th></tr>";
-    var i,j;
-    var e;
-    var txt;
-    var thclass;
-    var cc;
-    for (i= 0; i < database.antall; i++) {
-      e = events[i];
-      if (e.julday < thisweek) continue;
-      s += "<tr>";
-      s += "<th>"+e.week+"</th>";
-      for (j=0;j<6;j++) {
-        txt = Url.decode(e.pr[j]);
-        jdclass = (txt == " ") ? "normal" : "prover";
-        s += "<td class=\""+jdclass+"\">" + txt + "</td>";
-      }
-      s += "</tr>";
+  var uid = database.userinfo.id || 0;
+  var minefaggrupper = {};
+  if (timetables.teach[uid]) {
+    // we have a teach 
+    // a teach dosn't have all the tests for a given group
+    // a group may be connected to different subjects.
+    var minefag = database.teachcourse[uid];
+    for (var j in minefag) {
+      var fagcourse = minefag[j];
+      var faggruppe = fagcourse.split('_');
+      var fag = faggruppe[0];
+      minefaggrupper[fagcourse] = 1;
+      minefaggrupper[fag] = 1;
     }
-    s += "</table>";
-    $j("#main").html(s);
+  } else {
+    var usergr = memgr[uid] || null;
+    if (usergr) {
+      for (var i in usergr) {
+        var group = usergr[i];
+        var fagliste = database.grcourses[group];
+        for (var k in fagliste) {
+          var fag = fagliste[k];
+          minefaggrupper[fag] = 1;
+        }
+        minefaggrupper[group] = 1;
+      }
+    } 
+  }
+  show_alleprover("",minefaggrupper);
 }
 
 function show_all(thisweek) {
     // viser hele årsplanen (ikke prøver og heldag)
     var events = database.aarsplan;
-    var prover = alleprover.alleprover;
+    var prover = alleprover;
     var theader ="<table class=\"year\" >"
      + "<tr><th>Uke</th><th>Man</th><th>Tir</th><th>Ons</th>"
      + "<th>Tor</th><th>Fre</th><th>Merknad</th></tr>";
     var tfooter ="</table>";
     var s = theader;
-    s += "<caption>Første halvår</caption>";
+    var week = julian.week(thisweek);
+    if (week > 30 && week < 45) {
+      s += "<caption>Første halvår</caption>";
+    }
+    if (week > 44 && week < 52) {
+      s += "<caption>Første halvår II</caption>";
+    }
+    if (week < 13 ) {
+      s += "<caption>Andre halvår</caption>";
+    }
     var i,j;
     var e;
     var pro;   // dagens prover
     var txt;
     var thclass;
     var cc;
-    for (i= 0; i < database.antall; i++) {
-      e = events[i];
-      if (e.julday < thisweek) continue;
+
+    var events = database.yearplan;
+    for (i= thisweek; i < database.lastweek; i += 7) {
+      e = events[Math.floor(i/7)] || { pr:[],days:[]};
       // add a page break if we pass new year
-      if (e.week == "45") {
+      if (julian.week(i) == "45") {
          s += tfooter + '<div class="page-break"></div><p>' + theader;
          s += "<caption>Første halvår II</caption>";
       }
-      if (e.week == "1") {
+      if (julian.week(i) == "1") {
          s += tfooter + '<div class="page-break"></div><p>' + theader;
          s += "<caption>Andre halvår</caption>";
       }
-      if (e.week == "13") {
+      if (julian.week(i) == "13") {
          s += tfooter + '<div class="page-break"></div><p>' + theader;
          s += "<caption>Andre halvår II</caption>";
       }
-      pro = prover[i];
+      pro = { pr:(prover[i] || []) , hd:(database.heldag[i] || [] ) };
       s += "<tr>";
-      thclass = e.klass;
-      s += "<th class=\""+thclass+"\">"+e.week+"</th>";
+      //thclass = e.klass;
+      thclass = '';
+      //s += "<th class=\""+thclass+"\">"+e.week+"</th>";
+      //s += "<th>"+julian.week(i)+'<br><span class="date">' + formatweekdate(i) + "</span></th>";
+      s += '<th><div class="weeknum">'+julian.week(i)+'</div><br class="clear" /><div class="date">' + formatweekdate(i) + "</div></th>";
       for (j=0;j<6;j++) {
-        cc = Url.decode(e.days[j][1]);
         var xtra = '';
-        if (pro.hd[j]) {
-            xtra += '<span title="heldag" class="enheldag">+</span>'; 
+        var tlist = [];
+        if (database.freedays[i+j]) {
+          txt = database.freedays[i+j];
+          tdclass = 'fridag';
+        } else {
+          tdclass = '';
+          if (database.heldag[i+j]) {
+            var hd =  database.heldag[i+j];
+            for (fag in hd) {
+                tlist.push(fag + ' ' + hd[fag]);
+            } 
+            tdclass += 'hd';
+            xtra += 'heldag';
+          }
+          if (prover[i+j] ) {
+              tdclass += 'pr';
+              tlist.push(countme(prover[i+j]) + ' prøver');
+              //xtra += '<span title="prøve" class="enprove">x</span>'; 
+              xtra += ' prøve';
+          }
+          xtra = (xtra) ? '<div class="gui textcenter hinted">'+xtra+'</div>' : '';
+          txt = e.days[j] || xtra;
         }
-        if (pro.pr[j]) {
-            xtra += '<span title="prøve" class="enprove">x</span>'; 
-        }
-        txt = Url.decode(e.days[j][0]);
-        s += "<td class=\""+cc+"\">" + txt + xtra + "</td>";
+        var title = tlist.join(','); 
+        title = (title) ? 'title="'+title+'"' : '';
+        s += '<td ' + title + ' class="'+tdclass+'">' + txt + "</td>";
       }
       s += "</tr>";
     }
@@ -241,40 +270,26 @@ function show_next4() {
     var e;
     var jdclass;
     for (i=thisweek; i < thisweek+22; i+= 7) {
-      e = events[Math.floor(i/7)] || {pr:[],days:[]};
+      e = events[Math.floor(i/7)] || {pr:[],days:[ [],[],[],[],[],[] ] };
       s += "<tr>";
-      s += "<th>"+e.week+"</th>";
+      //s += "<th>"+julian.week(i)+'<br><span class="date">' + formatweekdate(i) + "</span></th>";
+      s += '<th><div class="weeknum">'+julian.week(i)+'</div><br class="clear" /><div class="date">' + formatweekdate(i) + "</div></th>";
       for (j=0;j<6;j++) {
-          txt = e.pr[j] || " ";
-          if (txt != " ") {
-            txt = "<span class=\"prove\">" + txt + "</span>";
+          tdclass = '';
+          if (database.freedays[i+j]) {
+            txt = database.freedays[i+j];
+            tdclass = ' class="fridag"';
           } else {
-            txt = "";
+            txt = e.pr[j] || " ";
+            if (txt != " ") {
+              txt = "<span class=\"prove\">" + txt + "</span>";
+            } else {
+              txt = "";
+            }
+            txt += e.days[j] || "";
           }
-          txt += e.days[j] || "";
-          s += "<td>" + txt + "</td>";
+          s += '<td'+tdclass+'>' + txt + "</td>";
       }
-      s += "</tr>";
-    }
-    s += "</table>";
-    $j("#main").html(s);
-}
-
-
-function show_info() {
-    // vis merknadsfeltet fra årsplanen
-    var events = database.yearplan;
-    var thisweek = database.startjd;
-    var s = "<table class=\"info\" border='2'>";
-    s += "<tr><th>Uke</th><th>Merknad</th></tr>";
-    var i,j,weeknum;
-    var e;
-    for (i = database.firstweek; i<database.lastweek; i += 7 ) {
-      e = events[Math.floor(i/7)] || { pr:[],days:[]};
-      s += "<tr>";
-      s += "<th>"+julian.week(i)+"</th>";
-      var txt = e.days[5] || "";
-      s += "<td>" + txt + "</td>";
       s += "</tr>";
     }
     s += "</table>";

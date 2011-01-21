@@ -92,6 +92,10 @@ function take_action() {
         case 'reload':
             // after login - don't do anything
             break;
+        case 'login':
+            // go to the login page
+            get_login();
+            break;
 
         case 'plan':
             // planen er allerede på skjermen
@@ -101,7 +105,7 @@ function take_action() {
         default:
             if (isteach) {
                 setup_teach();
-            } else if (userinfo.maybeteach == 'y') {
+            } else if (userinfo.maybeteach) {
                 $j("#login").html('login').click(function(event) {
                     event.preventDefault();
                     get_login();
@@ -191,36 +195,47 @@ function setup_teach() {
 function get_login() {
     // this function is available for maybeteachers
     // if they authenticate they get expanded menu
+    // NOTE: this is not security - just convenience. we only show
+    // editing menues to presumed teachers.
+    // The real check is performed on the node server on all
+    // requests that perform changes. We just don't show menues that
+    // users arn't allowed to use.
     var s = '<form name="loginform"><table id="loginform" class="gradback rcorner centered" >';
     s += '<tr><th><label for="username" >Brukernavn</label></th><td><input id="uname" type="text" name="username"></td></tr>';
     s += '<tr><th><label for="password" >Passord</label></th><td><input id="pwd" type="password" name="password"></td></tr>';
     s += '<tr><td colspan="2"><div id="do_login" class="button">Login</div></td></tr>';
     s += '</table></form>';
     $j("#main").html(s);
+    $j("#uname").keypress(function(event) {
+        if (event.keyCode == "13") {
+            event.preventDefault();
+            $j("#pwd").focus();
+        }
+      }).focus();
+    $j("#pwd").keypress(function(event) {
+        if (event.keyCode == "13") {
+            event.preventDefault();
+            $j("#do_login").click();
+        }
+      });
+
     $j("#do_login").click(function(event) {
         var username = $j("#uname").val();
         var password = $j("#pwd").val();
-        $j.get( 'aarsplan/php/getlogin.php',{"username":username, "password":password }, function(data) {
-            // if data == YES then we are logged in
-            // add new and dainty things to the menu
-            // same as isteach
-            $j.getJSON( "aarsplan/php/getusers.php", 
-                function(data) {
-                    brukerliste["elev"] = data.elev;
-                    brukerliste["teach"] = data.teach;
-                    brukerliste["klasse"] = data.klasser;
-                    brukerliste["gruppe"] = data.grupper;
-                    fullname = data.fullname;
-                    isteach = (data.isteach == 'y');
-                    isadmin = (data.isadmin == 'y');
-                    memberlist = data.memlist;
-                    category = data.category;
-                    fagautocomp = data.fagauto;
-                    id2elev = data.id2elev;
-                    setup_teach();
-                });
-            $j("#login").unbind();
-            show_thisweek();
+        $j.get( '/login',{"username":username, "password":password }, function(userinfo) {
+            if (userinfo && userinfo.id > 0) {
+              // if user.id > 0 then we are logged in
+              // add new and dainty things to the menu
+              // same as isteach
+              if (userinfo.department == 'Undervisning') {
+                fullname = userinfo.firstname + ' ' + userinfo.lastname;
+                isteach = true;
+                isadmin = (userinfo.isadmin == 'y');
+                setup_teach();
+                $j("#login").unbind();
+                show_thisweek();
+              }
+            }
         });
     });
 }
@@ -228,11 +243,7 @@ function get_login() {
 var prevtitle;
 
 function getusers() {
-    // henter alle prøver for hele skolen
-    userinfo = database.userinfo || { firstname:"", lastname:"", department:"", isadmin:false };
-    fullname = userinfo.firstname + " " + userinfo.lastname;
-    isteach = (userinfo.department == 'Undervisning');
-    isadmin = userinfo.isadmin;
+    // noen kjappe globale
     memberlist = database.memlist;
     memgr = database.memgr;
     heldag = database.heldag;
@@ -242,51 +253,80 @@ function getusers() {
     teachers = database.teachers;
     students = database.students;
     studentIds = database.studentIds;
-    take_action();
-    prevtitle = $j("#htitle").html();
-    var url = 'aarsplan/php/getandrefagplaner.php';
-    $j.getJSON( url, { "user":userinfo.uid },
-    function(data) {
-        allefagplaner = data;
-        var s = '<ul>';
-        var linktilfag = [];
-        for (var avdeling in allefagplaner.fagliste) {
-            var myteachers = allefagplaner.fagliste[avdeling];
-            s += '<li><a href="#">' + Url.decode(avdeling) + '</a><ul>';
-            for (var teach in myteachers) {
-                var fagene = myteachers[teach];
-                s += '<li><a href="#">' + teach + '</a><ul>';
-                for (var fag in fagene) {
-                    var idd = fag+'z'+teach+'z'+avdeling;
-                    var compliance = allefagplaner.fagliste[avdeling][teach][fag].compliance; 
-                    var comp = Math.floor(Math.log(1 +compliance))
-                    s += '<li><a class="fag'+comp+'" id="'+idd+'" href="#">' + fag + '</a></li>';
-                    linktilfag.push(idd);
-                }
-                s += '</ul></li>';
-            }
-            s += '</ul></li>';
+    // sjekk først om bruker allerede er logga inn
+    $j.get( '/login', function(uinfo) {
+        if (uinfo && uinfo.id > 0) {
+          // if user.id > 0 then we are logged in
+          // add new and dainty things to the menu
+          // same as isteach
+          database.userinfo = userinfo = uinfo;
+          if (userinfo.department == 'Undervisning') {
+            fullname = userinfo.firstname + ' ' + userinfo.lastname;
+            isteach = true;
+            isadmin = (userinfo.isadmin == 'y');
+            //setup_teach();
+            $j("#login").unbind();
+            //show_thisweek();
+            take_action();
+          }
+        } else {
+            userinfo = database.userinfo || { firstname:"", lastname:"", department:"", isadmin:false };
+            fullname = userinfo.firstname + " " + userinfo.lastname;
+            //isteach = (userinfo.department == 'Undervisning');
+            userinfo.maybeteach = (userinfo.department == 'Undervisning');
+            isteach = false;
+            //isadmin = userinfo.isadmin;
+            isadmin = false;
+            take_action();
+            prevtitle = $j("#htitle").html();
         }
-        s += '</ul>';
-        $j("#andreplaner").after(s);
-        for (var i=0; i < linktilfag.length; i++) {
-            var fag = linktilfag[i];
-            $j("#"+fag).click(function() {
-                var idd = $j(this).attr("id");
-                var elms = idd.split('z');
-                var fagnavn = elms[0];
-                var teach = elms[1];
-                var avdeling = elms[2];
-                var plandata = allefagplaner.fagliste[avdeling][teach][fagnavn].sections;
-                var datoliste = allefagplaner.wdates;
-                visEnPlan(fagnavn,plandata,datoliste);
-            } );
-        }
-        $j("#htitle").html(prevtitle);
-
     });
+    getcourseplans();
 }
 
+function getcourseplans() {
+  var url = 'allplans';
+  $j.getJSON( url, 
+  function(allplans) {
+      allefagplaner = allplans;
+      var s = '<ul>';
+      var linktilfag = [];
+      for (var avdeling in allefagplaner.courseplans) {
+          var myteachers = allefagplaner.courseplans[avdeling];
+          s += '<li><a href="#">' + avdeling + '</a><ul>';
+          for (var teach in myteachers) {
+              var fagene = myteachers[teach];
+              s += '<li><a href="#">' + teach + '</a><ul>';
+              for (var fag in fagene) {
+                  var idd = fag+'z'+teach+'z'+avdeling;
+                  var compliance = allefagplaner.compliance[teach][fag]; 
+                  var comp = Math.floor(Math.log(1 +compliance))
+                  s += '<li><a class="fag'+comp+'" id="'+idd+'" href="#">' + fag + '</a></li>';
+                  linktilfag.push(idd);
+              }
+              s += '</ul></li>';
+          }
+          s += '</ul></li>';
+      }
+      s += '</ul>';
+      $j("#andreplaner").after(s);
+      for (var i=0; i < linktilfag.length; i++) {
+          var fag = linktilfag[i];
+          $j("#"+fag).click(function() {
+              var idd = $j(this).attr("id");
+              var elms = idd.split('z');
+              var fagnavn = elms[0];
+              var teach = elms[1];
+              var avdeling = elms[2];
+              var plandata = allefagplaner.courseplans[avdeling][teach][fagnavn];
+              //var datoliste = allefagplaner.wdates;
+              visEnPlan(fagnavn,plandata);
+          } );
+      }
+      $j("#htitle").html(prevtitle);
+
+  });
+}            
 
 
 
@@ -325,15 +365,15 @@ $j(document).ready(function() {
          });
     $j("#yearplan").click(function(event) {
         event.preventDefault();
-        show_all(0);
+        show_all(database.firstweek);
     });
     $j("#resten").click(function(event) {
         event.preventDefault();
-        show_all(database.thisweek);
+        show_all(database.startjd);
     });
     $j("#hele").click(function(event) {
         event.preventDefault();
-        show_all(0);
+        show_all(database.firstweek);
     });
     $j("#heldag").click(function(event) {
         event.preventDefault();
@@ -357,10 +397,6 @@ $j(document).ready(function() {
     $j("#neste").click(function(event) {
         event.preventDefault();
         show_next4();
-    });
-    $j("#info").click(function(event) {
-        event.preventDefault();
-        show_info();
     });
     $j("#denne").click(function(event) {
         event.preventDefault();

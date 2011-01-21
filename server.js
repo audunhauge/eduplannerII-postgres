@@ -1,6 +1,5 @@
 var database = require('./database');
 var julian = require('./julian');
-console.log(database.db.aarsplan);
 var db = database.db;
 var client = database.client;
 db.starttime = '8.05 - 8.45,8.45 - 9.25,9.35 - 10.15,10.20 - 11.00,11.25 - 12.05,12.10 - 12.50,12.50 - 13.30,13.40 - 14.20,14.25 - 15.05,15.05'.split(',');
@@ -116,13 +115,6 @@ var assets = assetManager({
 var port = 3000;
 var app = module.exports = express.createServer();
 
-function requiresLogin(req, res, next) {
-  if (req.session.user) {
-    next();
-  } else {
-    res.redirect('/sessions/new?redir=' + req.url);
-  }
-};
 
 
 app.configure(function() {
@@ -179,10 +171,9 @@ app.get('/', function(req, res) {
 
 var users = require('./users');
 
+/*
 app.get('/sessions/new', function(req, res) {
-  res.render('sessions/new', {locals: {
-    redir: req.query.redir
-  }});
+  res.render('sessions/new', {locals: { redir: req.query.redir }});
 });
 
 app.post('/sessions', function(req, res) {
@@ -208,10 +199,40 @@ app.get('/login',requiresLogin, function(req, res) {
 	res.render('yearplan/index', locals);
 });
 
+function requiresLogin(req, res, next) {
+  if (req.session.user) {
+    next();
+  } else {
+    res.redirect('/sessions/new?redir=' + req.url);
+  }
+};
+*/
+
+app.get('/login', function(req, res) {
+  if (req.session.user) {
+      res.send(req.session.user);
+      return;
+  }
+  users.authenticate(client,req.query.username, req.query.password, function(user) {
+    if (user) {
+      req.session.user = user;
+      res.send(user);
+    }
+    res.send({id:0});
+  });
+});
+
 app.get('/alltests', function(req, res) {
     // always query the dbase to get new tests
         database.getAllTests(function(prover) {
             res.send(prover);
+          });
+});
+
+app.get('/allplans', function(req, res) {
+    // always query the dbase to get new tests
+        database.getCoursePlans(function(plans) {
+            res.send(plans);
           });
 });
 

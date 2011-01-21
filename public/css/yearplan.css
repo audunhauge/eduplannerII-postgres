@@ -18,12 +18,24 @@
   background: -webkit-gradient(linear, 0% 0%, 100% 0%, from(#a6A6a6), to(#224A20));
 }
 
+.fixx {
+  position:fixed;
+  left:4em;
+  top:50%;
+}
+
+.infobox {
+  width:9em;
+  position:fixed;
+  left:2em;
+  top:20%;
+}
 .disabled {
   color:#bbb !important;
 }
 
 .textcenter {
-  text-align:center;
+  text-align:center !important;
 }
 
 .centered {
@@ -44,6 +56,8 @@
   border: 1px solid black;
 }
 
+.hinted { color:#fff; font-size:0.7em; }
+
 th.time { width:3em; }
 
 td.oversikt { width:7em; }
@@ -63,11 +77,9 @@ div.helper { border:solid yellow 1px; background:yellow; width:20px; height:16px
     clear:both;
 }
 
-.fixx {
-    position:fixed;
-    left:4em;
-    top:50%;
-}
+
+div.date    { width:5em; padding:2px; font-size:0.7em; white-space:nowrap; }
+div.weeknum { width:2em; padding:2px; float:left; }
 
 
 div.button {
@@ -167,7 +179,7 @@ span.pro {
   -moz-box-shadow: 3px 3px 2px rgba(0, 0, 0, .4);
 }
 
-.fag2, .fag3   { color:red !important; }
+.fag0, .fag2, .fag3   { color:red !important; }
 .fag4, .fag5   { color:yellow !important; }
 .fag6, .fag7   { color:blue !important; }
 .fag8, .fag9   { color:green !important; }
@@ -366,8 +378,10 @@ table.uke td.time {
    border: 1px solid black;
 }
 
-td.fridag { background:green; }
-
+td.fridag { background:#a0d0a0; }
+td.hd { background:#AFC4E3; }
+td.pr { background:#cFe4ff; }
+td.hdpr { background:#bFc4E3; }
 
 td {  border: 1px solid black; }
 
