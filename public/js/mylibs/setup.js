@@ -201,7 +201,7 @@ function get_login() {
     // requests that perform changes. We just don't show menues that
     // users arn't allowed to use.
     var s = '<form name="loginform"><table id="loginform" class="gradback rcorner centered" >';
-    s += '<tr><th><label for="username" >Brukernavn</label></th><td><input id="uname" type="text" name="username"></td></tr>';
+    s += '<tr><th><label for="username" >Brukernavn</label></th><td><input id="uname" type="text" name="username" value="'+userinfo.username+'"></td></tr>';
     s += '<tr><th><label for="password" >Passord</label></th><td><input id="pwd" type="password" name="password"></td></tr>';
     s += '<tr><td colspan="2"><div id="do_login" class="button">Login</div></td></tr>';
     s += '</table></form>';
@@ -222,13 +222,16 @@ function get_login() {
     $j("#do_login").click(function(event) {
         var username = $j("#uname").val();
         var password = $j("#pwd").val();
-        $j.get( '/login',{"username":username, "password":password }, function(userinfo) {
-            if (userinfo && userinfo.id > 0) {
+        $j.get( '/login',{"username":username, "password":password }, function(uinfo) {
+            if (uinfo && uinfo.id > 0) {
+              database.userinfo = userinfo = uinfo;
               // if user.id > 0 then we are logged in
               // add new and dainty things to the menu
               // same as isteach
               if (userinfo.department == 'Undervisning') {
                 fullname = userinfo.firstname + ' ' + userinfo.lastname;
+                user = fullname;
+                userinfo.fullname = fullname;
                 isteach = true;
                 isadmin = (userinfo.isadmin == 'y');
                 setup_teach();
@@ -253,34 +256,6 @@ function getusers() {
     teachers = database.teachers;
     students = database.students;
     studentIds = database.studentIds;
-    // sjekk først om bruker allerede er logga inn
-    $j.get( '/login', function(uinfo) {
-        if (uinfo && uinfo.id > 0) {
-          // if user.id > 0 then we are logged in
-          // add new and dainty things to the menu
-          // same as isteach
-          database.userinfo = userinfo = uinfo;
-          if (userinfo.department == 'Undervisning') {
-            fullname = userinfo.firstname + ' ' + userinfo.lastname;
-            isteach = true;
-            isadmin = (userinfo.isadmin == 'y');
-            //setup_teach();
-            $j("#login").unbind();
-            //show_thisweek();
-            take_action();
-          }
-        } else {
-            userinfo = database.userinfo || { firstname:"", lastname:"", department:"", isadmin:false };
-            fullname = userinfo.firstname + " " + userinfo.lastname;
-            //isteach = (userinfo.department == 'Undervisning');
-            userinfo.maybeteach = (userinfo.department == 'Undervisning');
-            isteach = false;
-            //isadmin = userinfo.isadmin;
-            isadmin = false;
-            take_action();
-            prevtitle = $j("#htitle").html();
-        }
-    });
     getcourseplans();
 }
 
@@ -358,10 +333,40 @@ $j(document).ready(function() {
          function(data) {
            database = data;
            userinfo = data.userinfo;
-           if (action == 'default') {
-             show_thisweek();
-           }
-           getusers();
+            // sjekk først om bruker allerede er logga inn
+            $j.get( '/login', function(uinfo) {
+               if (uinfo && uinfo.id > 0) {
+                  // if user.id > 0 then we are logged in
+                  // add new and dainty things to the menu
+                  // same as isteach
+                  database.userinfo = userinfo = uinfo;
+                  if (userinfo.department == 'Undervisning') {
+                    fullname = userinfo.firstname + ' ' + userinfo.lastname;
+                    user = fullname;
+                    userinfo.fullname = fullname;
+                    isteach = true;
+                    isadmin = (userinfo.isadmin == 'y');
+                    //setup_teach();
+                    $j("#login").unbind();
+                    //show_thisweek();
+                    take_action();
+                  }
+               } else {
+                    userinfo = database.userinfo || { firstname:"", lastname:"", department:"", isadmin:false };
+                    fullname = userinfo.firstname + " " + userinfo.lastname;
+                    //isteach = (userinfo.department == 'Undervisning');
+                    userinfo.maybeteach = (userinfo.department == 'Undervisning');
+                    isteach = false;
+                    //isadmin = userinfo.isadmin;
+                    isadmin = false;
+                    take_action();
+                    prevtitle = $j("#htitle").html();
+               }
+               if (action == 'default') {
+                 show_thisweek();
+               }
+               getusers();
+            });
          });
     $j("#yearplan").click(function(event) {
         event.preventDefault();

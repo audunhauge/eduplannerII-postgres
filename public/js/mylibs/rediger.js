@@ -110,8 +110,8 @@ function visEnPlan(fagnavn,plandata,datoliste,egne) {
         s += '<div id="saveme" class="button fixx">Lagre</div>'
           + ' <span id="editmsg">Du kan redigere planen ved å klikke på en rute</span>';
     }
-    s += '<div class="button float gui" id="toot">Hele</div><div  class="button float gui" id="forste">Første</div>'
-      + '<div  class="button float gui" id="andre">Andre</div>'
+    s += '<div class="button float gui" id="toot">Hele</div>'
+      + '<div  class="button float gui" id="rest">Fra idag</div>'
       + '<div  class="button float gui" id="copy">Ta kopi</div>'
       + '<div  class="button float gui" id="paste">Lim inn</div>'
       + '<div class="clear"></div>'
@@ -136,25 +136,20 @@ function visEnPlan(fagnavn,plandata,datoliste,egne) {
                 });
         changedPlans = [];
     });
+    var uke = database.week;
     $j("#toot").click(function() {
         var plan = visEnValgtPlan(plandata,datoliste,egne,33,26);
         $j("#planviser").html(plan);
         fagplan_enable_editing(isteach,egne);
         minVisning = "#toot";
     });
-    $j("#forste").click(function() {
-        var plan = visEnValgtPlan(plandata,datoliste,egne,33,53);
+    $j("#rest").click(function() {
+        var plan = visEnValgtPlan(plandata,datoliste,egne,uke,26);
         $j("#planviser").html(plan);
         fagplan_enable_editing(isteach,egne);
-        minVisning = "#forste";
+        minVisning = "#rest";
     });
-    $j("#andre").click(function() {
-        var plan = visEnValgtPlan(plandata,datoliste,egne,1,28);
-        $j("#planviser").html(plan);
-        fagplan_enable_editing(isteach,egne);
-        minVisning = "#andre";
-    });
-    var plan = visEnValgtPlan(plandata,datoliste,egne,33,26);
+    var plan = visEnValgtPlan(plandata,datoliste,egne,uke,26);
     $j("#planviser").html(plan);
     fagplan_enable_editing(isteach,egne);
 
@@ -165,33 +160,38 @@ function visEnValgtPlan(plandata,datoliste,egne,start,stop) {
      var s = '<table class="fagplan" >'
      + "<tr><th>Uke</th><th>Tema</th><th>Vurdering</th><th>Mål</th><th>Oppgaver</th><th>Logg/merk</th></tr>";
     var i,j,e,klass,idd;
-    //for (i= 0; i < plandata.length; i++) {
-    for (i= 0; i < 47; i++) {
-        e = plandata[i] || { summary:"", section:i };
-        var dato = datoliste[i] || '';
-        var elm = dato.split(' ');
-        var uke = elm[0] || '';
+    //for (i= thisweek; i < database.lastweek; i += 7) {
+    var jd = database.firstweek;
+    var tjd;
+    for (section in  plandata) {
+        //for (i= 0; i < 47; i++) {
+        summary = plandata[section]; 
+        //var dato = datoliste[i] || '';
+        //var elm = dato.split(' ');
+        //var uke = elm[0] || '';
+        var uke = julian.week(jd);
+        tjd = jd;
+        jd += 7;
         if (!(+uke > 0)) continue;
         if (+uke > 30 && start < 30) continue;
         if ((+uke < start && start < 30) || (start > 30 && +uke > 30 && +uke < start) ) continue;
         if ((+uke > stop && +uke < 30) || (stop > 30  && +uke > stop) || (stop > 30 && +uke < 30) ) continue;
-        var section = e.section;
         if (+section < 10) {
             section = '0' + section;
         }
         if (+uke < 10) {
             uke = '0' + uke;
         }
-        dato = elm[1] || '';
-        var summary = Url.decode(e.summary);
         summary += '|||||';
         summary = summary.replace(/(<br>)+/g,"<br>");
         summary = summary.replace(/<br>$/,"");
+        summary = summary.replace(/(&amp;nbsp;)+/g," ");
         var elements = summary.split('|');
         klass = (isteach && egne) ? ' class="edit_area"' : '';
         idd = 'wd' + section + '_';
         s += '<tr id="section'+section+'">';
-        s += "<th>" +'<span class="uke">' + uke + '</span> <span class="dato">' +dato+"</span></th>";
+        s += '<th><div class="weeknum">'+julian.week(tjd)+'</div><br class="clear" /><div class="date">' + formatweekdate(tjd) + "</div></th>";
+        //s += "<th>" +'<span class="uke">' + uke + '</span> <span class="dato">' +dato+"</span></th>";
         s += '<td><div id="'+idd+'0" '+klass+'>' + elements[0] + "</div></td>";
         s += '<td><div id="'+idd+'1" '+klass+'>' + elements[1] + "</div></td>";
         s += '<td><div id="'+idd+'2" '+klass+'>' + elements[2] + "</div></td>";
