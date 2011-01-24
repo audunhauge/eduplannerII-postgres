@@ -206,45 +206,56 @@ function show_all(thisweek) {
 
 
 
-function updateFagplanMenu(fagliste) {
+function updateFagplanMenu() {
     // denne funksjonen kjøres ved onready etter at timeplanen for brukeren er lest
     // den oppdaterer menyen MinePlaner med en liste med fag
     // <a id="mineplaner"   href="#">Mine fagplaner</a>
+    var uid = database.userinfo.id || 0;
+    var minefag;
+    if (timetables.teach[uid]) {
+      // we have a teach 
+      minefag = database.teachcourse[uid];
+    } else {
+      var usergr = memgr[uid] || null;
+      if (usergr) {
+        for (var i in usergr) {
+          var group = usergr[i];
+          var fagliste = database.grcourses[group];
+          for (var k in fagliste) {
+            var fag = fagliste[k];
+            minefaggrupper[fag] = 1;
+          }
+          minefaggrupper[group] = 1;
+        }
+      } 
+    }
     var s = '<a id="mineplaner"   href="#">Mine fag</a><ul>';
     s += '<li><a href="#">Planer</a><ul>';
-    for (var i=0;i < fagliste.length; i++) {
-        var fag = fagliste[i];
-        s += '<li><a id="'+fag.shortname+'" href="#">' + fag.shortname + '</a></li>';
+    for (var i in minefag) {
+        var fag = minefag[i];
+        s += '<li><a id="'+fag+'" href="#">' + fag + '</a></li>';
     }
     s += '</ul></li><li><a href="#">Prøver</a><ul>';
-    for (i=0;i < fagliste.length; i++) {
-        var fag = fagliste[i];
-        s += '<li><a id="prove_'+fag.shortname+'" href="#">' + fag.shortname + '</a></li>';
+    for (var i in minefag) {
+        var fag = minefag[i];
+        s += '<li><a id="prove_'+fag+'" href="#">' + fag + '</a></li>';
     }
     s += '</ul></li></ul>';
     $j("#teachmenu").html(s);
     //$j("#mineplaner").after('<li><a href="">Prøveplaner</a></li>');
-    for (var i=0;i < fagliste.length; i++) {
-        var fag = fagliste[i];
-        $j("#prove_"+fag.shortname).click(function() {
+    for (var i in minefag) {
+        var fag = minefag[i];
+        $j("#prove_"+fag).click(function() {
             var fagnavn = $j(this).html();
-            var plandata = fagplaner.fagliste[fagnavn];
-            var datoliste = fagplaner.wdates;
-            edit_proveplan(fagnavn,plandata,datoliste);
+            var plandata = courseplans[fagnavn];
+            edit_proveplan(fagnavn,plandata);
         } );
-        $j("#"+fag.shortname).click(function() {
+        $j("#"+fag).click(function() {
             var fagnavn = $j(this).html();
-            var plandata = fagplaner.fagliste[fagnavn];
-            var datoliste = fagplaner.wdates;
-            visEnPlan(fagnavn,plandata,datoliste,true);
+            var plandata = courseplans[fagnavn];
+            visEnPlan(fagnavn,plandata,true);
         } );
     }
-    // hent ut og lagre mine egne fagplaner
-    var url = 'aarsplan/php/getfagplaner.php';
-    $j.getJSON( url, { "user":userinfo.uid },
-      function(data) {
-       fagplaner = data;
-      });
 }
 
 

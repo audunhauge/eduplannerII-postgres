@@ -1,5 +1,5 @@
 // editing functions
-function edit_proveplan(fagnavn,plandata,datoliste) {
+function edit_proveplan(fagnavn,plandata) {
     // rediger prøveplanen for et fag
     minfagplan = fagnavn;
     var prover = alleprover.alleprover;
@@ -44,7 +44,7 @@ function edit_proveplan(fagnavn,plandata,datoliste) {
     for (i= 0; i < 47; i++) {
         pro = prover[i];
         e = plandata[i] || { summary:"", section:i };
-        var dato = datoliste[i] || '';
+        //var dato = datoliste[i] || '';
         var elm = dato.split(' ');
         var uke = elm[0] || '';
         if (+uke < 10) {
@@ -97,11 +97,15 @@ function edit_proveplan(fagnavn,plandata,datoliste) {
     $j("#main").html(s);
 }
 
+
 var minfagplan;     // remember the name of current fagplan - used for saving
 var changedPlans = {};   // hash of changed sections in a fagplan
 var minVisning = "#toot";  // valgt visning - slik at vi kan tegne på nytt
+var mycopy;         //  {}  a copy of a plan
+var activeplan;     //  plandata for chosen plan
 
-function visEnPlan(fagnavn,plandata,datoliste,egne) {
+function visEnPlan(fagnavn,plandata,egne) {
+    activeplan = plandata;
     egne = typeof(egne) != 'undefined' ? true : false;
     minfagplan = fagnavn;
     var s='<div id="fagplan">';
@@ -111,10 +115,14 @@ function visEnPlan(fagnavn,plandata,datoliste,egne) {
           + ' <span id="editmsg">Du kan redigere planen ved å klikke på en rute</span>';
     }
     s += '<div class="button float gui" id="toot">Hele</div>'
-      + '<div  class="button float gui" id="rest">Fra idag</div>'
-      + '<div  class="button float gui" id="copy">Ta kopi</div>'
-      + '<div  class="button float gui" id="paste">Lim inn</div>'
-      + '<div class="clear"></div>'
+      + '<div  class="button float gui" id="rest">Fra idag</div>';
+    if (isteach) {
+       s += '<div  class="button float gui" id="copy">Ta kopi</div>';
+    }
+    if (isteach && egne && mycopy) {
+      s += '<div  class="button float gui" id="paste">Lim inn</div>';
+    }
+    s += '<div class="clear"></div>'
       + '<div id="planviser"></div>'
       + '</div>';
     $j("#main").html(s);
@@ -138,24 +146,46 @@ function visEnPlan(fagnavn,plandata,datoliste,egne) {
     });
     var uke = database.week;
     $j("#toot").click(function() {
-        var plan = visEnValgtPlan(plandata,datoliste,egne,33,26);
+        var plan = visEnValgtPlan(plandata,egne,33,26);
         $j("#planviser").html(plan);
         fagplan_enable_editing(isteach,egne);
         minVisning = "#toot";
     });
     $j("#rest").click(function() {
-        var plan = visEnValgtPlan(plandata,datoliste,egne,uke,26);
+        var plan = visEnValgtPlan(plandata,egne,uke,26);
         $j("#planviser").html(plan);
         fagplan_enable_editing(isteach,egne);
         minVisning = "#rest";
     });
-    var plan = visEnValgtPlan(plandata,datoliste,egne,uke,26);
+    var plan = visEnValgtPlan(plandata,egne,uke,26);
     $j("#planviser").html(plan);
     fagplan_enable_editing(isteach,egne);
 
+
+    $j("#paste").click(function() {
+       if (mycopy) {
+          pasteIntoThisPlan(fagnavn,egne);
+       }
+    });
+    $j("#copy").click(function() {
+        mycopy = activeplan;
+    });
 }
 
-function visEnValgtPlan(plandata,datoliste,egne,start,stop) {
+function pasteIntoThisPlan(fagnavn,egne) {
+    visEnPlan(fagnavn,mycopy,egne);
+    changedPlans = {};
+    for (var i in mycopy) {
+        var elm = mycopy[i];
+        changedPlans[elm.section] = translatebreaks(elm.summary);
+    }
+    fagplaner.fagliste[fagnavn] = mycopy;
+    $j("#saveme").show();
+    $j("#editmsg").html('Planen er oppdatetert, men IKKE lagra.');
+}
+
+
+function visEnValgtPlan(plandata,egne,start,stop) {
     // viser en plan - du kan redigere dersom du er eier
      var s = '<table class="fagplan" >'
      + "<tr><th>Uke</th><th>Tema</th><th>Vurdering</th><th>Mål</th><th>Oppgaver</th><th>Logg/merk</th></tr>";

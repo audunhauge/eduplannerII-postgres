@@ -97,7 +97,7 @@ var getCoursePlans = function(callback) {
                 compliance[username] = {};
             }
             if (!compliance[username][shortname]) {
-                compliance[username][shortname] = 0;
+                compliance[username][shortname] = { sum:0, count:0 };
             }
             if (!fliste[institution]) {
                 fliste[institution] = {};
@@ -109,7 +109,8 @@ var getCoursePlans = function(callback) {
                 fliste[institution][username][shortname] = {};
             }
             fliste[institution][username][shortname][section] = summary;
-            compliance[username][shortname] += summary.length;
+            compliance[username][shortname].sum += summary.length;
+            compliance[username][shortname].count += (summary.length > 2) ? 1 : 0 ;
           }
           var allplans = { courseplans:fliste, compliance:compliance, startdate:startdate, numsections:numsections };
           callback(allplans);

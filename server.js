@@ -171,43 +171,6 @@ app.get('/', function(req, res) {
 
 var users = require('./users');
 
-/*
-app.get('/sessions/new', function(req, res) {
-  res.render('sessions/new', {locals: { redir: req.query.redir }});
-});
-
-app.post('/sessions', function(req, res) {
-  users.authenticate(client,req.body.login, req.body.password, function(user) {
-    if (user) {
-      req.session.user = user;
-      res.redirect(req.body.redir || '/');
-    } else {
-      req.flash('warn', 'Login failed');
-      res.render('sessions/new', {locals: {redir: req.body.redir}});
-    }
-  });
-});
-
-app.get('/sessions/destroy', function(req, res) {
-  delete req.session.user;
-  res.redirect('/sessions/new');
-});
-
-app.get('/login',requiresLogin, function(req, res) {
-	var locals = { 'key': 'value' };
-	locals = dummyHelper.add_overlay(app, req, locals);
-	res.render('yearplan/index', locals);
-});
-
-function requiresLogin(req, res, next) {
-  if (req.session.user) {
-    next();
-  } else {
-    res.redirect('/sessions/new?redir=' + req.url);
-  }
-};
-*/
-
 app.get('/login', function(req, res) {
   if (req.session.user) {
       res.send(req.session.user);

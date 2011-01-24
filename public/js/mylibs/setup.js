@@ -40,7 +40,8 @@ var userinfo = {};
 var memothisweek = '';  // remember timetable for this week (this user)
 
 var fagplaner;          // mine fagplaner
-var allefagplaner;      // alle fagplaner (pr lærer)
+var allefagplaner;      // alle fagplaner courseplans[avdeling][teach][fag] (pr lærer)
+var courseplans = {};   // courseplans[course]
 
 var siste10 = {}        // husk 10 siste timeplaner
 
@@ -275,8 +276,10 @@ function getcourseplans() {
               for (var fag in fagene) {
                   var idd = fag+'z'+teach+'z'+avdeling;
                   var compliance = allefagplaner.compliance[teach][fag]; 
-                  var comp = Math.floor(Math.log(1 +compliance))
+                  var comp = Math.floor(Math.log(1 +compliance.sum * compliance.count/44))
                   s += '<li><a class="fag'+comp+'" id="'+idd+'" href="#">' + fag + '</a></li>';
+                  var plandata = allefagplaner.courseplans[avdeling][teach][fag];
+                  courseplans[fag] = plandata;
                   linktilfag.push(idd);
               }
               s += '</ul></li>';
@@ -299,6 +302,7 @@ function getcourseplans() {
           } );
       }
       $j("#htitle").html(prevtitle);
+      updateFagplanMenu();
 
   });
 }            
