@@ -21,7 +21,7 @@ var db = {
   ,grcourses   : {}    // hash of { "3304":[ "3inf5" ] , ... }  -- courses connected to a group
   ,coursesgr   : {}    // hash of { "3inf5":[ "3304" ] , ... }  -- groups connected to a course
   ,memgr       : {}    // hash of { 234:["3304","2303","3sta" ..], ... }  --- groups stud is member of
-  ,teachcourse : []    // array of courses the teacher teaches (inverse of courseteach)
+  ,teachcourse : {}    // array of courses the teacher teaches (inverse of courseteach)
   ,category    : {}    // hash of coursename:category { '3inf5':4 , '1nat5':2 ... }
   ,classes     : ("1STA,1STB,1STC,1STD,1STE,1MDA,1MDB,2STA,2STB,2STC,"
                   + "2STD,2STE,2DDA,2MUA,3STA,3STB,3STC,3STD,3STE,3DDA,3MUA").split(",")
@@ -115,6 +115,88 @@ var getCoursePlans = function(callback) {
           var allplans = { courseplans:fliste, compliance:compliance, startdate:startdate, numsections:numsections };
           callback(allplans);
           //console.log(reservations);
+      });
+}
+
+var updateCoursePlan = function(query,callback) {
+  // update courseplan for given section
+    // { "section":section,"value":value, "idx":idx, "week":week,
+    // "fag":minfagplan, "summary":summary }
+    /*
+    if (USER->department != 'Undervisning') return;
+
+    sql = 'select * from mdl_course c where c.shortname= "'.fag.'"';
+    if (!r = get_record_sql(sql)) {
+        print "No course";
+        return;
+    }
+    courseid = r->id;
+
+    sql = 'select s.* from mdl_course_sections s where s.course= '.courseid.' and s.section='.section;
+    if (fagliste = get_records_sql(sql)) {
+        sect = array_shift(fagliste);
+        sql = 'update mdl_course_sections set summary="'.summary.'" where id='.sect->id;
+    } else {
+        sql = 'insert into mdl_course_sections (course,section,summary) values ('.courseid.','.section.',"'.summary.'")';
+    }
+    rs = db->Execute(sql);
+    if (rs) {
+        print "OK";
+    } else {
+        print db->ErrorMsg();
+    }
+    */
+  client.query(
+      'select * from mdl_course c where c.shortname= "' + query.fag + '"' ,
+      function (err, results, fields) {
+          if (err) {
+              console.log("ERROR: " + err.message);
+              throw err;
+          }
+          var course = results.pop();
+          if (course) {
+            client.query(
+                'select s.* from mdl_course_sections s where s.course= ' + course.id + ' and s.section=' + query.section,
+                function (err, results, fields) {
+                    if (err) {
+                        console.log("ERROR: " + err.message);
+                        throw err;
+                    }
+                    var sect = results.pop();
+                    if (sect) {
+                      client.query(
+                          'update mdl_course_sections set summary="' + query.summary + '" where id=' + query.sect.id,
+                          function (err, results, fields) {
+                              if (err) {
+                                  console.log("ERROR: " + err.message);
+                                  throw err;
+                              }
+                              var sect = results.pop();
+                              if (sect) {
+                              } else {
+                              }
+                              callback(results);
+                          });
+                    } else {
+                      client.query(
+                          'insert into mdl_course_sections (course,section,summary) values ('+course.id+','+query.section+',"'+query.summary+'")',
+                          function (err, results, fields) {
+                              if (err) {
+                                  console.log("ERROR: " + err.message);
+                                  throw err;
+                              }
+                              var sect = results.pop();
+                              if (sect) {
+                              } else {
+                              }
+                              callback(results);
+                          });
+                    }
+                    callback(results);
+                });
+          }
+          console.log(results);
+          callback(results);
       });
 }
 
@@ -231,7 +313,7 @@ var getTimetables = function(callback) {
       });
 }
 
-getBasicData = function(client) {
+var getBasicData = function(client) {
   // get some basic data from mysql
   // we want list of all users, list of all courses
   // list of all groups, list of all tests
@@ -325,14 +407,14 @@ getBasicData = function(client) {
                     // and teachcourse
                       // only teachers in courseteach
                       if (amem.role == 3) {
-                        if (!db.courseteach[group]) {
-                          db.courseteach[group] = [];
+                        if (!db.courseteach[amem.shortname]) {
+                          db.courseteach[amem.shortname] = [];
                         }
                         if (!db.teachcourse[amem.userid]) {
                           db.teachcourse[amem.userid] = [];
                         }
                         db.teachcourse[amem.userid].push(amem.shortname);
-                        db.courseteach[group].push(amem.userid);
+                        db.courseteach[amem.shortname].push(amem.userid);
                       } 
 
                     // build person : grouplist
@@ -364,7 +446,7 @@ getBasicData = function(client) {
           }
       });
   client.query(
-      // fetch free-days
+      // fetch yearplan events
       'select id,julday,value from mdl_bookings_calendar where eventtype="aarsplan"',
       function (err, results, fields) {
           if (err) {
@@ -406,3 +488,4 @@ module.exports.getAllTests = getAllTests;
 module.exports.getReservations = getReservations;
 module.exports.getTimetables = getTimetables;
 module.exports.getCoursePlans = getCoursePlans;
+module.exports.updateCoursePlan  = updateCoursePlan;

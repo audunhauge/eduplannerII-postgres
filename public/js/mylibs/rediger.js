@@ -108,8 +108,12 @@ function visEnPlan(fagnavn,plandata,egne) {
     activeplan = plandata;
     egne = typeof(egne) != 'undefined' ? true : false;
     minfagplan = fagnavn;
+    var myteachers = $j.map(database.courseteach[fagnavn],function(e,i) {
+           return (teachers[e].firstname + " " + teachers[e].lastname);
+        }).join(', ');
     var s='<div id="fagplan">';
     s += '<h1><a class="copylink" href="yearplan.html?plan='+fagnavn+'">'+ fagnavn  +'</a></h1>';
+    s += '<h3 class="textcenter" >'+ myteachers  +'</h3>';
     if (isteach && egne) {
         s += '<div id="saveme" class="button fixx">Lagre</div>'
           + ' <span id="editmsg">Du kan redigere planen ved å klikke på en rute</span>';
@@ -129,14 +133,14 @@ function visEnPlan(fagnavn,plandata,egne) {
     $j("#saveme").hide().click(function() {
         // anta at alle endringer er tilbakeført til fagplanen
         //    fagplaner.fagliste[fagnavn];
-        $j(this).removeClass("button").html('<img src="aarsplan/indicator.gif">');
+        $j(this).removeClass("button").html('<img src="img/indicator.gif">');
         var all = [];
         for (var i in changedPlans) {
             var section = +i;
             all.push('' + section + 'x|x' + changedPlans[i]);
         }
         var alltext = all.join('z|z');
-        $j.get( "aarsplan/php/save_totfagplan.php", { "alltext":alltext, "fag":fagnavn },
+        $j.get( "/save_totfagplan", { "alltext":alltext, "fag":fagnavn },
                 function(data) {
                     $j("#editmsg").html(data);
                     $j("#saveme").hide().addClass("button").html('Lagre');
@@ -427,7 +431,7 @@ function save_fagplan(value,settings) {
         }
     }
     update_fagplaner(minfagplan,section,summary);
-    $j.get( "aarsplan/php/save_fagplan.php", { "section":section,"value":value, "idx":idx, "week":week, "fag":minfagplan, "summary":summary },
+    $j.get( "/save_fagplan", { "section":section,"value":value, "idx":idx, "week":week, "fag":minfagplan, "summary":summary },
     function(data) {
         if (data != 'OK') {
             $j("#editmsg").html('<span class="error">'+data+'</span>');
@@ -443,15 +447,9 @@ function save_fagplan(value,settings) {
 
 
 function update_fagplaner(fagnavn,section,summary) {
-    var plandata = fagplaner.fagliste[fagnavn];
-    summary = Url.encode(summary);
-    for (var i=0; i < plandata.length; i++) {
-        var e = plandata[i]; 
-        if (e.section == +section) {
-            e.summary = summary;
-            return;
-        }
-    }
+    courseplans[fagnavn][section] = summary;
+    //summary = Url.encode(summary);
+    //for (var i=0; i < plandata.length; i++) {
 }
 
 function translatebreaks(s) {

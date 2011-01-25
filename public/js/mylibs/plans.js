@@ -87,9 +87,14 @@ function show_heldag() {
 }
 
 function show_prover() {
-    // viser prøver for gjeldende bruker
-    // bør kunne velge bruker
   var uid = database.userinfo.id || 0;
+  var minefaggrupper = getUserSubj(uid);
+  show_alleprover("",minefaggrupper);
+}
+
+
+function getUserSubj(uid) {
+  // finner alle prøver for en bruker
   var minefaggrupper = {};
   if (timetables.teach[uid]) {
     // we have a teach 
@@ -117,7 +122,7 @@ function show_prover() {
       }
     } 
   }
-  show_alleprover("",minefaggrupper);
+  return minefaggrupper;
 }
 
 function show_all(thisweek) {
@@ -211,7 +216,7 @@ function updateFagplanMenu() {
     // den oppdaterer menyen MinePlaner med en liste med fag
     // <a id="mineplaner"   href="#">Mine fagplaner</a>
     var uid = database.userinfo.id || 0;
-    var minefag;
+    var minefag = [];
     if (timetables.teach[uid]) {
       // we have a teach 
       minefag = database.teachcourse[uid];
@@ -223,9 +228,9 @@ function updateFagplanMenu() {
           var fagliste = database.grcourses[group];
           for (var k in fagliste) {
             var fag = fagliste[k];
-            minefaggrupper[fag] = 1;
+            if (fag == "KOMO") continue;
+            minefag.push(fag+"_"+group);
           }
-          minefaggrupper[group] = 1;
         }
       } 
     }

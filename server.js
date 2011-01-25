@@ -4,6 +4,13 @@ var db = database.db;
 var client = database.client;
 db.starttime = '8.05 - 8.45,8.45 - 9.25,9.35 - 10.15,10.20 - 11.00,11.25 - 12.05,12.10 - 12.50,12.50 - 13.30,13.40 - 14.20,14.25 - 15.05,15.05'.split(',');
 
+var addons = {}
+// extra data that we send AFTER the main page has been drawn
+// this so that the page seems more responsive
+addons.update = {};
+// used to store time info for resources
+// we refetch if the resource is stale
+
 function findUser(firstname,lastname) {
   // search for a user given firstname and lastname
   // try students first (studs may shadow teach)
@@ -187,16 +194,43 @@ app.get('/login', function(req, res) {
 
 app.get('/alltests', function(req, res) {
     // always query the dbase to get new tests
+    // - TODO change to same logic as for allplans
         database.getAllTests(function(prover) {
             res.send(prover);
           });
 });
 
+app.get('/save_fagplan', function(req, res) {
+    // user has new data to push into a plan
+    if (req.session.user && req.session.user.department == 'Undervisning') {
+      console.log("User saved som data");
+      database.updateCoursePlan(req.query,function(msg) {
+         res.send({ok:true, msg:msg});
+      });
+    } else {
+      res.send({ok:false, msg:"bad user"});
+    }
+
+});
+
 app.get('/allplans', function(req, res) {
-    // always query the dbase to get new tests
-        database.getCoursePlans(function(plans) {
-            res.send(plans);
-          });
+    // requery only if 10h since last query
+    // we will refetch allplans if any of them have changed
+    // - this we will know because the editor will fetch /saveplan
+    // - /saveplan will then refetch allplans (after res.send )
+    // thus allplans will mostly always be in memory
+    var justnow = new Date();
+    if (addons.plans && ((justnow.getTime() - addons.update.plans.getTime())/60000 < 600  )  ) {
+      res.send(addons.plans);
+      var diff = (justnow.getTime() - addons.update.plans.getTime())/60000;
+      console.log("resending allplans - diff = " + diff);
+    } else {
+      database.getCoursePlans(function(plans) {
+        addons.plans = plans
+        addons.update.plans = new Date();
+        res.send(plans);
+      });
+    }
 });
 
 app.get('/reserv', function(req, res) {
@@ -208,11 +242,11 @@ app.get('/reserv', function(req, res) {
 
 app.get('/timetables', function(req, res) {
     // timetables dont change much - reuse value
-    if (db.timetable) {
-      res.send(db.timetable);
+    if (addons.timetable) {
+      res.send(addons.timetable);
     } else database.getTimetables(function(timtab) {
-            db.timetable = timtab;
-            res.send(db.timetable);
+            addons.timetable = timtab;
+            res.send(addons.timetable);
           });
 });
 
@@ -239,7 +273,7 @@ app.get('/basic', function(req, res) {
         db.enddate = julian.jdtogregorian(db.startjd+6);
         db.week = julian.week(db.startjd);
         var db_copy = db;
-        db_copy.userinfo = null;
+        db_copy.userinfo = { uid:0 };
         if (req.query.navn) {
           var username = req.query.navn;
           username = username.replace(/æ/g,'e').replace(/Æ/g,'E').replace(/ø/g,'o');
@@ -248,7 +282,7 @@ app.get('/basic', function(req, res) {
           var nameparts = username.split(" ");
           var ln = nameparts.pop();
           var fn = nameparts.join(' ');
-          db_copy.userinfo = findUser(fn,ln);
+          db_copy.userinfo = findUser(fn,ln) || {uid:0};
           if (db_copy.userinfo) {
             db_copy.userinfo.isadmin = (admins[db_copy.userinfo.username] && admins[db_copy.userinfo.username] == 1) ? true : false;
           }

@@ -302,7 +302,7 @@ function getcourseplans() {
           } );
       }
       $j("#htitle").html(prevtitle);
-      updateFagplanMenu();
+      // updateFagplanMenu();
 
   });
 }            
