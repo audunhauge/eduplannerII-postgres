@@ -200,12 +200,27 @@ app.get('/alltests', function(req, res) {
           });
 });
 
-app.get('/save_fagplan', function(req, res) {
+app.post('/save_totfagplan', function(req, res) {
+    // several sections may be changed
+    if (req.session.user && req.session.user.department == 'Undervisning') {
+      //console.log("User saved som data");
+      database.updateTotCoursePlan(req.body,function(msg) {
+         res.send(msg);
+         delete addons.plans;
+      });
+    } else {
+      res.send({ok:false, msg:"bad user"});
+    }
+
+});
+
+app.post('/save_fagplan', function(req, res) {
     // user has new data to push into a plan
     if (req.session.user && req.session.user.department == 'Undervisning') {
-      console.log("User saved som data");
-      database.updateCoursePlan(req.query,function(msg) {
+      //console.log("User saved som data");
+      database.updateCoursePlan(req.body,function(msg) {
          res.send(msg);
+         delete addons.plans;
       });
     } else {
       res.send({ok:false, msg:"bad user"});

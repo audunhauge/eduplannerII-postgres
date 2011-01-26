@@ -98,17 +98,17 @@ function edit_proveplan(fagnavn,plandata) {
 }
 
 
-var minfagplan;     // remember the name of current fagplan - used for saving
-var changedPlans = {};   // hash of changed sections in a fagplan
-var minVisning = "#toot";  // valgt visning - slik at vi kan tegne på nytt
-var mycopy;         //  {}  a copy of a plan
-var activeplan;     //  plandata for chosen plan
+var minfagplan;            // remember the name of current fagplan - used for saving
+var changedPlans = {};     // hash of changed sections in a fagplan
+var minVisning = "#rest";  // valgt visning - slik at vi kan tegne på nytt
+var mycopy;                //  {}  a copy of a plan
+var activeplan;            //  plandata for chosen plan
 
 function visEnPlan(fagnavn,plandata,egne) {
     activeplan = plandata;
     egne = typeof(egne) != 'undefined' ? true : false;
     minfagplan = fagnavn;
-    var myteachers = $j.map(database.courseteach[fagnavn],function(e,i) {
+    var myteachers = $j.map(database.courseteach[fagnavn].teach,function(e,i) {
            return (teachers[e].firstname + " " + teachers[e].lastname);
         }).join(', ');
     var s='<div id="fagplan">';
@@ -140,9 +140,10 @@ function visEnPlan(fagnavn,plandata,egne) {
             all.push('' + section + 'x|x' + changedPlans[i]);
         }
         var alltext = all.join('z|z');
-        $j.get( "/save_totfagplan", { "alltext":alltext, "fag":fagnavn },
+        var courseid = database.courseteach[fagnavn].id;
+        $j.post( "/save_totfagplan", { "alltext":alltext, "courseid":courseid },
                 function(data) {
-                    $j("#editmsg").html(data);
+                    $j("#editmsg").html(data.msg);
                     $j("#saveme").hide().addClass("button").html('Lagre');
                     $j(minVisning).click();
                 });
@@ -397,13 +398,13 @@ function check_heldag(value,settings) {
         // so that it can be removed for mysql later
         var jd = $j("#"+this.id).parent().attr("id").substr(2);
         $j("#"+this.id).attr("id","hd" + jd + "_" + fagnavn);
-        $j.get( "aarsplan/php/save_heldag.php", { "julday":jd, "fag":fagnavn, "value":beskrivelse });
+        $j.post( "/save_heldag", { "julday":jd, "fag":fagnavn, "value":beskrivelse });
         // this is the code that actually sends the new info to the server and inserts into mysql
         return(correct);
     } else {
         if (value == '') {
             var pid = $j("#"+this.id).attr("id");
-            $j.get( "aarsplan/php/delete_heldag.php", { "pid":pid });
+            $j.post( "/delete_heldag", { "pid":pid });
             // try to delete this entry from the database
             $j("#"+this.id).remove();
             return false;
@@ -431,7 +432,8 @@ function save_fagplan(value,settings) {
         }
     }
     update_fagplaner(minfagplan,section,summary);
-    $j.get( "/save_fagplan", { "section":section,"value":value, "idx":idx, "week":week, "fag":minfagplan, "summary":summary },
+    var courseid = database.courseteach[minfagplan].id;
+    $j.post( "/save_fagplan", { "section":section,"value":value, "idx":idx, "week":week, "courseid":courseid, "summary":summary },
     function(data) {
         if (data.ok) {
             $j("#editmsg").html('Du kan redigere planen ved å klikke på en rute');

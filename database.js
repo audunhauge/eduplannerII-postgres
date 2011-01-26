@@ -118,12 +118,66 @@ var getCoursePlans = function(callback) {
       });
 }
 
+var updateTotCoursePlan = function(query,callback) {
+  // update courseplan - multiple sections
+  var updated = query.alltext.split('z|z');
+  var usects = {};
+  for (var uid in updated) {
+      var u = updated[uid];
+      var elm = u.split('x|x');
+      var sectnum = elm[0],text=elm[1];
+      text = text.replace('&amp;nbsp;',' ');
+      text = text.replace('&nbsp;',' ');
+      usects[+sectnum] = text;
+  }
+  var ok = true;
+  var msg = '';
+  client.query(
+        'select s.* from mdl_course_sections s where s.course = ? ' , [ query.courseid],
+      function (err, sections, fields) {
+          if (err) {
+              callback( { ok:false, msg:err.message } );
+              return;
+          }
+          for (var sid in sections) {
+              var s = sections[sid];
+              if (usects[s.section]) {
+                  if (usects[s.section] != s.summary) {
+                      // there is an update for this section and it differs from dbase
+                      // we must update this section
+                      client.query(
+                          'update mdl_course_sections set summary=? where id=?',[ usects[s.section], s.id ],
+                          function (err, results, fields) {
+                              if (err) {
+                                  ok = false;
+                                  msg = err.message;
+                              }
+                          });
+                  }
+                  delete usects[s.section];
+                  // unset this section - remaining sections in usects will be INSERTED
+              }
+          }
+          for (sectnum in usects) {
+              summary = usects[sectnum];
+              client.query(
+                  'insert into mdl_course_sections (course,section,summary) values (?,?,?)', [ query.courseid, sectnum, summary],
+                  function (err, results, fields) {
+                      if (err) {
+                          ok = false;
+                          msg = err.message;
+                      }
+                  });
+          }
+          callback( { ok:ok, msg:msg } );
+      });
+}
+
 var updateCoursePlan = function(query,callback) {
   // update courseplan for given section
   client.query(
         'select s.* from mdl_course_sections s '
-      + ' inner join mdl_course c on (c.id = s.course) '  
-      + ' where c.shortname=? and s.section=? ' , [ query.fag,  query.section],
+      + ' where s.course = ? and s.section = ? ' , [ query.courseid,  query.section],
       function (err, results, fields) {
           if (err) {
               callback( { ok:false, msg:err.message } );
@@ -131,15 +185,19 @@ var updateCoursePlan = function(query,callback) {
           }
           var sect = results.pop();
           if (sect) {
-            client.query(
-                'update mdl_course_sections set summary=? where id=?',[ query.summary, sect.id ],
-                function (err, results, fields) {
-                    if (err) {
-                        callback( { ok:false, msg:err.message } );
-                        return;
-                    }
-                    callback( {ok:true, msg:"updated"} );
-                });
+            if (sect.summary != query.summary) {
+              client.query(
+                  'update mdl_course_sections set summary=? where id=?',[ query.summary, sect.id ],
+                  function (err, results, fields) {
+                      if (err) {
+                          callback( { ok:false, msg:err.message } );
+                          return;
+                      }
+                      callback( {ok:true, msg:"updated"} );
+                  });
+              } else {
+                callback( {ok:true, msg:"unchanged"} );
+              }
           } else {
             client.query(
                 'insert into mdl_course_sections (course,section,summary) values ('+course.id+','+query.section+',"'+query.summary+'")',
@@ -331,7 +389,7 @@ var getBasicData = function(client) {
           var str_courselist = courselist.join(',');
           client.query(
               // fetch memberlist for all courses
-              'select c.shortname,ra.userid,ra.roleid as role from mdl_role_assignments ra inner join mdl_context x '
+              'select c.id, c.shortname,ra.userid,ra.roleid as role from mdl_role_assignments ra inner join mdl_context x '
                    + ' ON (x.id=ra.contextid and ra.roleid in (3,5)) inner join '
                    + ' mdl_course c ON x.instanceid=c.id where c.id in ( ' + str_courselist + ' )',
               function (err, results, fields) {
@@ -362,13 +420,13 @@ var getBasicData = function(client) {
                       // only teachers in courseteach
                       if (amem.role == 3) {
                         if (!db.courseteach[amem.shortname]) {
-                          db.courseteach[amem.shortname] = [];
+                          db.courseteach[amem.shortname] = {teach:[],id:amem.id};
                         }
                         if (!db.teachcourse[amem.userid]) {
                           db.teachcourse[amem.userid] = [];
                         }
                         db.teachcourse[amem.userid].push(amem.shortname);
-                        db.courseteach[amem.shortname].push(amem.userid);
+                        db.courseteach[amem.shortname].teach.push(amem.userid);
                       } 
 
                     // build person : grouplist
@@ -443,3 +501,4 @@ module.exports.getReservations = getReservations;
 module.exports.getTimetables = getTimetables;
 module.exports.getCoursePlans = getCoursePlans;
 module.exports.updateCoursePlan  = updateCoursePlan;
+module.exports.updateTotCoursePlan = updateTotCoursePlan ;
