@@ -205,7 +205,7 @@ app.get('/save_fagplan', function(req, res) {
     if (req.session.user && req.session.user.department == 'Undervisning') {
       console.log("User saved som data");
       database.updateCoursePlan(req.query,function(msg) {
-         res.send({ok:true, msg:msg});
+         res.send(msg);
       });
     } else {
       res.send({ok:false, msg:"bad user"});

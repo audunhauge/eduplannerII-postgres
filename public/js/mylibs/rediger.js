@@ -433,12 +433,10 @@ function save_fagplan(value,settings) {
     update_fagplaner(minfagplan,section,summary);
     $j.get( "/save_fagplan", { "section":section,"value":value, "idx":idx, "week":week, "fag":minfagplan, "summary":summary },
     function(data) {
-        if (data != 'OK') {
-            $j("#editmsg").html('<span class="error">'+data+'</span>');
-            value = "Feil ved lagring:"+data;
-            return false;
-        } else {    
+        if (data.ok) {
             $j("#editmsg").html('Du kan redigere planen ved å klikke på en rute');
+        } else {    
+            $j("#editmsg").html('<span class="error">'+data.msg+'</span>');
         }
     });
     value = value.replace(/\n|\r/g,"<br>");

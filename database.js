@@ -17,7 +17,7 @@ var db = {
   ,yearplan    : {}    // hash of { 2345556:["info om valg", 2345557:"Exam", ...], ...  }
   ,groups      : []    // array of groups
   ,memlist     : {}    // hash of { "3304":[234,45,454],"2303":[23, ...], ... }  -- group -> studs
-  ,courseteach : {}    // hash of { "3inf5_3304":[654],"2inf5":[654,1363]," ... }  -- group -> teachers
+  ,courseteach : {}    // hash of { "3inf5_3304":{teach:[654],id:6347},"2inf5":{teach:[654,1363],id:6348}," ... }  -- course -> {teach,id}
   ,grcourses   : {}    // hash of { "3304":[ "3inf5" ] , ... }  -- courses connected to a group
   ,coursesgr   : {}    // hash of { "3inf5":[ "3304" ] , ... }  -- groups connected to a course
   ,memgr       : {}    // hash of { 234:["3304","2303","3sta" ..], ... }  --- groups stud is member of
@@ -120,83 +120,37 @@ var getCoursePlans = function(callback) {
 
 var updateCoursePlan = function(query,callback) {
   // update courseplan for given section
-    // { "section":section,"value":value, "idx":idx, "week":week,
-    // "fag":minfagplan, "summary":summary }
-    /*
-    if (USER->department != 'Undervisning') return;
-
-    sql = 'select * from mdl_course c where c.shortname= "'.fag.'"';
-    if (!r = get_record_sql(sql)) {
-        print "No course";
-        return;
-    }
-    courseid = r->id;
-
-    sql = 'select s.* from mdl_course_sections s where s.course= '.courseid.' and s.section='.section;
-    if (fagliste = get_records_sql(sql)) {
-        sect = array_shift(fagliste);
-        sql = 'update mdl_course_sections set summary="'.summary.'" where id='.sect->id;
-    } else {
-        sql = 'insert into mdl_course_sections (course,section,summary) values ('.courseid.','.section.',"'.summary.'")';
-    }
-    rs = db->Execute(sql);
-    if (rs) {
-        print "OK";
-    } else {
-        print db->ErrorMsg();
-    }
-    */
   client.query(
-      'select * from mdl_course c where c.shortname= "' + query.fag + '"' ,
+        'select s.* from mdl_course_sections s '
+      + ' inner join mdl_course c on (c.id = s.course) '  
+      + ' where c.shortname=? and s.section=? ' , [ query.fag,  query.section],
       function (err, results, fields) {
           if (err) {
-              console.log("ERROR: " + err.message);
-              throw err;
+              callback( { ok:false, msg:err.message } );
+              return;
           }
-          var course = results.pop();
-          if (course) {
+          var sect = results.pop();
+          if (sect) {
             client.query(
-                'select s.* from mdl_course_sections s where s.course= ' + course.id + ' and s.section=' + query.section,
+                'update mdl_course_sections set summary=? where id=?',[ query.summary, sect.id ],
                 function (err, results, fields) {
                     if (err) {
-                        console.log("ERROR: " + err.message);
-                        throw err;
+                        callback( { ok:false, msg:err.message } );
+                        return;
                     }
-                    var sect = results.pop();
-                    if (sect) {
-                      client.query(
-                          'update mdl_course_sections set summary="' + query.summary + '" where id=' + query.sect.id,
-                          function (err, results, fields) {
-                              if (err) {
-                                  console.log("ERROR: " + err.message);
-                                  throw err;
-                              }
-                              var sect = results.pop();
-                              if (sect) {
-                              } else {
-                              }
-                              callback(results);
-                          });
-                    } else {
-                      client.query(
-                          'insert into mdl_course_sections (course,section,summary) values ('+course.id+','+query.section+',"'+query.summary+'")',
-                          function (err, results, fields) {
-                              if (err) {
-                                  console.log("ERROR: " + err.message);
-                                  throw err;
-                              }
-                              var sect = results.pop();
-                              if (sect) {
-                              } else {
-                              }
-                              callback(results);
-                          });
+                    callback( {ok:true, msg:"updated"} );
+                });
+          } else {
+            client.query(
+                'insert into mdl_course_sections (course,section,summary) values ('+course.id+','+query.section+',"'+query.summary+'")',
+                function (err, results, fields) {
+                    if (err) {
+                        callback( { ok:false, msg:err.message } );
+                        return;
                     }
-                    callback(results);
+                    callback( {ok:true, msg:"inserted"} );
                 });
           }
-          console.log(results);
-          callback(results);
       });
 }
 
