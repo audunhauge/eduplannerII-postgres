@@ -11,23 +11,44 @@ addons.update = {};
 // used to store time info for resources
 // we refetch if the resource is stale
 
+
 function findUser(firstname,lastname) {
   // search for a user given firstname and lastname
   // try students first (studs may shadow teach)
+  var list = [];
+  firstname = firstname.trim();
+  lastname = lastname.trim();
+  console.log("fn="+firstname + " ln=" + lastname);
   for (var i in db.students) {
     var s = db.students[i];
     if (s.firstname.toLowerCase() == firstname && s.lastname.toLowerCase() == lastname) {
-       return s;
+       list.push(s);
+       return list;
     }
   }
   // scan thru teachers
   for (var j in db.teachers) {
     var t = db.teachers[j];
     if (t.firstname.toLowerCase() == firstname && t.lastname.toLowerCase() == lastname) {
-       return t;
+       list.push(t);
+       return list;
     }
   }
-  return null;
+  var fn = new RegExp(firstname,"i");
+  var ln = new RegExp(lastname,"i");
+  for (var i in db.students) {
+    var s = db.students[i];
+    if ( s.firstname.match(fn) && s.lastname.match(ln)) {
+       list.push(s);
+    }
+  }
+  for (var j in db.teachers) {
+    var t = db.teachers[j];
+    if ( t.firstname.match(fn) && t.lastname.match(ln)) {
+       list.push(t);
+    }
+  }
+  return list;
 }
 
 process.title = 'node-dummy';
@@ -297,7 +318,11 @@ app.get('/basic', function(req, res) {
           var nameparts = username.split(" ");
           var ln = nameparts.pop();
           var fn = nameparts.join(' ');
-          db_copy.userinfo = findUser(fn,ln) || {uid:0};
+          if (fn == '') { fn = ln; ln = '' };
+          var ulist = findUser(fn,ln);
+          console.log(ulist);
+          db_copy.userinfo = (ulist.length > 0) ? ulist.pop() : { uid:0 };
+          //console.log(db_copy.userinfo);
           if (db_copy.userinfo) {
             db_copy.userinfo.isadmin = (admins[db_copy.userinfo.username] && admins[db_copy.userinfo.username] == 1) ? true : false;
           }
