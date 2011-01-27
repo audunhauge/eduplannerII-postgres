@@ -197,6 +197,7 @@ function visEnValgtPlan(plandata,egne,start,stop) {
     var i,j,e,klass,idd;
     //for (i= thisweek; i < database.lastweek; i += 7) {
     var jd = database.firstweek;
+    var tests =coursetests(minfagplan);
     var tjd;
     for (section in  plandata) {
         //for (i= 0; i < 47; i++) {
@@ -217,11 +218,18 @@ function visEnValgtPlan(plandata,egne,start,stop) {
         if (+uke < 10) {
             uke = '0' + uke;
         }
+        var testweek = tests[tjd];
         summary += '|||||';
         summary = summary.replace(/(<br>)+/g,"<br>");
         summary = summary.replace(/<br>$/,"");
         summary = summary.replace(/(&amp;nbsp;)+/g," ");
         var elements = summary.split('|');
+        if (testweek) {
+          elements[1] = $j.map(testweek,function(e,i) {
+                 return '<span class="prove">prøve ' + dager[+e.day] + "dag " + e.slots + " time</span>";
+              txt = "<span class=\"prove\">" + pro.shortname+ ' ' + pro.value + "</span>";
+              }).join('<br>') + elements[1];
+        }
         klass = (isteach && egne) ? ' class="edit_area"' : '';
         idd = 'wd' + section + '_';
         s += '<tr id="section'+section+'">';

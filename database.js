@@ -246,7 +246,7 @@ var getAllTests = function(callback) {
        'SELECT julday,shortname,cl.value, u.username FROM mdl_bookings_calendar cl '
        + '      INNER JOIN mdl_course c ON (c.id = cl.courseid) '
        + '      INNER JOIN mdl_user u ON (u.id = cl.userid) '
-       + '      WHERE eventtype = "prove" and julday >= ' + db.startjd + ' ORDER BY julday,value,shortname',
+       + '      WHERE eventtype = "prove" and julday >= ' + db.firstweek + ' ORDER BY julday,value,shortname',
       function (err, results, fields) {
           if (err) {
               console.log("ERROR: " + err.message);
