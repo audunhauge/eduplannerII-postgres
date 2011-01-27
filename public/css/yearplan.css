@@ -460,7 +460,8 @@ span.heldag {
 
 span.prove {
   display:block;
-  width:10em;
+  white-space:nowrap;
+  width:12em;
   color:white;
   background:#700;
   text-align:center;

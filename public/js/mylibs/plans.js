@@ -277,13 +277,15 @@ function vis_andreplaner() {
 
 function show_next4() {
     // vis neste fire uker
+    var uid = database.userinfo.id || 0;
     var events = database.yearplan;
     var thisweek = database.startjd;
+    var tests = add_tests(uid,thisweek).tests;
     var s = "<table class=\"uke next\">";
     s += "<tr><th>Uke</th><th>Man</th><th>Tir</th><th>Ons</th>";
     s += "<th>Tor</th><th>Fre</th><th>Merknad</th></tr>";
     var i,j,k;
-    var e;
+    var e,txt,pro;
     var jdclass;
     for (i=thisweek; i < thisweek+22; i+= 7) {
       e = events[Math.floor(i/7)] || {pr:[],days:[ [],[],[],[],[],[] ] };
@@ -296,9 +298,9 @@ function show_next4() {
             txt = database.freedays[i+j];
             tdclass = ' class="fridag"';
           } else {
-            txt = e.pr[j] || " ";
-            if (txt != " ") {
-              txt = "<span class=\"prove\">" + txt + "</span>";
+            pro = tests[i+j];
+            if (pro) {
+              txt = "<span class=\"prove\">" + pro.shortname+ ' ' + pro.value + "</span>";
             } else {
               txt = "";
             }

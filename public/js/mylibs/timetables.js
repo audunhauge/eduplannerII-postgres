@@ -212,7 +212,7 @@ function updateMemory() {
 function vistimeplan(data,uid,filter) {
      // viser timeplan med gitt datasett
      var plan = data.plan;
-     plan = add_tests(plan,uid,database.startjd);
+     plan.prover = add_tests(uid,database.startjd);
      // TODO change from startjd to parameter set by user
      valgtPlan = plan;        // husk denne slik at vi kan lagre i timeregister
      var timeplan = {};
@@ -360,12 +360,37 @@ function getuserplan(uid) {
   return [];
 }
 
-function add_tests(plan,uid,jd) {  
-  // given a plan, will add inn tests for this teach/stud
+function coursetests(coursename) {  
+  // returns list of tests for given course
+  // { jdmonday:[{day:0..4, slots:"1,2,3"}]  }
+  // the key is jd for monday each week with test, value is list of tests {day,slots}
+  var prover = {};
+  for (jd= database.firstweek; jd < database.lastweek; jd += 7) {
+    for (var day = 0; day<5; day++) {
+      // database.heldag[i]
+      if (alleprover[jd + day]) {
+        for (var pr in alleprover[jd + day]) {
+          var pro = alleprover[jd + day][pr];
+          if (coursename != pro.shortname) continue;
+          if (!prover[jd]) {
+            prover[jd] = [];
+          }
+          prover[jd].push( { day:day, slots:pro.value } );
+        }
+      }
+    }
+  }
+  return prover;
+}
+
+
+function add_tests(uid,jd) {  
+  // returns table of tests for uid for given week
   // assumes jd is monday of desired week
   var mysubj = getUserSubj(uid);  // list of courses - groups for this stud
   var prover = {};
-  for (var day = 0; day<5; day++) {
+  prover.tests = {};   // store info about test indexed by jd for next 4 weeks
+  for (var day = 0; day<28; day++) {
     if (alleprover[jd + day]) {
       for (var pr in alleprover[jd + day]) {
         var pro = alleprover[jd + day][pr];
@@ -373,7 +398,9 @@ function add_tests(plan,uid,jd) {
         var ccgg = coursename.split('_');
         var cc = ccgg[0], gg = ccgg[1];
         if (!(mysubj[coursename] || mysubj[cc] && mysubj[gg])) continue;
-        // ignore tests not in mysubj
+        prover.tests[jd+day] = pro;      // used in show_next4 to mark days with tests
+        if (day > 4) continue;
+        // build timetable for this week
         var elm = pro.value.split(',');  // get the slots for this test
         for (var k in elm) {
           var slot = +elm[k]-1;
@@ -385,9 +412,7 @@ function add_tests(plan,uid,jd) {
       }
     }
   }
-  plan.prover = prover;
-  return plan;
-
+  return prover;
 }
 
 
