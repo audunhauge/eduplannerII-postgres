@@ -7,22 +7,7 @@ function edit_proveplan(fagnavn,plandata) {
     var fag = felms[0];
     var gru = felms[1];
     var elever = memberlist[gru];
-    var andrefag = [];
-    var andregru = [];
-    for (var eid in elever) {
-        var elev = elever[eid];
-        var egru = memgr[elev];
-        for (var egid in egru) {
-            var eg = egru[egid].split('_')[0];
-            if ($j.inArray(eg,andrefag) == -1) {
-                andrefag.push(eg);
-            }
-            var efg = egru[egid].split('_')[1];
-            if ($j.inArray(efg,andregru) == -1) {
-                andregru.push(efg);
-            }
-        }
-    }
+    var andre = getOtherCG(elever);
     var events = database.aarsplan;
     var thisweek = database.thisweek;
     var s = '<div id="proveplan">';
@@ -51,7 +36,7 @@ function edit_proveplan(fagnavn,plandata) {
             uke = '0' + uke;
         }
         dato = elm[1] || '';
-        var summary = Url.decode(e.summary);
+        var summary = e.summary;
         var oversikt = summary.replace(/\|/g,"<br>");
         oversikt = oversikt.replace(/<br><br>/g,"<br>");
         oversikt = oversikt.replace(/<br><br>/g,"<br>");
@@ -65,21 +50,23 @@ function edit_proveplan(fagnavn,plandata) {
         for (j=0;j<5;j++) {
             var andre = '';
             var heldag = '';
-            var epro   = Url.decode(pro.pr[j]).split('zz');
-            var hdager = Url.decode(pro.hd[j]).split('zz');
+            var epro   = pro.pr[j].split('zz');
+            var hdager = pro.hd[j].split('zz');
+            // sjekk mot vanlige prøver i andre grupper
             for (k=0; k < epro.length; k++) {
                 var progro = epro[k].split('|')[0].split('_')[1];
-                if (progro && $j.inArray(progro,andregru) != -1) {
+                if (progro && $j.inArray(progro,andre.gru) != -1) {
                     var grlink = epro[k].split('_')[0];
                     var grheading = '<span class="uheader">' + epro[k].replace(/\|/g," ") + '</span>';
                     popup = makepop(grlink,ulist,progro,gru,'group',grheading);
                     andre += '<ul class="nav">' + popup + '</ul>';
                 }
             }
+            // sjekk mot heldagsprøver for fag
             for (k=0; k < hdager.length; k++) {
                 if (hdager[k] == "") continue;
                 var hd = hdager[k].split('>')[1].split(' ')[0];
-                if (hd  && $j.inArray(hd.toUpperCase(),andrefag) != -1) {
+                if (hd  && $j.inArray(hd.toUpperCase(),andre.fag) != -1) {
                     heldag += hdager[k];
                 }
             }
@@ -141,12 +128,14 @@ function visEnPlan(fagnavn,plandata,egne) {
         }
         var alltext = all.join('z|z');
         var courseid = database.courseteach[fagnavn].id;
-        $j.post( "/save_totfagplan", { "alltext":alltext, "courseid":courseid },
+        if (alltext) {
+          $j.post( "/save_totfagplan", { "alltext":alltext, "courseid":courseid },
                 function(data) {
                     $j("#editmsg").html(data.msg);
                     $j("#saveme").hide().addClass("button").html('Lagre');
                     $j(minVisning).click();
                 });
+        }
         changedPlans = [];
     });
     var uke = database.week;
@@ -193,7 +182,7 @@ function pasteIntoThisPlan(fagnavn,egne) {
 function visEnValgtPlan(plandata,egne,start,stop) {
     // viser en plan - du kan redigere dersom du er eier
      var s = '<table class="fagplan" >'
-     + "<tr><th>Uke</th><th>Tema</th><th>Vurdering</th><th>Mål</th><th>Oppgaver</th><th>Logg/merk</th></tr>";
+     + "<tr><th>Uke</th><th>Info</th><th>Tema</th><th>Vurdering</th><th>Mål</th><th>Oppgaver</th><th>Logg/merk</th></tr>";
     var i,j,e,klass,idd;
     //for (i= thisweek; i < database.lastweek; i += 7) {
     var jd = database.firstweek;
@@ -219,24 +208,25 @@ function visEnValgtPlan(plandata,egne,start,stop) {
             uke = '0' + uke;
         }
         var testweek = tests[tjd];
+        var test = '';
         summary += '|||||';
         summary = summary.replace(/(<br>)+/g,"<br>");
         summary = summary.replace(/<br>$/,"");
         summary = summary.replace(/(&amp;nbsp;)+/g," ");
         var elements = summary.split('|');
         if (testweek) {
-          elements[1] = $j.map(testweek,function(e,i) {
+          test = $j.map(testweek,function(e,i) {
                  return '<span class="prove">prøve ' + dager[+e.day] + "dag " + e.slots + " time</span>";
               txt = "<span class=\"prove\">" + pro.shortname+ ' ' + pro.value + "</span>";
-              }).join('<br>') + elements[1];
+              }).join('<br>');
         }
         klass = (isteach && egne) ? ' class="edit_area"' : '';
         idd = 'wd' + section + '_';
         s += '<tr id="section'+section+'">';
         s += '<th><div class="weeknum">'+julian.week(tjd)+'</div><br class="clear" /><div class="date">' + formatweekdate(tjd) + "</div></th>";
-        //s += "<th>" +'<span class="uke">' + uke + '</span> <span class="dato">' +dato+"</span></th>";
+        s += '<td class="synopsis"><div></div></td>';
         s += '<td><div id="'+idd+'0" '+klass+'>' + elements[0] + "</div></td>";
-        s += '<td><div id="'+idd+'1" '+klass+'>' + elements[1] + "</div></td>";
+        s += '<td>'+test+'<div id="'+idd+'1" '+klass+'>' + elements[1] + "</div></td>";
         s += '<td><div id="'+idd+'2" '+klass+'>' + elements[2] + "</div></td>";
         s += '<td><div id="'+idd+'3" '+klass+'>' + elements[3] + "</div></td>";
         s += '<td><div id="'+idd+'4" '+klass+'>' + elements[4] + "</div></td>";
@@ -283,9 +273,9 @@ function edit_aarsplan() {
       s += "<th class=\""+thclass+"\">"+e.week+"</th>";
       for (j=0;j<6;j++) {
         var idd = e.julday + '_' + j;
-        cc = Url.decode(e.days[j][1]);
+        cc = e.days[j][1];
         var klass = (cc != 'fridag') ? 'edit_area' : cc;
-        txt = Url.decode(e.days[j][0]);
+        txt = e.days[j][0];
         s += '<td id="jd'+idd+'" class="'+klass+'">' + txt + '</td>';
       }
       s += "</tr>";
@@ -333,8 +323,8 @@ function edit_fridager() {
       s += "<th class=\""+thclass+"\">"+e.week+"</th>";
       for (j=0;j<6;j++) {
         var idd = e.julday + '_' + j;
-        cc = Url.decode(e.days[j][1]);
-        txt = (cc != 'normal') ? Url.decode(e.days[j][0]) : '';
+        cc = e.days[j][1];
+        txt = (cc != 'normal') ? e.days[j][0] : '';
         s += '<td id="jd'+idd+'" class="edit">' + txt + '</td>';
       }
       s += "</tr>";
@@ -369,7 +359,7 @@ function edit_heldag() {
       s += "<th>"+e.week+"</th>";
       for (j=0;j<5;j++) {
         var idd = e.julday + j;
-        txt = Url.decode(e.hd[j]);
+        txt = e.hd[j];
         s += '<td id="jd'+idd+'" >' + txt + '<span class="addnew">+</span></td>';
       }
       s += "</tr>";
@@ -424,6 +414,7 @@ function check_heldag(value,settings) {
 function save_fagplan(value,settings) {
     // save the changed element into compound week data a|b|c|d|e
     var myid = this.id;
+    $j(this).removeClass( "ui-state-highlight" );
     var base = myid.substr(0,5);
     var week = myid.substr(2,2);
     var idx  = myid.substr(5,1);
@@ -434,11 +425,15 @@ function save_fagplan(value,settings) {
         if (myid == base + i) {
             summary += value + '|';
         } else {
-            var elm = $j("#"+base+i).html();
+            var elm = $j("#"+base+i).removeClass( "ui-state-highlight" ).html();
             elm = (elm == '&nbsp;') ? '' : elm;
             summary += elm + '|';
         }
     }
+    delete  changedPlans[section];
+      // if we edit a cell that has been added to changedPlans by drop or paste
+      // then we must remove it from list of cells to be updated (as it is now
+      // saved with new content)
     update_fagplaner(minfagplan,section,summary);
     var courseid = database.courseteach[minfagplan].id;
     $j.post( "/save_fagplan", { "section":section,"value":value, "idx":idx, "week":week, "courseid":courseid, "summary":summary },

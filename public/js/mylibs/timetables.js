@@ -213,6 +213,12 @@ function vistimeplan(data,uid,filter) {
      // viser timeplan med gitt datasett
      var plan = data.plan;
      plan.prover = add_tests(uid,database.startjd);
+     if (memberlist[uid]) {
+       // this is a group or class
+       var elever = memberlist[uid];
+       var andre = getOtherCG(elever); 
+       plan.prover = grouptest(plan.prover, andre.gru, database.startjd);
+     }
      // TODO change from startjd to parameter set by user
      valgtPlan = plan;        // husk denne slik at vi kan lagre i timeregister
      var timeplan = {};
@@ -220,36 +226,53 @@ function vistimeplan(data,uid,filter) {
      var i,j;
      var s = '';
      var cell,userlist,gruppe,popup;
-     var user = (teachers[uid]) ?  teachers[uid] : (students[uid]) ? students[uid] : {firtstname:'',lastname:''};
+     var user = (teachers[uid]) ?  teachers[uid] : (students[uid]) ? students[uid] : {firstname:uid,lastname:''};
      var username = user.firstname + ' ' + user.lastname;
-     // hent ut normalplanen - skal vises som ren text
-     timeplan = build_timetable(timeplan,plan,filter);
+     var elever = memberlist[uid] || null;
      // hent ut ekstraplanen - skal vises som css:hover
      if (data.xplan) {
         var xplan = data.xplan;
         for (i=0; i< xplan.length;i++) {
             var pt = xplan[i];
-            var cell = pt.value.replace(' ','_');
+            // pt = [1,7,"1mt5_1st2","a002","",1361]
+            var cell = pt[2].replace(' ','_');
             gruppe = cell.split('_')[1];
-            if (!xtraplan[pt.slot]) {
-                xtraplan[pt.slot] = {};
+            // add in tests for group
+            if (!xtraplan[pt[1]]) {
+                xtraplan[pt[1]] = {};
             }
-            if (!xtraplan[pt.slot][pt.day]) xtraplan[pt.slot][pt.day] = [];
-            userlist = memberlist[gruppe];
+            if (!xtraplan[pt[1]][pt[0]]) xtraplan[pt[1]][pt[0]] = [];
+            userlist = intersect(memberlist[gruppe],elever);
             popup = makepop(cell,userlist,username,gruppe,filter);
-            xtraplan[pt.slot][pt.day].push(popup);
+            xtraplan[pt[1]][pt[0]].push(popup);
         }
      }
-     s += build_plantable(username,timeplan,xtraplan,filter);
+     // hent ut normalplanen - skal vises som ren text
+     timeplan = build_timetable(timeplan,plan,filter);
+     s += build_plantable(username.trim(),timeplan,xtraplan,filter);
      return s;
+}
+
+
+function intersect(a,b) {
+  if (!b) return a;
+  if (!a) return [];
+  var inter = [];
+  for (var i in a) {
+    var elm = a[i];
+    if ($j.inArray(elm,b) != -1) inter.push(elm);
+  }
+  return inter;
 }
 
 
 function vis_valgt_timeplan(user,filter,visfagplan) {
     // gitt en userid vil denne hente og vise en timeplan
     visfagplan = typeof(visfagplan) != 'undefined' ? true : false;
-    var userplan = getuserplan(user.id);
-    s = vistimeplan(userplan,user.id,filter);
+    var userplan = (user.id) ? getuserplan(user.id) : getcourseplan(user) ;
+    var uid = user.id || user;
+    // if user is name of klass or group then getcourseplan
+    s = vistimeplan(userplan,uid,filter);
     $j("#timeplan").html(s);
 }
 
@@ -272,6 +295,10 @@ function vis_timeplan(s,bru,filter) {
            updateMemory();
        }
     });
+    $j("#velgbruker").keyup(function() {
+       var idx = $j("#velgbruker option:selected").val();
+       vis_valgt_timeplan(bru[idx],filter,true);
+    });
     $j("#velgbruker").change(function() {
        var idx = $j("#velgbruker option:selected").val();
        vis_valgt_timeplan(bru[idx],filter,true);
@@ -291,21 +318,21 @@ function vis_gruppetimeplan() {
        s+= '<option value="'+i+'">' + fagnavn+ " " + e.username  +  "</option>";
     }
     s+= "</select></div>";
-    vis_timeplan(s,bru,ant,"aarsplan/php/gettimeplangruppe.php",'group' );
+    vis_timeplan(s,bru,'group' );
 }
 
 function vis_klassetimeplan() {
-    var bru = brukerliste[valg];
+    var bru = database.classes;
     var ant = bru.length;
     var s="<div id=\"timeviser\"><h1>Klasse-timeplaner</h1>";
     s+= '<div class="gui" id=\"velg\">Velg klassen du vil se timeplanen for <select id="velgbruker">';
     s+= '<option value="0"> --velg-- </option>';
     for (i=0;i< ant; i++) {
        e = bru[i]; 
-       s+= '<option value="'+i+'">' + e.username  +  "</option>";
+       s+= '<option value="'+i+'">' + e  +  "</option>";
     }
     s+= "</select></div>";
-    vis_timeplan(s,bru,ant,"aarsplan/php/gettimeplangruppe.php",'klasse' );
+    vis_timeplan(s,bru,'' );
 }
 
 
@@ -334,13 +361,66 @@ function vis_teachtimeplan() {
     vis_timeplan(s,teachers,'non' );
 }
 
+function getcourseplan(cgr) {
+  // We want a timetable for a course/group/room
+  // just try each in turn and return first found
+  if (timetables.course[cgr]) {
+    var elever = memberlist[cgr];
+    var andre = getOtherCG(elever); 
+    var xplan = [];
+    for (gr in andre.gru) {
+      // get timetables for all other groups for these studs
+      xplan.push(timetables.group[gr]);
+    }
+    return {plan:timetables.course[cgr]};
+  }
+  if (timetables.group[cgr]) {
+    var elever = memberlist[cgr];
+    var andre = getOtherCG(elever); 
+    var xplan = [];
+    for (gri in andre.gru) {
+      // get timetables for all other groups for these studs
+      gr = andre.gru[gri];
+      if (gr == cgr) continue;  // ignore the original group
+      xplan = xplan.concat(timetables.group[gr]);
+    }
+    return {xplan:xplan, plan:timetables.group[cgr]};
+  }
+  if (timetables.room[cgr]) return {plan:timetables.room[cgr]};
+  return {plan:[]};
+}
 
+
+function getOtherCG(studlist) {
+  // given a list of students
+  // returns other groups and courses that
+  // are connected to these studs
+    var fag = [];
+    var gru = [];
+    for (var eid in studlist) {
+        var elev = studlist[eid];
+        var egru = memgr[elev];
+        for (var egid in egru) {
+            var eg = egru[egid];
+            if ($j.inArray(eg,gru) == -1) {
+                gru.push(eg);
+            }
+            var fgru = database.grcourses[eg];
+            for (var fid in fgru) {
+              var efg = fgru[fid];
+              if ($j.inArray(efg,fag) == -1) {
+                  fag.push(efg);
+              }
+            }
+        }
+    }
+    return {fag:fag, gru:gru };
+}    
 
 function getuserplan(uid) {
   // assume timetables is valid
   // use memgr to pick out all groups
   // build up a timetable from timetables for each group
-  //
   if (timetables.teach[uid]) {
     // we have a teach - just pick out timetable.
     return {plan:timetables.teach[uid]};
@@ -384,11 +464,39 @@ function coursetests(coursename) {
 }
 
 
+function grouptest(prover,grouplist,jd) {  
+  // updates table of tests for given grouplist, given jd
+  // assumes jd is monday of desired week
+  for (var day = 0; day<5; day++) {
+    if (alleprover[jd + day]) {
+      for (var pr in alleprover[jd + day]) {
+        var pro = alleprover[jd + day][pr];
+        var coursename = pro.shortname;
+        var ccgg = coursename.split('_');
+        var cc = ccgg[0], gg = ccgg[1];
+        //if (group != gg) continue;
+        if ($j.inArray(gg,grouplist) == -1) continue;
+        var elm = pro.value.split(',');  // get the slots for this test
+        for (var k in elm) {
+          var slot = +elm[k]-1;
+          if (!prover[slot]) {    // ingen rad definert ennå
+              prover[slot] = {};  // ny rad
+          }
+          prover[slot][day] = 1;
+        }
+      }
+    }
+  }
+  return prover;
+}
+
+
 function add_tests(uid,jd) {  
   // returns table of tests for uid for given week
   // assumes jd is monday of desired week
-  var mysubj = getUserSubj(uid);  // list of courses - groups for this stud
   var prover = {};
+  if (uid.length) return prover;  // this is not a user id (most likely a course/group)
+  var mysubj = getUserSubj(uid);  // list of courses - groups for this stud
   prover.tests = {};   // store info about test indexed by jd for next 4 weeks
   for (var day = 0; day<28; day++) {
     if (alleprover[jd + day]) {

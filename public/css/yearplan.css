@@ -1,4 +1,6 @@
 
+html { min-height: 100%; margin-bottom: 1px; }
+
 .rcorner {
   -webkit-border-radius: 2em;
   -moz-border-radius: 2em;
@@ -80,6 +82,7 @@ div.helper { border:solid yellow 1px; background:yellow; width:20px; height:16px
 
 div.date    { width:5em; padding:2px; font-size:0.7em; white-space:nowrap; }
 div.weeknum { width:2em; padding:2px; float:left; }
+td.synopsis { width:10px !important; font-size:0.7em; white-space:nowrap; }
 
 
 div.button {
