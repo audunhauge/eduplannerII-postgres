@@ -90,8 +90,8 @@ function makepop(cell,userlist,username,gruppe,filter,heading) {
     // lag en css:hover som viser elever i en gruppe
     // denne funksjonen er memoized - den husker på
     // elevlista for tuple (gruppe,username)
-    if (popmemoizer[gruppe+username]) {
-        return popmemoizer[gruppe+username];
+    if (popmemoizer[cell+gruppe+username]) {
+        return popmemoizer[cell+gruppe+username];
     } 
     if (userlist) {
         var elev;
@@ -118,7 +118,7 @@ function makepop(cell,userlist,username,gruppe,filter,heading) {
     } else {
         ce = '<li><a href="#">'+cell+'</a></li>';
     }
-    popmemoizer[gruppe+username] = ce;
+    popmemoizer[cell+gruppe+username] = ce;
     return ce;
 }
 
@@ -181,10 +181,14 @@ function build_plantable(username,timeplan,xtraplan,filter) {
              header = 'x';
           }
           if (xtraplan[i] && xtraplan[i][j]) {
-             xcell = xtraplan[i][j];
-             if ($j.isArray(xcell)) {
+             var xp = xtraplan[i][j];
+             if ($j.isArray(xp)) {
+                xcell = xp.join('');
+                if (xcell.indexOf('redfont') > 0) {
+                    header = '<span class="pinkfont">'+header+'</span>';
+                }
                 xcell = '<ul class="nav'+bad+'"><li><a href="#">'+header+'</a><ul>' 
-                       + xcell.join('') 
+                       + xcell
                        + '</ul></li></ul>';
              }
           }
@@ -243,6 +247,11 @@ function vistimeplan(data,uid,filter) {
             }
             if (!xtraplan[pt[1]][pt[0]]) xtraplan[pt[1]][pt[0]] = [];
             userlist = intersect(memberlist[gruppe],elever);
+            if (plan.prover[pt[1]] && plan.prover[pt[1]][pt[0]]) {
+                if ($j.inArray(gruppe,plan.prover[pt[1]][pt[0]]) != -1) {
+                  cell = '<span class="redfont">'+cell+'</span>';
+                }
+            }
             popup = makepop(cell,userlist,username,gruppe,filter);
             xtraplan[pt[1]][pt[0]].push(popup);
         }
@@ -482,7 +491,10 @@ function grouptest(prover,grouplist,jd) {
           if (!prover[slot]) {    // ingen rad definert ennå
               prover[slot] = {};  // ny rad
           }
-          prover[slot][day] = 1;
+          if (!prover[slot][day]) {    // mangler kolonne
+              prover[slot][day] = [];  // ny kolonne
+          }
+          prover[slot][day].push(gg);
         }
       }
     }

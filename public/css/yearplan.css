@@ -6,6 +6,14 @@ html { min-height: 100%; margin-bottom: 1px; }
   -moz-border-radius: 2em;
 }
 
+.redfont {
+    color:red;
+}
+
+.pinkfont {
+    color:#ffa0a0;
+}
+
 .gradback {
   background: -moz-linear-gradient(top,#AFC4E3,#E0E9FC 50%,white 100%);
   background: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#AFC4E3), to(#FFFFFF), color-stop(.4,#E0E9FC));
