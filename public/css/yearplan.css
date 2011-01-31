@@ -5,7 +5,7 @@ div.tinytim {
     /* used to show a tiny timetable */
     position:relative;
     width:24px;
-    background:gray;
+    background:white;
     border:solid green 1px;
     height:20px;
 } 
