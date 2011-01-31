@@ -4,26 +4,36 @@ html { min-height: 100%; margin-bottom: 1px; }
 div.tinytim {
     /* used to show a tiny timetable */
     position:relative;
-    width:24px;
-    background:white;
+    width:32px;
+    background:gray;
     border:solid green 1px;
-    height:20px;
+    height:30px;
 } 
 div.tinytt {
     /* used to show a tiny timetable */
     position:absolute;
-    width:4px;
+    width:5px;
     background:white;
-    height:2px;
+    height:3px;
     left:0px;
     top:0px;
+} 
+div.tinytest {
+    /* used to show a tiny timetable */
+    position:absolute;
+    width:5px;
+    height:3px;
+    left:0px;
+    top:0px;
+    opacity:0.2;
+    background:red;
 } 
 div.tinyfree {
     /* used to show a tiny timetable */
     position:absolute;
-    width:4px;
+    width:5px;
     background:green;
-    height:20px;
+    height:30px;
     left:0px;
     top:0px;
 } 
@@ -31,9 +41,9 @@ div.tinyfree {
 div.tinyhd {
     /* used to show a tiny timetable */
     position:absolute;
-    width:4px;
+    width:5px;
     background:red;
-    height:20px;
+    height:30px;
     left:0px;
     top:0px;
 } 
@@ -41,10 +51,10 @@ div.tinyhd {
 div.tinyohd {
     /* used to show a tiny timetable */
     position:absolute;
-    opacity:0.2;
-    width:4px;
-    background:orange;
-    height:20px;
+    opacity:0.3;
+    width:5px;
+    background:blue;
+    height:30px;
     left:0px;
     top:0px;
 } 

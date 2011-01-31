@@ -27,7 +27,7 @@ function synopsis(coursename,plandata,tests) {
   for (var i=0; i<10; i++) {
      for (var j=0; j<5; j++) {
         if (mytt[i] && mytt[i][j]) {
-          s += '<div class="tinytt" style="top:'+(i*2)+'px; left:'+(j*5)+'px;"></div>';
+          s += '<div class="tinytt" style="top:'+(i*3)+'px; left:'+(j*6)+'px;"></div>';
         }
      }
   }
@@ -35,58 +35,49 @@ function synopsis(coursename,plandata,tests) {
   for (section in  plandata) {
     var ulist = memberlist[gru];
     var s = '';
+    var links = '';
     for (var j=0; j<5; j++) {
         pro = prover[jd+j];
         var title = '';
+        var testitle = '';
         if (database.freedays[jd+j]) {
           title +=database.freedays[jd+j];
-          s += '<div title="'+title+'" class="tinyfree" style="left:'+(j*5)+'px;"></div>';
+          s += '<div title="'+title+'" class="tinyfree" style="left:'+(j*6)+'px;"></div>';
         }
         var hd = database.heldag[jd+j];
         for (fag in hd) {
           if (coursename.indexOf(fag) >= 0) {
             title += ' ' + fag+' '+hd[fag];
-            s += '<div title="'+title+'" class="tinyhd" style="left:'+(j*5)+'px;"></div>';
+            s += '<div title="'+title+'" class="tinyhd" style="left:'+(j*6)+'px;"></div>';
           }
           if ($j.inArray(fag.toUpperCase(),andre.fag) != -1) {
             title += ' ' + fag+' '+hd[fag];
-            s += '<div title="'+title+'" class="tinyohd" style="left:'+(j*5)+'px;"></div>';
+            s += '<div title="'+title+'" class="tinyohd" style="left:'+(j*6)+'px;"></div>';
           }
         } 
         if (pro) {
-          var epro   = pro[j] || [];
           // var hdager = pro.hd[j].split('zz');
           // sjekk mot vanlige prøver i andre grupper
-          for (k=0; k < epro.length; k++) {
-              var progro = epro[k].shortname.split('_')[1];
+          for (k=0; k < pro.length; k++) {
+              var progro = pro[k].shortname.split('_')[1];
               if (progro && $j.inArray(progro,andre.gru) != -1) {
-                  var grlink = epro[k].shortname.split('_')[0];
-                  var grheading = '<span class="uheader">' + epro[k].shortname + '</span>';
-                  popup = makepop(grlink,ulist,progro,gru,'group',grheading);
-                  andre += '<ul class="nav">' + popup + '</ul>';
+                  var grlink = pro[k].shortname.split('_')[0];
+                  var grheading = '<span class="uheader">' + pro[k].shortname + '</span>';
+                  var popup = makepop(grlink,ulist,progro,gru,'group',grheading);
+                  testitle += ' ' + pro[k].shortname;
+                  var tlist = pro[k].value.split(',');
+                  var min = +tlist.shift();
+                  var max = +tlist.pop() || min;
+                  links += '<ul class="nav">' + popup + '</ul>';
+                  s += '<div title="'+testitle+'" class="tinytest" style="left:'
+                      +(j*6)+ 'px; top:'+ ((min-1)*3) +'px; height:'+(max+1-min)*3+'px; "></div>';
               }
           }
         }
-        // sjekk mot heldagsprøver for fag
-        /*
-        for (k=0; k < hdager.length; k++) {
-            if (hdager[k] == "") continue;
-            var hd = hdager[k].split('>')[1].split(' ')[0];
-            if (hd  && $j.inArray(hd.toUpperCase(),andre.fag) != -1) {
-                heldag += hdager[k];
-            }
-        }
-        if (heldag) {
-            s += '<td'+klass+'>' + heldag + '</td>';
-        } else {
-            //andre = andre.replace(/ /g,"&nbsp;");
-            s += '<td'+klass+'>' + txt + andre+ '</td>';
-        }
-        */
     }
     synop[section] = {};
     synop[section].tiny = '<div class="tinytim">'+standard+s+'</div>';
-    synop[section].links = '';
+    synop[section].links = links;
     jd += 7;
   }
   return synop;
