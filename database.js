@@ -273,7 +273,7 @@ var getTimetables = function(callback) {
   //                  group:{ "3304":[ [1,2,"3inf5_3304","r210",'',654], ..],  "3sta":[... ] ... }
   //                  teach:{ "654":[ [1,2,"3inf5_3304","r210",'',654], ..],  "1312":[... ] ... }
   //                }
-  // the inner array is [day,slot,room]
+  // the inner array is [day,slot,room,changed-room,teachid]
   // assumes you give it a callback that assigns the hash
   client.query(
       'select userid,cal.day,cal.slot,r.name as room,cal.name from mdl_bookings_calendar cal inner join mdl_bookings_item r '

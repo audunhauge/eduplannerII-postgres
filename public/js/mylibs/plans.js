@@ -1,6 +1,96 @@
 // funksjoner for å vise fagplaner
 // alle typer planer untatt timeplaner
 
+function synopsis(coursename,plandata,tests) {
+  // returns a synopsis of each week
+  // this is a tiny timeplan for each week (drawn as tiny divs)
+  // with all tests and events plotted in
+  var prover = alleprover;
+  var felms = coursename.split('_');
+  var fag = felms[0];
+  var gru = felms[1];
+  var elever = memberlist[gru];
+  var andre = getOtherCG(elever);
+  //var events = database.aarsplan;
+  var myttimer = timetables.course[coursename];
+  var jd = database.firstweek;
+  var mytt = {};
+  for (var i=0; i< myttimer.length;i++) {
+     var pt = myttimer[i];
+     if (!mytt[pt[1]]) {    // ingen rad definert ennå
+         mytt[pt[1]] = {};  // ny rad
+     }
+     mytt[pt[1]][pt[0]] = 1;
+  }
+  var synop = {};
+  var s = '';
+  for (var i=0; i<10; i++) {
+     for (var j=0; j<5; j++) {
+        if (mytt[i] && mytt[i][j]) {
+          s += '<div class="tinytt" style="top:'+(i*2)+'px; left:'+(j*5)+'px;"></div>';
+        }
+     }
+  }
+  var standard = s;
+  for (section in  plandata) {
+    var ulist = memberlist[gru];
+    var s = '';
+    for (var j=0; j<5; j++) {
+        pro = prover[jd+j];
+        var title = '';
+        if (database.freedays[jd+j]) {
+          title +=database.freedays[jd+j];
+          s += '<div title="'+title+'" class="tinyfree" style="left:'+(j*5)+'px;"></div>';
+        }
+        var hd = database.heldag[jd+j];
+        for (fag in hd) {
+          if (coursename.indexOf(fag) >= 0) {
+            title += ' ' + fag+' '+hd[fag];
+            s += '<div title="'+title+'" class="tinyhd" style="left:'+(j*5)+'px;"></div>';
+          }
+          if ($j.inArray(fag.toUpperCase(),andre.fag) != -1) {
+            title += ' ' + fag+' '+hd[fag];
+            s += '<div title="'+title+'" class="tinyohd" style="left:'+(j*5)+'px;"></div>';
+          }
+        } 
+        if (pro) {
+          var epro   = pro[j] || [];
+          // var hdager = pro.hd[j].split('zz');
+          // sjekk mot vanlige prøver i andre grupper
+          for (k=0; k < epro.length; k++) {
+              var progro = epro[k].shortname.split('_')[1];
+              if (progro && $j.inArray(progro,andre.gru) != -1) {
+                  var grlink = epro[k].shortname.split('_')[0];
+                  var grheading = '<span class="uheader">' + epro[k].shortname + '</span>';
+                  popup = makepop(grlink,ulist,progro,gru,'group',grheading);
+                  andre += '<ul class="nav">' + popup + '</ul>';
+              }
+          }
+        }
+        // sjekk mot heldagsprøver for fag
+        /*
+        for (k=0; k < hdager.length; k++) {
+            if (hdager[k] == "") continue;
+            var hd = hdager[k].split('>')[1].split(' ')[0];
+            if (hd  && $j.inArray(hd.toUpperCase(),andre.fag) != -1) {
+                heldag += hdager[k];
+            }
+        }
+        if (heldag) {
+            s += '<td'+klass+'>' + heldag + '</td>';
+        } else {
+            //andre = andre.replace(/ /g,"&nbsp;");
+            s += '<td'+klass+'>' + txt + andre+ '</td>';
+        }
+        */
+    }
+    synop[section] = {};
+    synop[section].tiny = '<div class="tinytim">'+standard+s+'</div>';
+    synop[section].links = '';
+    jd += 7;
+  }
+  return synop;
+}
 
 function vis_fagplaner(data) {
     // viser fagplaner for valgt bruker
