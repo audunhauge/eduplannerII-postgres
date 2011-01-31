@@ -1,6 +1,56 @@
 
 html { min-height: 100%; margin-bottom: 1px; }
 
+div.tinytim {
+    /* used to show a tiny timetable */
+    position:relative;
+    width:24px;
+    background:gray;
+    border:solid green 1px;
+    height:20px;
+} 
+div.tinytt {
+    /* used to show a tiny timetable */
+    position:absolute;
+    width:4px;
+    background:white;
+    height:2px;
+    left:0px;
+    top:0px;
+} 
+div.tinyfree {
+    /* used to show a tiny timetable */
+    position:absolute;
+    width:4px;
+    background:green;
+    height:20px;
+    left:0px;
+    top:0px;
+} 
+
+div.tinyhd {
+    /* used to show a tiny timetable */
+    position:absolute;
+    width:4px;
+    background:red;
+    height:20px;
+    left:0px;
+    top:0px;
+} 
+
+div.tinyohd {
+    /* used to show a tiny timetable */
+    position:absolute;
+    opacity:0.2;
+    width:4px;
+    background:orange;
+    height:20px;
+    left:0px;
+    top:0px;
+} 
+
+
+
 .rcorner {
   -webkit-border-radius: 2em;
   -moz-border-radius: 2em;

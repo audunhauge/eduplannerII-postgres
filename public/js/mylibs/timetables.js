@@ -53,6 +53,8 @@ function show_thisweek() {
 }
 
 
+
+
 function build_timetable(timeplan,plan,filter,planspan) {
     // fills in a table with events from a plan
      var spanstart = typeof(planspan) != 'undefined' ? '<span class="'+planspan+'">' : '';
@@ -389,7 +391,7 @@ function getcourseplan(cgr) {
     var xplan = [];
     for (gri in andre.gru) {
       // get timetables for all other groups for these studs
-      gr = andre.gru[gri];
+      var gr = andre.gru[gri];
       if (gr == cgr) continue;  // ignore the original group
       xplan = xplan.concat(timetables.group[gr]);
     }

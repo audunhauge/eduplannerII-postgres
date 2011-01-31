@@ -188,6 +188,7 @@ function visEnValgtPlan(plandata,egne,start,stop) {
     var jd = database.firstweek;
     var tests =coursetests(minfagplan);
     var tjd;
+    var info = synopsis(minfagplan,plandata,tests);
     for (section in  plandata) {
         //for (i= 0; i < 47; i++) {
         summary = plandata[section]; 
@@ -224,7 +225,7 @@ function visEnValgtPlan(plandata,egne,start,stop) {
         idd = 'wd' + section + '_';
         s += '<tr id="section'+section+'">';
         s += '<th><div class="weeknum">'+julian.week(tjd)+'</div><br class="clear" /><div class="date">' + formatweekdate(tjd) + "</div></th>";
-        s += '<td class="synopsis"><div></div></td>';
+        s += '<td class="synopsis">'+info[section].tiny+'</td>';
         s += '<td><div id="'+idd+'0" '+klass+'>' + elements[0] + "</div></td>";
         s += '<td>'+test+'<div id="'+idd+'1" '+klass+'>' + elements[1] + "</div></td>";
         s += '<td><div id="'+idd+'2" '+klass+'>' + elements[2] + "</div></td>";
