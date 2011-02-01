@@ -140,7 +140,7 @@ var assets = assetManager({
 		}
 	}
 });
-var port = 8000;
+var port = 3000;
 var app = module.exports = express.createServer();
 
 

@@ -35,24 +35,28 @@ function synopsis(coursename,plandata,tests) {
   for (section in  plandata) {
     var ulist = memberlist[gru];
     var s = '';
-    var links = '';
+    var links = [];    // builds popup-buttons for test showing affected studs
+    var heldag = [];    // full-day-tests for some or all studs in this group
     for (var j=0; j<5; j++) {
         pro = prover[jd+j];
-        var title = '';
-        var testitle = '';
+        var title = [];
+        var testitle = [];
         if (database.freedays[jd+j]) {
-          title +=database.freedays[jd+j];
-          s += '<div title="'+title+'" class="tinyfree" style="left:'+(j*6)+'px;"></div>';
+          title.push(database.freedays[jd+j]);
+          s += '<div title="'+title.join('')+'" class="totip tinyfree" style="left:'+(j*6)+'px;"></div>';
         }
         var hd = database.heldag[jd+j];
         for (fag in hd) {
           if (coursename.indexOf(fag) >= 0) {
-            title += ' ' + fag+' '+hd[fag];
-            s += '<div title="'+title+'" class="tinyhd" style="left:'+(j*6)+'px;"></div>';
-          }
-          if ($j.inArray(fag.toUpperCase(),andre.fag) != -1) {
-            title += ' ' + fag+' '+hd[fag];
-            s += '<div title="'+title+'" class="tinyohd" style="left:'+(j*6)+'px;"></div>';
+            title.push(fag+' '+hd[fag]);
+            s += '<div title="'+title.join('<br>')+'" class="totip tinyhd" style="left:'+(j*6)+'px;"></div>';
+            if (!heldag[j]) heldag[j] = [];
+            heldag[j].push(fag+' '+hd[fag]);
+          } else if ($j.inArray(fag.toUpperCase(),andre.fag) != -1) {
+            title.push(fag+' '+hd[fag]);
+            if (!heldag[j]) heldag[j] = [];
+            heldag[j].push(fag+' '+hd[fag]);
+            s += '<div title="'+title.join('<br>')+'" class="totip tinyohd" style="left:'+(j*6)+'px;"></div>';
           }
         } 
         if (pro) {
@@ -64,12 +68,13 @@ function synopsis(coursename,plandata,tests) {
                   var grlink = pro[k].shortname.split('_')[0];
                   var grheading = '<span class="uheader">' + pro[k].shortname + '</span>';
                   var popup = makepop(grlink,ulist,progro,gru,'group',grheading);
-                  testitle += ' ' + pro[k].shortname;
+                  testitle.push(pro[k].shortname+' '+pro[k].username);
                   var tlist = pro[k].value.split(',');
                   var min = +tlist.shift();
                   var max = +tlist.pop() || min;
-                  links += '<ul class="nav">' + popup + '</ul>';
-                  s += '<div title="'+testitle+'" class="tinytest" style="left:'
+                  if (!links[j]) links[j] = [];
+                  links[j].push('<ul class="nav">' + popup + '</ul>');
+                  s += '<div title="'+testitle.join('<br>')+'" class="totip tinytest" style="left:'
                       +(j*6)+ 'px; top:'+ ((min-1)*3) +'px; height:'+(max+1-min)*3+'px; "></div>';
               }
           }
@@ -78,6 +83,7 @@ function synopsis(coursename,plandata,tests) {
     synop[section] = {};
     synop[section].tiny = '<div class="tinytim">'+standard+s+'</div>';
     synop[section].links = links;
+    synop[section].heldag = heldag;
     jd += 7;
   }
   return synop;
@@ -258,36 +264,45 @@ function show_all(thisweek) {
       for (j=0;j<6;j++) {
         var xtra = '';
         var tlist = [];
+        var totip = '';  // no tooltip so far
         if (database.freedays[i+j]) {
           txt = database.freedays[i+j];
           tdclass = 'fridag';
         } else {
           tdclass = '';
           if (database.heldag[i+j]) {
+            tlist.push('Heldag/Eksamen');
             var hd =  database.heldag[i+j];
             for (fag in hd) {
                 tlist.push(fag + ' ' + hd[fag]);
             } 
             tdclass += 'hd';
+            totip = " totip";
             xtra += 'heldag';
           }
           if (prover[i+j] ) {
               tdclass += 'pr';
-              tlist.push(countme(prover[i+j]) + ' prøver');
+              totip = " totip";
+              //tlist.push(countme(prover[i+j]) + ' prøver');
+              tlist.push( 'Prøver<br>'+$j.map(prover[i+j],function(e,i) {
+                      var val = e.value.replace(/1.+9/,"heldag");
+                      return (""+ e.shortname + ' '+ e.username+' '+val);
+                    }).join('<br>'));
               //xtra += '<span title="prøve" class="enprove">x</span>'; 
               xtra += ' prøve';
           }
           xtra = (xtra) ? '<div class="gui textcenter hinted">'+xtra+'</div>' : '';
           txt = e.days[j] || xtra;
         }
-        var title = tlist.join(','); 
+        var title = tlist.join('<br>'); 
         title = (title) ? 'title="'+title+'"' : '';
-        s += '<td ' + title + ' class="'+tdclass+'">' + txt + "</td>";
+        s += '<td ' + title + ' class="'+tdclass+totip+'">' + txt + "</td>";
       }
       s += "</tr>";
     }
     s += "</table>";
     $j("#main").html(s);
+    $j(".totip").tooltip();
 }
 
 

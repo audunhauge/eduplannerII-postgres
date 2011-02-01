@@ -1,6 +1,25 @@
 
 html { min-height: 100%; margin-bottom: 1px; }
 
+.tooltip {
+        display:none;
+        /*
+        background: #8b8b8b; 
+        filter:  progid:DXImageTransform.Microsoft.gradient(startColorstr='#79a9ff', endColorstr='#7a7a7a');
+        background: -webkit-gradient(linear, left top, left bottom, from(#79a9ff), to(#7a7a7a)); 
+        background: -moz-linear-gradient(top,  #79a9ff,  #7a7a7a); 
+        */
+        font-size:10px;
+        height:auto;
+        width:160px;
+        padding:25px;
+        color:#fff;     
+        border:solid #d0d0d0 2px;
+        /*background:transparent url(/img/downarrow.png) center bottom no-repeat;*/
+        background: -webkit-gradient(linear, left top, left bottom, from(rgba(33,118,155,0.9)), to(rgba(50,50,50,0.6 ))); 
+        background: -moz-linear-gradient(top, rgba(33,118,155,0.9) , rgba(50,50,50,0.6 )); 
+}
+
 div.tinytim {
     /* used to show a tiny timetable */
     position:relative;
