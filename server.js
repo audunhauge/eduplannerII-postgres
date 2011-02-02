@@ -16,37 +16,57 @@ function findUser(firstname,lastname) {
   // search for a user given firstname and lastname
   // try students first (studs may shadow teach)
   var list = [];
-  firstname = firstname.trim();
-  lastname = lastname.trim();
-  console.log("fn="+firstname + " ln=" + lastname);
-  for (var i in db.students) {
-    var s = db.students[i];
-    if (s.firstname.toLowerCase() == firstname && s.lastname.toLowerCase() == lastname) {
-       list.push(s);
-       return list;
-    }
-  }
-  // scan thru teachers
-  for (var j in db.teachers) {
-    var t = db.teachers[j];
-    if (t.firstname.toLowerCase() == firstname && t.lastname.toLowerCase() == lastname) {
-       list.push(t);
-       return list;
-    }
-  }
-  var fn = new RegExp(firstname,"i");
-  var ln = new RegExp(lastname,"i");
-  for (var i in db.students) {
-    var s = db.students[i];
-    if ( s.firstname.match(fn) && s.lastname.match(ln)) {
-       list.push(s);
-    }
-  }
-  for (var j in db.teachers) {
-    var t = db.teachers[j];
-    if ( t.firstname.match(fn) && t.lastname.match(ln)) {
-       list.push(t);
-    }
+  if (lastname == '') {
+      var any = new RegExp(firstname.trim(),"i");
+      for (var i in db.students) {
+        var s = db.students[i];
+        if (s.lastname.match(any) || s.firstname.match(any) || s.department.match(any)  || s.institution.match(any)) {
+           list.push(s);
+        }
+      }
+      for (var j in db.teachers) {
+        var t = db.teachers[j];
+        if (t.lastname.match(any) || t.firstname.match(any) || t.department.match(any)  || t.institution.match(any)) {
+           list.push(t);
+        }
+      }
+  } else {
+      firstname = firstname.trim();
+      lastname = lastname.trim();
+      console.log("fn="+firstname + " ln=" + lastname);
+      console.log("scanning studs");
+      for (var i in db.students) {
+        var s = db.students[i];
+        if (s.firstname.toLowerCase() == firstname && s.lastname.toLowerCase() == lastname) {
+           list.push(s);
+           return list;
+        }
+      }
+      // scan thru teachers
+      console.log("scanning teach");
+      for (var j in db.teachers) {
+        var t = db.teachers[j];
+        if (t.firstname.toLowerCase() == firstname && t.lastname.toLowerCase() == lastname) {
+           list.push(t);
+           return list;
+        }
+      }
+      var fn = new RegExp(firstname,"i");
+      var ln = new RegExp(lastname,"i");
+      console.log("regexp scanning studs");
+      for (var i in db.students) {
+        var s = db.students[i];
+        if ( s.firstname.match(fn) && s.lastname.match(ln)) {
+           list.push(s);
+        }
+      }
+      console.log("regexp scanning teach");
+      for (var j in db.teachers) {
+        var t = db.teachers[j];
+        if ( t.firstname.match(fn) && t.lastname.match(ln)) {
+           list.push(t);
+        }
+      }
   }
   return list;
 }
@@ -320,7 +340,7 @@ app.get('/basic', function(req, res) {
           var fn = nameparts.join(' ');
           if (fn == '') { fn = ln; ln = '' };
           var ulist = findUser(fn,ln);
-          //console.log(ulist);
+          console.log(ulist);
           db_copy.userinfo = (ulist.length == 1) ? ulist[0] : { uid:0 };
           db_copy.ulist = ulist;
           //console.log(db_copy.userinfo);
