@@ -112,7 +112,18 @@ function take_action() {
                     get_login();
                 });
             } else {
-                $j("#login").html('Elev');
+                $j("#login").html('<span id="heat"><span class="label">søk:'
+                    + '</span><input id="seeker" class="seeker" type="text" value="" size="8"></span>');
+                $j("#heat").hover(function(event) {
+                      $j("#seeker").focus();
+                    });
+                $j("#seeker").keypress(function(event) {
+                    if (event.keyCode == "13") {
+                        event.preventDefault();
+                        window.location = '/yearplan?navn='+$j("#seeker").val();
+                    }
+                });
+
             }
             break;
     }
@@ -153,10 +164,21 @@ function setup_teach() {
             +    '<li><a id="edbortfall"     href="#">Bortfall</a></li>'
             +    '<li><a id="edexcurs"       href="#">Ekskursjoner</a></li>'
             + '</ul></li>';
-        $j("#login").html('Admin');
+        //$j("#login").html('Admin');
     } else {
-        $j("#login").html('Teach');
+        //$j("#login").html('Teach');
     }
+    $j("#login").html('<span id="heat"><span class="label">søk:'
+        + '</span><input id="seeker" class="seeker" type="text" value="" size="8"></span>');
+    $j("#heat").hover(function(event) {
+          $j("#seeker").focus();
+        });
+    $j("#seeker").keypress(function(event) {
+        if (event.keyCode == "13") {
+            event.preventDefault();
+            window.location = '/yearplan?navn='+$j("#seeker").val();
+        }
+    });
     // legg inn clickhandler for alle rom
     // hent reserveringer for rommene
     $j.getJSON( "/reserv", 
@@ -337,8 +359,20 @@ $j(document).ready(function() {
          function(data) {
            database = data;
            userinfo = data.userinfo;
-            // sjekk først om bruker allerede er logga inn
-            $j.get( '/login', function(uinfo) {
+           if (userinfo.uid == 0 && data.ulist) {
+               // we have multiple matches for the user
+               // present a list of links for user to choose from
+               var s = '<h4>Velg fra lista</h4>';
+               data.userinfo = data.ulist[0];
+               s += '<div class="gradback centered sized1"><ul><li>' + $j.map(data.ulist,function(e,i) {
+                    return ('<a href="/yearplan?navn='+e.firstname 
+                      + ' ' + e.lastname+'">' + e.firstname + ' ' + e.lastname + '</a>');
+                 }).join('</li><li>') + '</li></ul></div>';
+               action = 'velg';
+               $j("#main").html(s);
+           }
+           // sjekk først om bruker allerede er logga inn
+           $j.get( '/login', function(uinfo) {
                if (uinfo && uinfo.id > 0) {
                   // if user.id > 0 then we are logged in
                   // add new and dainty things to the menu

@@ -1,6 +1,45 @@
 
 html { min-height: 100%; margin-bottom: 1px; }
 
+
+#heat {
+  display:inline;
+}
+
+
+#heat .seeker {
+  display:none;
+  width:2em;
+  margin:0;
+  padding:0;
+  background:#ffc;
+  border:none;
+}
+#heat:hover  > .seeker {
+  display:inline;
+}
+#heat:hover  > .label {
+  display:none;
+}
+
+
+td.prover, th.prover {
+  background:#800;
+  color:white;
+  font-size:1.2em;
+  border: 1px solid black;
+}
+
+.on {
+  font-size:1.4em;
+  color:white;
+}
+
+.off {
+  font-size:1.1em;
+  color:#909090;
+}
+
 .tooltip {
         display:none;
         /*
@@ -475,12 +514,6 @@ td.hdpr { background:#bFc4E3; }
 
 td {  border: 1px solid black; }
 
-td.prover, th.prover {
-  background:#800;
-  color:white;
-  font-size:1.2em;
-  border: 1px solid black;
-}
 
 
 

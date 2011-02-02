@@ -1,6 +1,8 @@
 var Client = require('mysql').Client;
+var creds  = require('./creds');
+var lev    = require('./levenshtein');
+
 var client = new Client();
-var creds = require('./creds');
 creds.setup(client);
 
 var julian = require('./julian');
@@ -82,6 +84,7 @@ var getCoursePlans = function(callback) {
           var compliance = {};  // is this a compliant teacher?
           var startdate   = 0;
           var numsections = 0;
+          var prevsum = '';  // used to calc lev distance
           for (var i=0,k= results.length; i < k; i++) {
             fag = results[i];
             summary = (fag.summary) ? fag.summary : '';
@@ -109,8 +112,11 @@ var getCoursePlans = function(callback) {
                 fliste[institution][username][shortname] = {};
             }
             fliste[institution][username][shortname][section] = summary;
-            compliance[username][shortname].sum += summary.length;
-            compliance[username][shortname].count += (summary.length > 2) ? 1 : 0 ;
+            if (lev.lev(summary,prevsum) > 1) {
+              compliance[username][shortname].sum += summary.length;
+              compliance[username][shortname].count += (summary.length > 2) ? 1 : 0 ;
+            }
+            prevsum = summary;
           }
           var allplans = { courseplans:fliste, compliance:compliance, startdate:startdate, numsections:numsections };
           callback(allplans);

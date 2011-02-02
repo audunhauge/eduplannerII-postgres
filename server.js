@@ -320,8 +320,9 @@ app.get('/basic', function(req, res) {
           var fn = nameparts.join(' ');
           if (fn == '') { fn = ln; ln = '' };
           var ulist = findUser(fn,ln);
-          console.log(ulist);
-          db_copy.userinfo = (ulist.length > 0) ? ulist.pop() : { uid:0 };
+          //console.log(ulist);
+          db_copy.userinfo = (ulist.length == 1) ? ulist[0] : { uid:0 };
+          db_copy.ulist = ulist;
           //console.log(db_copy.userinfo);
           if (db_copy.userinfo) {
             db_copy.userinfo.isadmin = (admins[db_copy.userinfo.username] && admins[db_copy.userinfo.username] == 1) ? true : false;

@@ -26,10 +26,12 @@ function edit_proveplan(fagnavn,plandata,start,stop) {
     }
     var s = '<div id="proveplan">';
     s += '<h1>Prøveplan</h1>';
-    if (isteach) {
         s += '<div class="centered sized1"><div class="button float gui" id="toot">Hele</div>'
-        + '<div  class="button float gui" id="rest">Fra idag</div></div>'
-        + '<p  id="editmsg"> Du kan redigere planen ved å klikke på en rute</p>'
+        + '<div  class="button float gui" id="rest">Fra idag</div></div>';
+    if (isteach) {
+        s += '<p  id="editmsg"> Du kan redigere planen ved å klikke på en rute</p>';
+    } else {
+        s += '<p  id="editmsg">&nbsp; </p>';
     }
     s += '<table id="testeditor" class="gradback centered sized1 border1">';
     s += '<caption>' + fagnavn + '</caption>';
@@ -70,7 +72,11 @@ function edit_proveplan(fagnavn,plandata,start,stop) {
             weekclass[w] = 'class="hd"';
           } else {
             var syn = syno[w] || [];
-            weektest[w] += syn.join('') + ((timmy[w]) ? '<span id="jdw'+tjd+'_'+w+'" class="addnew">+</span>' : '');
+            weektest[w] += syn.join('');
+            // only add new button if no other tests
+            if  (timmy[w] && isteach && !weektest[w] ) {
+               weektest[w] += '<span id="jdw'+tjd+'_'+w+'" class="addnew">+</span>' ;
+            }
           }
         }
         if (testweek) {
@@ -103,15 +109,48 @@ function edit_proveplan(fagnavn,plandata,start,stop) {
         edit_proveplan(fagnavn,plandata,uke,26);
     });
     $j("span.prove").addClass("edit");
-    $j("span.addnew").click(function() {
-        var id = $j(this).attr('id');
-        var wd = id.split('_')[1];
-        var s = '<span id="new'+iddx+'" class="prove edit">'
-           + tidy[wd].join(',')
-           + '</span>';
-        $j(this).parent().html(s);
-        iddx++;
-    });
+    if (isteach) {
+      $j("span.addnew").click(function() {
+          var id = $j(this).attr('id');
+          var wd = id.split('_')[1];
+          var s = test_time(tidy,wd);
+          $j(this).parent().html(s);
+          $j("span.on").click(function() {
+               $j(this).html('');
+            });
+
+          iddx++;
+      });
+    }
+}
+
+function remove(id) {
+
+}
+
+function test_time(tidy,wd) {
+  // given a timetable and weekday
+  // returns a test-chooser for that day
+  // the timetable slots are ON the others are OFF
+  // CHANGES global iddx
+  var j=0;
+  var unplanned = { 1:1,2:1,3:1,4:1,5:1,6:1,7:1,8:1,9:1}
+  for (var ww in tidy[wd]) {
+    delete unplanned[+tidy[wd][ww]];
+    j++;
+  }
+  var un = [];
+  for (var ww in unplanned) {
+     un.push(+ww);
+  }
+  var s = '<span id="new'+iddx+'" class="prove">'
+     + '<span class="on">'
+     + tidy[wd].join('</span>,<span class="on">')
+     + '</span><span class="off">&nbsp;'
+     + un.join(',')
+     + '</span></span>';
+  return s;
+
 }
 
 
