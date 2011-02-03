@@ -21,6 +21,7 @@ function edit_proveplan(fagnavn,plandata,start,stop) {
         timmy[tty[0]] = {};
         tidy [tty[0]] = [];
       }
+      if (timmy[ tty[0] ][ tty[1] ]) continue;
       timmy[ tty[0] ][ tty[1] ] = 1;
       tidy[ tty[0] ].push(1+tty[1]);
     }
@@ -29,7 +30,7 @@ function edit_proveplan(fagnavn,plandata,start,stop) {
         s += '<div class="centered sized1"><div class="button float gui" id="toot">Hele</div>'
         + '<div  class="button float gui" id="rest">Fra idag</div></div>';
     if (isteach) {
-        s += '<p  id="editmsg"> Du kan redigere planen ved å klikke på en rute</p>';
+        s += '<p  id="editmsg"> Legg til ny prøve med grønn knapper, klikk på eksisterende for å endre.</p>';
     } else {
         s += '<p  id="editmsg">&nbsp; </p>';
     }
@@ -82,7 +83,7 @@ function edit_proveplan(fagnavn,plandata,start,stop) {
         if (testweek) {
           for (var t in testweek) {
             var tw = testweek[t];
-            weektest[tw.day] = '<span class="prove">prøve ' + tw.slots + ' time</span>';
+            weektest[tw.day] = '<span active="'+tw.slots+'" class="prove">prøve ' + tw.slots + ' time</span>';
           }
         }
         klass = (isteach) ? ' class="edit_area"' : '';
@@ -108,47 +109,75 @@ function edit_proveplan(fagnavn,plandata,start,stop) {
     $j("#rest").click(function() {
         edit_proveplan(fagnavn,plandata,uke,26);
     });
-    $j("span.prove").addClass("edit");
+    //$j("span.prove").addClass("edit");
     if (isteach) {
+      $j("#testeditor").delegate("span.cancel", "click", function(){
+          edit_proveplan(fagnavn,plandata,start,stop)
+         });
+      $j("#testeditor").delegate("span.ok", "click", function(){
+          var par = $j(this).parent();
+          var id = par.attr("id");
+          var actatr = par.attr("active");
+          var active = actatr.split(',');
+          alert("Saving data "+id+" active="+active);
+          edit_proveplan(fagnavn,plandata,start,stop)
+         });
+      $j("#testeditor").delegate("span.prove", "click", function(){
+               var par = $j(this);
+               var id = par.attr("id");
+               var actatr = par.attr("active");
+               var active = actatr.split(',');
+               var s = generate(id,active);
+               par.parent().html(s);
+                });
+      $j("#testeditor").delegate("span.on", "click", function(){
+               var remove = $j(this).html();
+               var par = $j(this).parent();
+               var id = par.attr("id");
+               var active = $j.grep(par.attr("active").split(','),function(e,i) {
+                      return (+e != +remove);
+                 });
+               var s = generate(id,active);
+               par.parent().html(s);
+                });
+      $j("#testeditor").delegate("span.off", "click", function(){
+               var add = $j(this).html();
+               var par = $j(this).parent();
+               var id = par.attr("id");
+               var actatr = par.attr("active");
+               var active = actatr.split(',');
+               active.push(add);
+               active.sort(function (a,b) { return a-b; });
+               var s = generate(id,active);
+               par.parent().html(s);
+                });
       $j("span.addnew").click(function() {
+          $j("#editmsg").html("Prøver med gul bord er IKKE lagra");
           var id = $j(this).attr('id');
           var wd = id.split('_')[1];
-          var s = test_time(tidy,wd);
+          var s = generate(id,tidy[wd]);
           $j(this).parent().html(s);
-          $j("span.on").click(function() {
-               $j(this).html('');
-            });
-
           iddx++;
       });
     }
 }
 
-function remove(id) {
-
-}
-
-function test_time(tidy,wd) {
-  // given a timetable and weekday
-  // returns a test-chooser for that day
-  // the timetable slots are ON the others are OFF
-  // CHANGES global iddx
+function generate(id,active) {
   var j=0;
   var unplanned = { 1:1,2:1,3:1,4:1,5:1,6:1,7:1,8:1,9:1}
-  for (var ww in tidy[wd]) {
-    delete unplanned[+tidy[wd][ww]];
-    j++;
+  for (var ac in active) {
+    delete unplanned[ +active[ac] ];
   }
   var un = [];
   for (var ww in unplanned) {
      un.push(+ww);
   }
-  var s = '<span id="new'+iddx+'" class="prove">'
+  var s = '<span active="'+active.join(',')+'" id="new'+id+'" class="nyprove">'
      + '<span class="on">'
-     + tidy[wd].join('</span>,<span class="on">')
-     + '</span><span class="off">&nbsp;'
-     + un.join(',')
-     + '</span></span>';
+     + active.join('</span>,<span class="on">')
+     + '</span>&nbsp;<span class="off">'
+     + un.join('</span>,<span class="off">')
+     + '</span>&nbsp;<span class="ok">Y</span>&nbsp;<span class="cancel">N</span></span>';
   return s;
 
 }

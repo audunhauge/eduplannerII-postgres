@@ -1,6 +1,23 @@
 
 html { min-height: 100%; margin-bottom: 1px; }
 
+span.cancel, span.ok{
+  color:white;
+  text-align:center;
+  padding:2px;
+  margin:0px;
+  border:solid green 1px;
+  -webkit-border-radius: 2px;
+  -moz-border-radius: 2px;
+  background: -moz-linear-gradient(left,#58A60A,#224A20);
+  background: -webkit-gradient(linear, 0% 0%, 100% 0%, from(#58A60A), to(#224A20));
+  width:5em;
+}
+span.cancel {
+  background: -moz-linear-gradient(left,#2826AA,#224A20);
+  background: -webkit-gradient(linear, 0% 0%, 100% 0%, from(#2826AA), to(#224A20));
+}
+
 
 #heat {
   display:inline;
@@ -36,7 +53,7 @@ td.prover, th.prover {
 }
 
 .off {
-  font-size:1.1em;
+  font-size:1.4em;
   color:#909090;
 }
 
@@ -581,10 +598,10 @@ span.heldag {
 }
 
 
-span.prove {
+span.nyprove, span.prove {
   display:block;
   white-space:nowrap;
-  width:12em;
+  width:14em;
   color:white;
   background:#700;
   text-align:center;
@@ -597,3 +614,11 @@ span.prove {
   -webkit-box-shadow: 3px 3px 2px rgba(0, 0, 0, .4);
   -moz-box-shadow: 3px 3px 2px rgba(0, 0, 0, .4);
 }
+
+
+span.nyprove {
+  border:solid #ffff00 3px;
+}
+
+
+
