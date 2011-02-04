@@ -255,6 +255,19 @@ app.post('/save_totfagplan', function(req, res) {
 
 });
 
+app.post('/save_test', function(req, res) {
+    // user has changed/created a test
+    if (req.session.user && req.session.user.department == 'Undervisning') {
+      console.log("User saved som data");
+      database.saveTest(req.body,function(msg) {
+         res.send(msg);
+         delete addons.tests;
+      });
+    } else {
+      res.send({ok:false, msg:"bad user"});
+    }
+});
+
 app.post('/save_fagplan', function(req, res) {
     // user has new data to push into a plan
     if (req.session.user && req.session.user.department == 'Undervisning') {
