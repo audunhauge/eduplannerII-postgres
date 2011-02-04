@@ -179,6 +179,64 @@ var updateTotCoursePlan = function(query,callback) {
       });
 }
 
+var saveTest = function(user,query,callback) {
+  // update/insert test
+
+  var jd  = query.idd.substring(3).split('_')[0];
+  var day = query.idd.substring(3).split('_')[1];
+  var julday = (+jd) + (+day);
+  var courseid = db.courseteach[query.coursename].id;
+  var tlist = (query.timer) ? query.timer : '';
+  console.log(tlist,julday,courseid,user);
+  if (tlist == '') client.query(
+          'delete from mdl_bookings_calendar'
+      + ' where courseid = ? and userid = ? and eventtype="prove" and julday= ? ' , [ courseid,  user.id, julday ],
+          function (err, results, fields) {
+              if (err) {
+                  callback( { ok:false, msg:err.message } );
+                  return;
+              }
+              callback( {ok:true, msg:"deleted"} );
+          });
+  else client.query(
+        'select * from mdl_bookings_calendar '
+      + ' where courseid = ? and userid = ? and eventtype="prove" and julday= ? ' , [ courseid,  user.id, julday ],
+      function (err, results, fields) {
+          if (err) {
+              callback( { ok:false, msg:err.message } );
+              return;
+          }
+          var test = results.pop();
+          if (test) {
+              console.log(test);
+              if (test.value != tlist) {
+              client.query(
+                  'update mdl_bookings_calendar set value=? where id=?',[ tlist, test.id ],
+                  function (err, results, fields) {
+                      if (err) {
+                          callback( { ok:false, msg:err.message } );
+                          return;
+                      }
+                      callback( {ok:true, msg:"updated"} );
+                  });
+              } else {
+                callback( {ok:true, msg:"unchanged"} );
+              }
+          } else {
+            console.log("inserting new");
+            client.query(
+                'insert into mdl_bookings_calendar (courseid,userid,julday,eventtype,value) values (?,?,?,"prove",?)',[courseid, user.id, julday,tlist],
+                function (err, results, fields) {
+                    if (err) {
+                        callback( { ok:false, msg:err.message } );
+                        return;
+                    }
+                    callback( {ok:true, msg:"inserted"} );
+                });
+          }
+      });
+}
+
 var updateCoursePlan = function(query,callback) {
   // update courseplan for given section
   client.query(
@@ -508,3 +566,4 @@ module.exports.getTimetables = getTimetables;
 module.exports.getCoursePlans = getCoursePlans;
 module.exports.updateCoursePlan  = updateCoursePlan;
 module.exports.updateTotCoursePlan = updateTotCoursePlan ;
+module.exports.saveTest = saveTest;

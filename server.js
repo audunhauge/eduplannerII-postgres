@@ -233,13 +233,6 @@ app.get('/login', function(req, res) {
   });
 });
 
-app.get('/alltests', function(req, res) {
-    // always query the dbase to get new tests
-    // - TODO change to same logic as for allplans
-        database.getAllTests(function(prover) {
-            res.send(prover);
-          });
-});
 
 app.post('/save_totfagplan', function(req, res) {
     // several sections may be changed
@@ -257,15 +250,18 @@ app.post('/save_totfagplan', function(req, res) {
 
 app.post('/save_test', function(req, res) {
     // user has changed/created a test
+    var justnow = new Date();
     if (req.session.user && req.session.user.department == 'Undervisning') {
-      console.log("User saved som data");
-      database.saveTest(req.body,function(msg) {
+      database.saveTest(req.session.user,req.body,function(msg) {
+         console.log("returned here in app.post");
+         console.log(msg);
          res.send(msg);
          delete addons.tests;
       });
     } else {
       res.send({ok:false, msg:"bad user"});
     }
+
 });
 
 app.post('/save_fagplan', function(req, res) {
@@ -280,6 +276,22 @@ app.post('/save_fagplan', function(req, res) {
       res.send({ok:false, msg:"bad user"});
     }
 
+});
+
+app.get('/alltests', function(req, res) {
+    // get new tests
+    var justnow = new Date();
+    if (addons.tests && ((justnow.getTime() - addons.update.tests.getTime())/60000 < 600  )  ) {
+      res.send(addons.tests);
+      var diff = (justnow.getTime() - addons.update.plans.getTime())/60000;
+      console.log("resending tests - diff = " + diff);
+    } else {
+        database.getAllTests(function(prover) {
+            addons.tests = prover;
+            addons.update.tests = new Date();
+            res.send(prover);
+          });
+    }
 });
 
 app.get('/allplans', function(req, res) {

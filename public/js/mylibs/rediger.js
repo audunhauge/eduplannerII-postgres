@@ -1,10 +1,11 @@
 // editing functions
 
 
+var minVisning = "#toot";  // valgt visning - slik at vi kan tegne på nytt
+var testjd;    // store the current julday for a new test
 function edit_proveplan(fagnavn,plandata,start,stop) {
     // rediger prøveplanen for et fag
     minfagplan = fagnavn;
-    iddx = 0;
     var jd = database.firstweek;
     var tests = coursetests(minfagplan);
     var tjd;
@@ -91,7 +92,7 @@ function edit_proveplan(fagnavn,plandata,start,stop) {
         klass = (isteach) ? ' class="edit_area"' : '';
         idd = 'wd' + section + '_';
         s += '<tr id="section'+section+'">';
-        s += '<th><div class="weeknum">'+julian.week(tjd)
+        s += '<th><div class="weeknum">'+julian.week(tjd)+' '+tjd
              +'</div><br class="clear" /><div class="date">' + formatweekdate(tjd) + "</div></th>";
         s += '<td class="synopsis">'+info[+section].tiny+'</td>';
         for (var w=0; w<5; w++) {
@@ -110,29 +111,40 @@ function edit_proveplan(fagnavn,plandata,start,stop) {
     $j(".totip").tooltip();
     var uke = database.week;
     $j("#toot").click(function() {
+        minVisning = "#toot";
         edit_proveplan(fagnavn,plandata,33,26);
     });
     $j("#rest").click(function() {
+        minVisning = "#rest";
         edit_proveplan(fagnavn,plandata,uke,26);
     });
     if (isteach) {
 
-      $j("a.addnew,a.prove").click(function() {
+      var buttons = $j(".close").click(function (event) { 
+          var timer = $j.map($j("table.testtime tr.trac th"),function(e,i) {
+                return e.innerHTML.split(' ')[0];
+             });
+          triggers.eq(1).overlay().close();
+          if (buttons.index(this) == 0) 
+             $j.post( "/save_test", { coursename:fagnavn,"timer":timer.join(','), "idd":testjd },
+                function(data) {
+                $j.getJSON( "/alltests", 
+                     function(data) {
+                        alleprover = data;
+                        $j(minVisning).click();
+                        $j("#editmsg").html(data.msg);
+                     });
+                });
+             });
+      var triggers = $j("a.addnew,a.prove").click(function() {
           var id = $j(this).attr('id');
           var wd = id.split('_')[1];
           var par = $j(this);
-          var id = par.attr("id");
+          testjd = par.attr("id");
           var actatr = par.attr("active");
           var active = (actatr) ? actatr.split(',') : tidy[wd];
           var s = generate(id,wd,active,tidy[wd]);
           $j("#proveform").html(s);
-          $j("#prolagre").click(function () { 
-               var timer = $j.map($j("table.testtime tr.trac th"),function(e,i) {
-                    return e.innerHTML.split(' ')[0];
-                 });
-             });
-          $j("#proavbryt").click(function () { 
-             });
           $j("span.velgprove").click(function(){
              $j(this).parent().parent().toggleClass("trac");
            });
@@ -147,6 +159,13 @@ function edit_proveplan(fagnavn,plandata,start,stop) {
 }
 
 function generate(id,wd,active,tty) {
+  var uid = database.userinfo.id || 0;
+  var timetab = timetables.teach[uid];
+  var slots = ['','','','','','','','','',''];
+  for (var i = 0; i<timetab.length; i++) {
+      var elm = timetab[i];
+      if (+elm[0] == +wd) slots[+elm[1]+1] = elm[2];
+  }
   var unplanned = { 1:1,2:1,3:1,4:1,5:1,6:1,7:1,8:1,9:1}
   for (var ac in active) {
     delete unplanned[ +active[ac] ];
@@ -158,7 +177,7 @@ function generate(id,wd,active,tty) {
   var s = '<div class="centered" id="testtime" ><table class="testtime" >';
   for (var i=1; i<10; i++) {
     var acc = ($j.inArray(""+i,active) >= 0);
-    s += '<tr'+( acc ? ' class="trac"' : '') +'"><th>' + i + ' time</th><td><span class="velgprove"> 3inf5-haau</span></td></tr>';
+    s += '<tr'+( acc ? ' class="trac"' : '') +'"><th>' + i + ' time</th><td><span class="velgprove">'+slots[i]+'</span></td></tr>';
   }
   s    += '</table></div>';
   return s;
@@ -168,7 +187,6 @@ function generate(id,wd,active,tty) {
 
 var minfagplan;            // remember the name of current fagplan - used for saving
 var changedPlans = {};     // hash of changed sections in a fagplan
-var minVisning = "#rest";  // valgt visning - slik at vi kan tegne på nytt
 var mycopy;                //  {}  a copy of a plan
 var activeplan;            //  plandata for chosen plan
 
