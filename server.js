@@ -178,7 +178,7 @@ app.configure(function() {
         app.use(express.cookieDecoder());
         app.use(express.session({store: MemStore( {
             reapInterval: 60000 * 10
-          })}));
+          }),secret:"jalla"}));
 	app.use(assets);
 	app.use(connect.staticProvider(__dirname + '/public'));
 });
