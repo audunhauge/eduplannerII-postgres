@@ -1,6 +1,51 @@
 
 html { min-height: 100%; margin-bottom: 1px; }
 
+.simple_overlay {
+        display:none;
+        z-index:10000;
+        background-color:#E0E9FC;
+        background: -moz-linear-gradient(top,#AFC4E3,#E0E9FC 50%,white 100%);
+        background: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#AFC4E3), to(#FFFFFF), color-stop(.4,#E0E9FC));
+        width:375px;    
+        padding-bottom:12px;
+        min-height:200px;
+        border:1px solid #666;
+        -moz-box-shadow:5px 5px 9px #000;
+        -webkit-box-shadow: 5px 5px 9px #000;      
+}
+
+/*
+.simple_overlay .close {
+        background-image:url(../img/close.png);
+        position:absolute;
+        right:-15px;
+        top:-15px;
+        cursor:pointer;
+        height:35px;
+        width:35px;
+}
+#prolagre,#proavbryt {
+        position:static;
+}
+*/
+
+
+#testtime {
+   width:16em;
+   padding-bottom:38px;
+}
+
+table.testtime {
+  border-collapse:collapse;
+  border:solid black 1px;
+  width:15em;
+}
+
+table.testtime tr.trac  td {
+  background:green;
+}
+
 span.cancel, span.ok{
   color:white;
   text-align:center;
@@ -270,11 +315,11 @@ div.posbut {
 
 .cat10 {  border:solid yellow 3px!important;  }
 
-span.addnew:hover {
+a.addnew:hover {
     opacity:1;
 }
 
-span.addnew {
+a.addnew {
   display:block;
   opacity:0.2;
   width:2em;
@@ -598,7 +643,7 @@ span.heldag {
 }
 
 
-span.nyprove, span.prove {
+a.prove, span.prove {
   display:block;
   white-space:nowrap;
   width:14em;
@@ -616,8 +661,10 @@ span.nyprove, span.prove {
 }
 
 
-span.nyprove {
-  border:solid #ffff00 3px;
+span.unsaved {
+  border:solid #123 3px;
+  background:#554;
+  color:white;
 }
 
 

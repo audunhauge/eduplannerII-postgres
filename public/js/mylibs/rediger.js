@@ -1,4 +1,6 @@
 // editing functions
+
+
 function edit_proveplan(fagnavn,plandata,start,stop) {
     // rediger prøveplanen for et fag
     minfagplan = fagnavn;
@@ -23,7 +25,7 @@ function edit_proveplan(fagnavn,plandata,start,stop) {
       }
       if (timmy[ tty[0] ][ tty[1] ]) continue;
       timmy[ tty[0] ][ tty[1] ] = 1;
-      tidy[ tty[0] ].push(1+tty[1]);
+      tidy[ tty[0] ].push(""+(1+tty[1]));
     }
     var s = '<div id="proveplan">';
     s += '<h1>Prøveplan</h1>';
@@ -76,14 +78,14 @@ function edit_proveplan(fagnavn,plandata,start,stop) {
             weektest[w] += syn.join('');
             // only add new button if no other tests
             if  (timmy[w] && isteach && !weektest[w] ) {
-               weektest[w] += '<span id="jdw'+tjd+'_'+w+'" class="addnew">+</span>' ;
+               weektest[w] += '<a active="" rel="#testdialog" id="jdw'+tjd+'_'+w+'" class="addnew">+</a>' ;
             }
           }
         }
         if (testweek) {
           for (var t in testweek) {
             var tw = testweek[t];
-            weektest[tw.day] = '<span active="'+tw.slots+'" class="prove">prøve ' + tw.slots + ' time</span>';
+            weektest[tw.day] = '<a rel="#testdialog" id="jdw'+tjd+'_'+tw.day+'" active="'+tw.slots+'" class="prove">prøve ' + tw.slots + ' time</a>';
           }
         }
         klass = (isteach) ? ' class="edit_area"' : '';
@@ -100,6 +102,10 @@ function edit_proveplan(fagnavn,plandata,start,stop) {
     }
     s += "</table>";
     s += "</div>";
+    s += '<div class="simple_overlay" id="testdialog">'
+        + '<h1>Registrer prøve</h1>'
+        + '<div id="proveform"></div><div id="prolagre" class="close button gui float">Lagre</div> <div id="proavbryt" class="close button gui float">Avbryt</div>'
+        + '</div>';
     $j("#main").html(s);
     $j(".totip").tooltip();
     var uke = database.week;
@@ -109,61 +115,38 @@ function edit_proveplan(fagnavn,plandata,start,stop) {
     $j("#rest").click(function() {
         edit_proveplan(fagnavn,plandata,uke,26);
     });
-    //$j("span.prove").addClass("edit");
     if (isteach) {
-      $j("#testeditor").delegate("span.cancel", "click", function(){
-          edit_proveplan(fagnavn,plandata,start,stop)
-         });
-      $j("#testeditor").delegate("span.ok", "click", function(){
-          var par = $j(this).parent();
-          var id = par.attr("id");
-          var actatr = par.attr("active");
-          var active = actatr.split(',');
-          alert("Saving data "+id+" active="+active);
-          edit_proveplan(fagnavn,plandata,start,stop)
-         });
-      $j("#testeditor").delegate("span.prove", "click", function(){
-               var par = $j(this);
-               var id = par.attr("id");
-               var actatr = par.attr("active");
-               var active = actatr.split(',');
-               var s = generate(id,active);
-               par.parent().html(s);
-                });
-      $j("#testeditor").delegate("span.on", "click", function(){
-               var remove = $j(this).html();
-               var par = $j(this).parent();
-               var id = par.attr("id");
-               var active = $j.grep(par.attr("active").split(','),function(e,i) {
-                      return (+e != +remove);
-                 });
-               var s = generate(id,active);
-               par.parent().html(s);
-                });
-      $j("#testeditor").delegate("span.off", "click", function(){
-               var add = $j(this).html();
-               var par = $j(this).parent();
-               var id = par.attr("id");
-               var actatr = par.attr("active");
-               var active = actatr.split(',');
-               active.push(add);
-               active.sort(function (a,b) { return a-b; });
-               var s = generate(id,active);
-               par.parent().html(s);
-                });
-      $j("span.addnew").click(function() {
-          $j("#editmsg").html("Prøver med gul bord er IKKE lagra");
+
+      $j("a.addnew,a.prove").click(function() {
           var id = $j(this).attr('id');
           var wd = id.split('_')[1];
-          var s = generate(id,tidy[wd]);
-          $j(this).parent().html(s);
-          iddx++;
-      });
+          var par = $j(this);
+          var id = par.attr("id");
+          var actatr = par.attr("active");
+          var active = (actatr) ? actatr.split(',') : tidy[wd];
+          var s = generate(id,wd,active,tidy[wd]);
+          $j("#proveform").html(s);
+          $j("#prolagre").click(function () { 
+               var timer = $j.map($j("table.testtime tr.trac th"),function(e,i) {
+                    return e.innerHTML.split(' ')[0];
+                 });
+             });
+          $j("#proavbryt").click(function () { 
+             });
+          $j("span.velgprove").click(function(){
+             $j(this).parent().parent().toggleClass("trac");
+           });
+      }).overlay({ 
+          mask: {
+                  color: '#ebecff',
+                  loadSpeed: 200,
+                  opacity: 0.8
+          },
+          closeOnClick: false });
     }
 }
 
-function generate(id,active) {
-  var j=0;
+function generate(id,wd,active,tty) {
   var unplanned = { 1:1,2:1,3:1,4:1,5:1,6:1,7:1,8:1,9:1}
   for (var ac in active) {
     delete unplanned[ +active[ac] ];
@@ -172,12 +155,12 @@ function generate(id,active) {
   for (var ww in unplanned) {
      un.push(+ww);
   }
-  var s = '<span active="'+active.join(',')+'" id="new'+id+'" class="nyprove">'
-     + '<span class="on">'
-     + active.join('</span>,<span class="on">')
-     + '</span>&nbsp;<span class="off">'
-     + un.join('</span>,<span class="off">')
-     + '</span>&nbsp;<span class="ok">Y</span>&nbsp;<span class="cancel">N</span></span>';
+  var s = '<div class="centered" id="testtime" ><table class="testtime" >';
+  for (var i=1; i<10; i++) {
+    var acc = ($j.inArray(""+i,active) >= 0);
+    s += '<tr'+( acc ? ' class="trac"' : '') +'"><th>' + i + ' time</th><td><span class="velgprove"> 3inf5-haau</span></td></tr>';
+  }
+  s    += '</table></div>';
   return s;
 
 }
