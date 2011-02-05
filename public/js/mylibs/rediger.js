@@ -3,6 +3,7 @@
 
 var minVisning = "#toot";  // valgt visning - slik at vi kan tegne på nytt
 var testjd;    // store the current julday for a new test
+var undoid;    // store the id of changed value (so we can update html)
 function edit_proveplan(fagnavn,plandata,start,stop) {
     // rediger prøveplanen for et fag
     minfagplan = fagnavn;
@@ -92,7 +93,7 @@ function edit_proveplan(fagnavn,plandata,start,stop) {
         klass = (isteach) ? ' class="edit_area"' : '';
         idd = 'wd' + section + '_';
         s += '<tr id="section'+section+'">';
-        s += '<th><div class="weeknum">'+julian.week(tjd)+' '+tjd
+        s += '<th><div title="'+tjd+'" class="weeknum">'+julian.week(tjd)
              +'</div><br class="clear" /><div class="date">' + formatweekdate(tjd) + "</div></th>";
         s += '<td class="synopsis">'+info[+section].tiny+'</td>';
         for (var w=0; w<5; w++) {
@@ -126,6 +127,7 @@ function edit_proveplan(fagnavn,plandata,start,stop) {
              });
           triggers.eq(1).overlay().close();
           if (buttons.index(this) == 0) 
+             $j("#editmsg").html("Oppdaterer database .... vent ...");
              $j.post( "/save_test", { coursename:fagnavn,"timer":timer.join(','), "idd":testjd },
                 function(data) {
                 $j.getJSON( "/alltests", 

@@ -315,6 +315,7 @@ function updateFagplanMenu() {
     var minefag = [];
     if (timetables.teach[uid]) {
       // we have a teach 
+      isteach = true;
       minefag = database.teachcourse[uid];
     } else {
       var usergr = memgr[uid] || null;
@@ -331,17 +332,23 @@ function updateFagplanMenu() {
       } 
     }
     var s = '<a id="mineplaner"   href="#">Mine fag</a><ul>';
-    s += '<li><a href="#">Planer</a><ul>';
+    if (isteach) {
+      s += '<li><a href="#">Planer</a><ul>';
+    }
     for (var i in minefag) {
         var fag = minefag[i];
         s += '<li><a id="'+fag+'" href="#">' + fag + '</a></li>';
     }
-    s += '</ul></li><li><a href="#">Prøver</a><ul>';
-    for (var i in minefag) {
-        var fag = minefag[i];
-        s += '<li><a id="prove_'+fag+'" href="#">' + fag + '</a></li>';
+    if (isteach) {
+        s += '</ul></li>';
+        s += '<li><a href="#">Prøver</a><ul>';
+        for (var i in minefag) {
+            var fag = minefag[i];
+            s += '<li><a id="prove_'+fag+'" href="#">' + fag + '</a></li>';
+        }
+        s += '</ul></li>';
     }
-    s += '</ul></li></ul>';
+    s += '</ul>';
     $j("#teachmenu").html(s);
     //$j("#mineplaner").after('<li><a href="">Prøveplaner</a></li>');
     for (var i in minefag) {
