@@ -46,6 +46,7 @@ var courseplans = {};   // courseplans[course]
 var siste10 = {}        // husk 10 siste timeplaner
 
 var alleprover;         // lagrer data om alle prøver for alle elever
+var blocks;             // slots for entering tests for courses that belong to a block
 
 var fullname;           // lagrer fagnavn delen av gruppenavnet - fullname["3403"] = "3inf5"
 var category;           // 3inf5:4, 2SCD5:10  - kategori for faget 2=vg1,3=vg2,4=vg3,10=mdd
@@ -111,9 +112,9 @@ function take_action() {
                     event.preventDefault();
                     get_login();
                 });
-            } else {
-                $j("#login").html('<span id="heat"><span class="label">søk:'
-                    + '</span><input id="seeker" class="seeker" type="text" value="" size="8"></span>');
+            } 
+                $j("#seek").html('<span id="heat"><span class="label">søk:'
+                    + '</span><input id="seeker" class="seeker" type="text" value="" size="18"></span>');
                 $j("#heat").hover(function(event) {
                       $j("#seeker").focus();
                     });
@@ -124,7 +125,6 @@ function take_action() {
                     }
                 });
 
-            }
             break;
     }
 }
@@ -168,7 +168,7 @@ function setup_teach() {
     } else {
         //$j("#login").html('Teach');
     }
-    $j("#login").html('<span id="heat"><span class="label">søk:'
+    $j("#seek").html('<span id="heat"><span class="label">søk:'
         + '</span><input id="seeker" class="seeker" type="text" value="" size="8"></span>');
     $j("#heat").hover(function(event) {
           $j("#seeker").focus();
@@ -258,7 +258,7 @@ function get_login() {
                 isteach = true;
                 isadmin = (userinfo.isadmin == 'y');
                 setup_teach();
-                $j("#login").unbind();
+                //$j("#login").unbind();
                 show_thisweek();
               }
             }
@@ -280,6 +280,9 @@ function getusers() {
     students = database.students;
     studentIds = database.studentIds;
     getcourseplans();
+    $j.getJSON( 'blocks',function (newblocks) {
+        blocks = newblocks;
+    });
 }
 
 function getcourseplans() {
@@ -373,7 +376,7 @@ $j(document).ready(function() {
            }
            // sjekk først om bruker allerede er logga inn
            $j.get( '/login', function(uinfo) {
-               if (uinfo && uinfo.id > 0) {
+               if (uinfo && uinfo.id > 0 && uinfo.id == userinfo.id) {
                   // if user.id > 0 then we are logged in
                   // add new and dainty things to the menu
                   // same as isteach
@@ -384,9 +387,6 @@ $j(document).ready(function() {
                     userinfo.fullname = fullname;
                     isteach = true;
                     isadmin = (userinfo.isadmin == 'y');
-                    //setup_teach();
-                    $j("#login").unbind();
-                    //show_thisweek();
                     take_action();
                   }
                } else {
@@ -449,6 +449,11 @@ $j(document).ready(function() {
         event.preventDefault();
         valg = 'elev';
         vis_elevtimeplan();
+    });
+    $j("#logout").click(function(event) {
+        event.preventDefault();
+        $j.get( "/logout"); 
+        window.location= "/yearplan";
     });
     $j("#timeplanelev").click(function(event) {
         event.preventDefault();

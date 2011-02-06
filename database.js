@@ -276,6 +276,32 @@ var updateCoursePlan = function(query,callback) {
       });
 }
 
+var getBlocks = function(callback) {
+  // returns a hash of all blocks (slots for tests for all courses in a block)
+  // the first to digits in groupname gives the block
+  // this should be changed to a property of a course
+  client.query(
+      'select id,julday,name,value from mdl_bookings_calendar where value != " " and eventtype = "blokk" ',
+      function (err, results, fields) {
+          if (err) {
+              console.log("ERROR: " + err.message);
+              throw err;
+          }
+          var blocks = {};
+          for (var i=0,k= results.length; i < k; i++) {
+              var res = results[i];
+              var julday = res.julday;
+              delete res.julday;   // save some space
+              if (!blocks[julday]) {
+                blocks[julday] = [];
+              }
+              blocks[julday].push(res);
+          }
+          callback(blocks);
+          console.log(blocks);
+      });
+}
+
 var getReservations = function(callback) {
   // returns a hash of all reservations 
   client.query(
@@ -567,3 +593,4 @@ module.exports.getCoursePlans = getCoursePlans;
 module.exports.updateCoursePlan  = updateCoursePlan;
 module.exports.updateTotCoursePlan = updateTotCoursePlan ;
 module.exports.saveTest = saveTest;
+module.exports.getBlocks = getBlocks;

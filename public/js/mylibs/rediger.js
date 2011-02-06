@@ -7,6 +7,7 @@ var undoid;    // store the id of changed value (so we can update html)
 function edit_proveplan(fagnavn,plandata,start,stop) {
     // rediger prøveplanen for et fag
     minfagplan = fagnavn;
+    var thisblock = fagnavn.split('_')[1].substring(0,2);
     var jd = database.firstweek;
     var tests = coursetests(minfagplan);
     var tjd;
@@ -69,6 +70,7 @@ function edit_proveplan(fagnavn,plandata,start,stop) {
         var syno = info[+section].links;
         var heldg = info[+section].heldag;
         for (var w=0; w<5; w++) {
+          var blo = blocks[tjd+w];
           if (database.freedays[tjd+w]) {
             weektest[w] = database.freedays[tjd+w];
             weekclass[w] = 'class="fridag"';
@@ -81,6 +83,14 @@ function edit_proveplan(fagnavn,plandata,start,stop) {
             // only add new button if no other tests
             if  (timmy[w] && isteach && !weektest[w] ) {
                weektest[w] += '<a active="" rel="#testdialog" id="jdw'+tjd+'_'+w+'" class="addnew">+</a>' ;
+            }
+          }
+          if (blo) {
+            for (b in blo) {
+               if (blo[b].name == thisblock) {
+                 weekclass[w] = 'class="block"';
+                 break;
+               }
             }
           }
         }
@@ -126,7 +136,7 @@ function edit_proveplan(fagnavn,plandata,start,stop) {
                 return e.innerHTML.split(' ')[0];
              });
           triggers.eq(1).overlay().close();
-          if (buttons.index(this) == 0) 
+          if (buttons.index(this) == 0) { 
              $j("#editmsg").html("Oppdaterer database .... vent ...");
              $j.post( "/save_test", { coursename:fagnavn,"timer":timer.join(','), "idd":testjd },
                 function(data) {
@@ -137,7 +147,8 @@ function edit_proveplan(fagnavn,plandata,start,stop) {
                         $j("#editmsg").html(data.msg);
                      });
                 });
-             });
+          }
+      });
       var triggers = $j("a.addnew,a.prove").click(function() {
           var id = $j(this).attr('id');
           var wd = id.split('_')[1];

@@ -219,8 +219,15 @@ app.get('/', function(req, res) {
 
 var users = require('./users');
 
+app.get('/logout', function(req, res) {
+  delete req.session.user;
+  delete req.userinfo;
+  db_copy.userinfo = { uid:0 };
+  res.redirect('/yearplan');
+});
+
 app.get('/login', function(req, res) {
-  if (req.session.user) {
+  if (!req.query.username && req.session.user) {
       res.send(req.session.user);
       return;
   }
@@ -315,9 +322,21 @@ app.get('/allplans', function(req, res) {
 });
 
 app.get('/reserv', function(req, res) {
-    // always query the dbase to get new tests
+    // get all reservations
+    // they are expected to change often
+    // only get reservations that are ! in the past
         database.getReservations(function(data) {
             res.send(data);
+          });
+});
+
+app.get('/blocks', function(req, res) {
+    // blocks dont change much - reuse value
+    if (addons.blocks) {
+      res.send(addons.blocks);
+    } else database.getBlocks(function(blocks) {
+            addons.blocks = blocks;
+            res.send(addons.blocks);
           });
 });
 

@@ -71,7 +71,7 @@ span.cancel {
 
 #heat .seeker {
   display:none;
-  width:2em;
+  width:8em;
   margin:0;
   padding:0;
   background:#ffc;
@@ -338,6 +338,10 @@ a.addnew {
   -moz-box-shadow: 3px 3px 2px rgba(0, 0, 0, .4);
 }
 
+td.block a.addnew { 
+    opacity:1;
+}
+
 span.pro {
   display:block;
   width:10em;
@@ -573,6 +577,11 @@ td.fridag { background:#a0d0a0; }
 td.hd { background:#AFC4E3; }
 td.pr { background:#cFe4ff; }
 td.hdpr { background:#bFc4E3; }
+td.block { 
+   background:#3030cc; 
+   background: -moz-linear-gradient(top,#cc9090,#d0d0ff 100%);
+   background: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#cc9090), to(#d0d0ff))
+}
 
 td {  border: 1px solid black; }
 
