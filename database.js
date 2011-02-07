@@ -179,6 +179,60 @@ var updateTotCoursePlan = function(query,callback) {
       });
 }
 
+var savesimple = function(query,callback) {
+  // update/insert yearplan/freedays
+  var type = query.myid.substring(0,4);
+  var jd  = query.myid.substring(4);
+  var text = query.value;
+  if (text == '') client.query(
+          'delete from mdl_bookings_calendar'
+      + ' where eventtype=? and julday= ? ' , [ eventtype, jd ],
+          function (err, results, fields) {
+              if (err) {
+                  callback( { ok:false, msg:err.message } );
+                  return;
+              }
+              callback( {ok:true, msg:"deleted"} );
+          });
+  else client.query(
+        'select * from mdl_bookings_calendar '
+      + ' where eventtype= ? and julday= ? ' , [ type,  jd ],
+      function (err, results, fields) {
+          if (err) {
+              callback( { ok:false, msg:err.message } );
+              return;
+          }
+          var free = results.pop();
+          if (free) {
+              console.log(free);
+              if (free.value != text) {
+              client.query(
+                  'update mdl_bookings_calendar set value=? where id=?',[ text, free.id ],
+                  function (err, results, fields) {
+                      if (err) {
+                          callback( { ok:false, msg:err.message } );
+                          return;
+                      }
+                      callback( {ok:true, msg:"updated"} );
+                  });
+              } else {
+                callback( {ok:true, msg:"unchanged"} );
+              }
+          } else {
+            console.log("inserting new");
+            client.query(
+                'insert into mdl_bookings_calendar (courseid,userid,julday,eventtype,value) values (0,2,?,?,?)',[jd,type,text],
+                function (err, results, fields) {
+                    if (err) {
+                        callback( { ok:false, msg:err.message } );
+                        return;
+                    }
+                    callback( {ok:true, msg:"inserted"} );
+                });
+          }
+      });
+}
+
 var saveTest = function(user,query,callback) {
   // update/insert test
 
@@ -298,7 +352,7 @@ var getBlocks = function(callback) {
               blocks[julday].push(res);
           }
           callback(blocks);
-          console.log(blocks);
+          //console.log(blocks);
       });
 }
 
@@ -594,3 +648,4 @@ module.exports.updateCoursePlan  = updateCoursePlan;
 module.exports.updateTotCoursePlan = updateTotCoursePlan ;
 module.exports.saveTest = saveTest;
 module.exports.getBlocks = getBlocks;
+module.exports.savesimple = savesimple;

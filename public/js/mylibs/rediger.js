@@ -398,56 +398,38 @@ function edit_aarsplan() {
     }
     s += "</table>";
     $j("#main").html(s);
-    enable_editing("aarsplan/php/save_simple.php?eventtype=aarsplan");
+    enable_editing("aarsplan");
 }
 
 function edit_fridager() {
     var s="<h1>Rediger Fridager</h1>";
-    s+=  '<p>Klikk på rutene for å redigere<br />';
-    s+=  'Klikk utenfor (på hvit bakgrunn) for å avbryte.</p>';
-    // viser hele årsplanen (ikke prøver og heldag)
-    var events = database.aarsplan;
+    s += '<p  id="editmsg"> Klikk på rutene for å redigere, klikk utenfor for å avbryte.</p>';
     var theader ="<table class=\"year\" >"
      + "<tr><th>Uke</th><th>Man</th><th>Tir</th><th>Ons</th>"
-     + "<th>Tor</th><th>Fre</th><th>Merknad</th></tr>";
+     + "<th>Tor</th><th>Fre</th></tr>";
     var tfooter ="</table>";
     s += theader;
     s += "<caption>Første halvår</caption>";
-    var i,j;
-    var e;
-    var pro;   // dagens prover
-    var txt;
-    var thclass;
-    var cc;
-    for (i= 0; i < database.antall; i++) {
-      e = events[i];
-      // add a page break if we pass new year
-      if (e.week == "45") {
-         s += tfooter + '<div class="page-break"></div><p>' + theader;
-         s += "<caption>Første halvår II</caption>";
-      }
-      if (e.week == "1") {
-         s += tfooter + '<div class="page-break"></div><p>' + theader;
-         s += "<caption>Andre halvår</caption>";
-      }
-      if (e.week == "13") {
-         s += tfooter + '<div class="page-break"></div><p>' + theader;
-         s += "<caption>Andre halvår II</caption>";
-      }
+    var jd,j;
+    var text;
+    var tdclass;
+    for (jd = database.firstweek; jd < database.lastweek; jd += 7 ) {
       s += "<tr>";
-      thclass = e.klass;
-      s += "<th class=\""+thclass+"\">"+e.week+"</th>";
-      for (j=0;j<6;j++) {
-        var idd = e.julday + '_' + j;
-        cc = e.days[j][1];
-        txt = (cc != 'normal') ? e.days[j][0] : '';
-        s += '<td id="jd'+idd+'" class="edit">' + txt + '</td>';
+      s += '<th><div class="weeknum">'+julian.week(jd)+'</div><br class="clear" /><div class="date">' + formatweekdate(jd) + "</div></th>";
+      for (j=0;j<5;j++) {
+        tdclass = 'edit';
+        text = '';
+        if (database.freedays[jd+j]) {
+          text = database.freedays[jd+j];
+          tdclass += ' fridag';
+        }
+        s += '<td id="free'+(jd+j)+'" class="'+tdclass+'">' + text + "</td>";
       }
       s += "</tr>";
     }
     s += "</table>";
     $j("#main").html(s);
-    enable_editing("aarsplan/php/save_simple.php?eventtype=fridager");
+    enable_editing("fridager");
 }
 
 
@@ -623,6 +605,19 @@ function fagplan_enable_editing(lerar,owner) {
      });
 }
 
+function save_simple(value,settings) {
+    var myid = this.id;
+    $j.post( "/save_simple", { "myid":myid, "value":value },
+    function(data) {
+        if (data.ok) {
+            $j("#editmsg").html('Du kan redigere planen ved å klikke på en rute');
+        } else {    
+            $j("#editmsg").html('<span class="error">'+data.msg+'</span>');
+        }
+    });
+    return value;
+}
+
 function heldag_enable_editing() {
      $j('.edit').editable( check_heldag , {
          indicator      : 'Saving...',
@@ -632,13 +627,13 @@ function heldag_enable_editing() {
      });
 }
 
-function enable_editing(url) {
-     $j('.edit').editable(url, {
+function enable_editing(eventtype) {
+     $j('.edit').editable(save_simple, {
          indicator : 'Saving...',
          tooltip   : 'Click to edit...',
          submit    : 'OK'
      });
-     $j('.edit_area').editable(url, { 
+     $j('.edit_area').editable(save_simple, {
          type      : 'textarea',
          width     : '12em',
          height    : '12em',

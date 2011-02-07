@@ -11,7 +11,6 @@ function show_thisweek() {
     //var enr = uid
     var userlist = '';
     var e;
-    var events = database.aarsplan;
     var thisweek = database.startjd;
     if (database.startdate.year = database.enddate.year) {
         var dato = "" + database.startdate.day + "." + database.startdate.month 
@@ -22,8 +21,8 @@ function show_thisweek() {
     }
     s = '<table class="timeplan" >';
     var header = [];
-    e = database.yearplan[Math.floor(thisweek/7)] || {} ;
-    s += "<caption>Uke "+e.week+" "+dato+" Julday:"+thisweek+"</caption>";
+    e = database.yearplan[Math.floor(thisweek/7)] || { days:[]} ;
+    s += "<caption>Uke "+julian.week(thisweek)+' <span title="'+thisweek+'" class="dato">'+dato+' </span></caption>';
     for (var j=0;j<6;j++) {
         header[j] = e.days[j] || '';
     }

@@ -195,23 +195,23 @@ function setup_teach() {
                     rom_reservering(idd.substr(3));
                 } );
             }
+            $j("#edfridager").click(function(event) {
+                event.preventDefault();
+                edit_fridager();
+            });
+            $j("#edaarsplan").click(function(event) {
+                event.preventDefault();
+                edit_aarsplan();
+            });
+            $j("#edheldag").click(function(event) {
+                event.preventDefault();
+                edit_heldag();
+            });
+            $j("#edbortfall").click(function(event) {
+                event.preventDefault();
+                edit_bortfall();
+            });
          });
-    $j("#edfridager").click(function(event) {
-        event.preventDefault();
-        edit_fridager();
-    });
-    $j("#edaarsplan").click(function(event) {
-        event.preventDefault();
-        edit_aarsplan();
-    });
-    $j("#edheldag").click(function(event) {
-        event.preventDefault();
-        edit_heldag();
-    });
-    $j("#edbortfall").click(function(event) {
-        event.preventDefault();
-        edit_bortfall();
-    });
 }
 
 
@@ -256,7 +256,7 @@ function get_login() {
                 user = fullname;
                 userinfo.fullname = fullname;
                 isteach = true;
-                isadmin = (userinfo.isadmin == 'y');
+                isadmin = (database.userinfo.isadmin);
                 setup_teach();
                 //$j("#login").unbind();
                 show_thisweek();
@@ -386,7 +386,8 @@ $j(document).ready(function() {
                     user = fullname;
                     userinfo.fullname = fullname;
                     isteach = true;
-                    isadmin = (userinfo.isadmin == 'y');
+                    //isadmin = (userinfo.isadmin == 'y');
+                    isadmin = (database.userinfo.isadmin);
                     take_action();
                   }
                } else {

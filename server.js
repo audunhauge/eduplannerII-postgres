@@ -240,6 +240,20 @@ app.get('/login', function(req, res) {
   });
 });
 
+app.post('/save_simple', function(req, res) {
+    // save a julday for yearplan or freedays
+    if (req.session.user && req.session.user.department == 'Undervisning') {
+      console.log("User saved som data");
+      database.savesimple(req.body,function(msg) {
+         res.send(msg);
+         delete addons.plans;
+      });
+      /*
+      */
+    } else {
+      res.send({ok:false, msg:"bad user"});
+    }
+});
 
 app.post('/save_totfagplan', function(req, res) {
     // several sections may be changed
@@ -252,7 +266,6 @@ app.post('/save_totfagplan', function(req, res) {
     } else {
       res.send({ok:false, msg:"bad user"});
     }
-
 });
 
 app.post('/save_test', function(req, res) {
@@ -290,7 +303,7 @@ app.get('/alltests', function(req, res) {
     var justnow = new Date();
     if (addons.tests && ((justnow.getTime() - addons.update.tests.getTime())/60000 < 600  )  ) {
       res.send(addons.tests);
-      var diff = (justnow.getTime() - addons.update.plans.getTime())/60000;
+      var diff = (justnow.getTime() - addons.update.tests.getTime())/60000;
       console.log("resending tests - diff = " + diff);
     } else {
         database.getAllTests(function(prover) {
@@ -390,6 +403,7 @@ app.get('/basic', function(req, res) {
           //console.log(db_copy.userinfo);
           if (db_copy.userinfo) {
             db_copy.userinfo.isadmin = (admins[db_copy.userinfo.username] && admins[db_copy.userinfo.username] == 1) ? true : false;
+            console.log(db_copy.userinfo.isadmin);
           }
           req.userinfo = db_copy.userinfo; 
         }
