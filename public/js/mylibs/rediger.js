@@ -4,6 +4,7 @@
 var minVisning = "#toot";  // valgt visning - slik at vi kan tegne på nytt
 var testjd;    // store the current julday for a new test
 var undoid;    // store the id of changed value (so we can update html)
+
 function edit_proveplan(fagnavn,plandata,start,stop) {
     // rediger prøveplanen for et fag
     minfagplan = fagnavn;
@@ -20,6 +21,7 @@ function edit_proveplan(fagnavn,plandata,start,stop) {
     var thisweek = database.thisweek;
     var timmy = {};
     var tidy = {};
+    // build timetable data for quick reference
     for (var tt in timetables.course[fagnavn] ) {
       var tty = timetables.course[fagnavn][tt];
       if (!timmy[tty[0]]) {
@@ -63,63 +65,73 @@ function edit_proveplan(fagnavn,plandata,start,stop) {
         if (+uke < 10) {
             uke = '0' + uke;
         }
-        var testweek = tests[tjd];
-        var test = '';
-        var weektest = ['','','','',''];
-        var weekclass = ['','','','',''];
-        var syno = info[+section].links;
-        var heldg = info[+section].heldag;
-        for (var w=0; w<5; w++) {
-          var blo = blocks[tjd+w];
-          if (database.freedays[tjd+w]) {
-            weektest[w] = database.freedays[tjd+w];
-            weekclass[w] = 'class="fridag"';
-          } else if (heldg[w]) {
-            weektest[w] = heldg[w].join('<br>');
-            weekclass[w] = 'class="hd"';
-          } else {
-            var syn = syno[w] || [];
-            weektest[w] += syn.join('');
-            // only add new button if no other tests
-            if  (timmy[w] && isteach && !weektest[w] ) {
-               weektest[w] += '<a active="" rel="#testdialog" id="jdw'+tjd+'_'+w+'" class="addnew">+</a>' ;
+        // preparation
+            var testweek = tests[tjd];
+            var test = '';
+            var weektest = ['','','','',''];
+            var weekclass = ['','','','',''];
+            var syno = info[+section].links;  // synopsis contains list of studs having another test
+            var heldg = info[+section].heldag; // full day tests
+            for (var w=0; w<5; w++) {
+              if (database.freedays[tjd+w]) {
+                weektest[w] = database.freedays[tjd+w];
+                weekclass[w] = 'class="fridag"';
+              } else if (heldg[w]) {
+                weektest[w] = heldg[w].join('<br>');
+                weekclass[w] = 'class="hd"';
+              } else {
+                var syn = syno[w] || [];
+                weektest[w] += syn.join('');
+                // only add new button if no other tests
+                if  (timmy[w] && isteach && !weektest[w] ) {
+                   weektest[w] += '<a active="" rel="#testdialog" id="jdw'+tjd+'_'+w+'" class="addnew">+</a>' ;
+                }
+              }
+              // add in bg if this is a block (assigned slot for tests in this course)
+              var blo = blocks[tjd+w];
+              if (blo) {
+                for (b in blo) {
+                   if (blo[b].name == thisblock) {
+                     weekclass[w] = 'class="block"';
+                     break;
+                   }
+                }
+              }
             }
-          }
-          if (blo) {
-            for (b in blo) {
-               if (blo[b].name == thisblock) {
-                 weekclass[w] = 'class="block"';
-                 break;
-               }
+            // draw in tests that are already assigned to this course
+            // you can only have one test pr day in a course (but over any slot 0..9)
+            if (testweek) {
+              for (var t in testweek) {
+                var tw = testweek[t];
+                weektest[tw.day] = '<a rel="#testdialog" id="jdw'+tjd+'_'+tw.day+'" active="'+tw.slots+'" class="prove">prøve ' + tw.slots + ' time</a>';
+              }
             }
-          }
-        }
-        if (testweek) {
-          for (var t in testweek) {
-            var tw = testweek[t];
-            weektest[tw.day] = '<a rel="#testdialog" id="jdw'+tjd+'_'+tw.day+'" active="'+tw.slots+'" class="prove">prøve ' + tw.slots + ' time</a>';
-          }
-        }
-        klass = (isteach) ? ' class="edit_area"' : '';
-        idd = 'wd' + section + '_';
+            klass = (isteach) ? ' class="edit_area"' : '';
+            idd = 'wd' + section + '_';
+        // create the table row for this week
         s += '<tr id="section'+section+'">';
         s += '<th><div title="'+tjd+'" class="weeknum">'+julian.week(tjd)
              +'</div><br class="clear" /><div class="date">' + formatweekdate(tjd) + "</div></th>";
         s += '<td class="synopsis">'+info[+section].tiny+'</td>';
         for (var w=0; w<5; w++) {
-          //s += '<td id="jd'+idd+'" >' + txt + '<span class="addnew">+</span></td>';
           s += '<td '+weekclass[w]+'>'+weektest[w]+'</td>';
         }
         s += '</tr>';
     }
     s += "</table>";
     s += "</div>";
+    // edit overlay - is shown when we click addnew or on existing test
     s += '<div class="simple_overlay" id="testdialog">'
         + '<h1>Registrer prøve</h1>'
         + '<div id="proveform"></div><div id="prolagre" class="close button gui float">Lagre</div> <div id="proavbryt" class="close button gui float">Avbryt</div>'
         + '</div>';
+
+    // render the table
     $j("#main").html(s);
+    // add tooltips
     $j(".totip").tooltip();
+
+    // buttons for showing whole plan / from today
     var uke = database.week;
     $j("#toot").click(function() {
         minVisning = "#toot";
@@ -130,7 +142,6 @@ function edit_proveplan(fagnavn,plandata,start,stop) {
         edit_proveplan(fagnavn,plandata,uke,26);
     });
     if (isteach) {
-
       var buttons = $j(".close").click(function (event) { 
           var timer = $j.map($j("table.testtime tr.trac th"),function(e,i) {
                 return e.innerHTML.split(' ')[0];
@@ -172,6 +183,7 @@ function edit_proveplan(fagnavn,plandata,start,stop) {
 }
 
 function generate(id,wd,active,tty) {
+  // generate a table for choosing/changing slots for a test
   var uid = database.userinfo.id || 0;
   var timetab = timetables.teach[uid];
   var slots = ['','','','','','','','','',''];
@@ -194,7 +206,6 @@ function generate(id,wd,active,tty) {
   }
   s    += '</table></div>';
   return s;
-
 }
 
 
@@ -353,46 +364,28 @@ function visEnValgtPlan(plandata,egne,start,stop) {
 }
 
 function edit_aarsplan() {
+    var events = database.yearplan;
     var s="<h1>Rediger Årsplanen</h1>";
-    s+=  '<p>Klikk på rutene for å redigere - klikk utenfor (på hvit bakgrunn) for å avbryte. Dette er generell info - ikke heldagsprøver</p>';
-    // viser hele årsplanen (ikke prøver og heldag)
-    var events = database.aarsplan;
+    s += '<p  id="editmsg"> Klikk på rutene for å redigere, klikk utenfor for å avbryte.</p>';
     var theader ="<table class=\"year\" >"
      + "<tr><th>Uke</th><th>Man</th><th>Tir</th><th>Ons</th>"
      + "<th>Tor</th><th>Fre</th><th>Merknad</th></tr>";
     var tfooter ="</table>";
     s += theader;
-    s += "<caption>Første halvår</caption>";
-    var i,j;
-    var e;
-    var pro;   // dagens prover
-    var txt;
-    var thclass;
-    var cc;
-    for (i= 0; i < database.antall; i++) {
-      e = events[i];
-      // add a page break if we pass new year
-      if (e.week == "45") {
-         s += tfooter + '<div class="page-break"></div><p>' + theader;
-         s += "<caption>Første halvår II</caption>";
-      }
-      if (e.week == "1") {
-         s += tfooter + '<div class="page-break"></div><p>' + theader;
-         s += "<caption>Andre halvår</caption>";
-      }
-      if (e.week == "13") {
-         s += tfooter + '<div class="page-break"></div><p>' + theader;
-         s += "<caption>Andre halvår II</caption>";
-      }
+    for (var jd = database.firstweek; jd < database.lastweek; jd += 7 ) {
       s += "<tr>";
-      thclass = e.klass;
-      s += "<th class=\""+thclass+"\">"+e.week+"</th>";
-      for (j=0;j<6;j++) {
-        var idd = e.julday + '_' + j;
-        cc = e.days[j][1];
-        var klass = (cc != 'fridag') ? 'edit_area' : cc;
-        txt = e.days[j][0];
-        s += '<td id="jd'+idd+'" class="'+klass+'">' + txt + '</td>';
+      s += '<th><div class="weeknum">'+julian.week(jd)+'</div><br class="clear" /><div class="date">' + formatweekdate(jd) + "</div></th>";
+      e = events[Math.floor(jd/7)] || { pr:[],days:[]};
+      for (var j=0;j<6;j++) {
+        tdclass = 'edit_area';
+        var text = '';
+        if (database.freedays[jd+j]) {
+          text = database.freedays[jd+j];
+          tdclass += ' fridag';
+        } else {
+          text = e.days[j] || '';
+        }
+        s += '<td id="year'+(jd+j)+'" class="'+tdclass+'">' + text + "</td>";
       }
       s += "</tr>";
     }
@@ -549,8 +542,6 @@ function save_fagplan(value,settings) {
 
 function update_fagplaner(fagnavn,section,summary) {
     courseplans[fagnavn][section] = summary;
-    //summary = Url.encode(summary);
-    //for (var i=0; i < plandata.length; i++) {
 }
 
 function translatebreaks(s) {

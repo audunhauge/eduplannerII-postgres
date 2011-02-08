@@ -182,6 +182,11 @@ var updateTotCoursePlan = function(query,callback) {
 var savesimple = function(query,callback) {
   // update/insert yearplan/freedays
   var type = query.myid.substring(0,4);
+  var typemap = { 'free':'fridager','year':'aarsplan' };
+  var eventtype = typemap[type] || 'error';
+  if (eventtype == 'error') {
+     callback( { ok:false, msg:"invalid event-type" } );
+  }
   var jd  = query.myid.substring(4);
   var text = query.value;
   if (text == '') client.query(
@@ -196,7 +201,7 @@ var savesimple = function(query,callback) {
           });
   else client.query(
         'select * from mdl_bookings_calendar '
-      + ' where eventtype= ? and julday= ? ' , [ type,  jd ],
+      + ' where eventtype= ? and julday= ? ' , [ eventtype,  jd ],
       function (err, results, fields) {
           if (err) {
               callback( { ok:false, msg:err.message } );
@@ -219,9 +224,9 @@ var savesimple = function(query,callback) {
                 callback( {ok:true, msg:"unchanged"} );
               }
           } else {
-            console.log("inserting new");
+            console.log( 'insert into mdl_bookings_calendar (courseid,userid,julday,eventtype,value) values (0,2,?,?,?)',[jd,eventtype,text]);
             client.query(
-                'insert into mdl_bookings_calendar (courseid,userid,julday,eventtype,value) values (0,2,?,?,?)',[jd,type,text],
+                'insert into mdl_bookings_calendar (courseid,userid,julday,eventtype,value) values (0,2,?,?,?)',[jd,eventtype,text],
                 function (err, results, fields) {
                     if (err) {
                         callback( { ok:false, msg:err.message } );
