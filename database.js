@@ -179,6 +179,91 @@ var updateTotCoursePlan = function(query,callback) {
       });
 }
 
+var saveabsent = function(query,callback) {
+  // update/insert absent list
+  var idd  = query.jd.substr(3);
+  var jd = idd.split('_')[0];
+  var day = idd.split('_')[1];
+  var text = query.value;
+  var name = query.name;
+  var userid = query.userid;
+  //console.log(jd,text,name,userid);
+  if (text == '') client.query(
+          'delete from mdl_bookings_calendar'
+      + ' where userid= ? and eventtype="absent" and julday= ? ' , [ userid, jd ],
+          function (err, results, fields) {
+              if (err) {
+                  callback( { ok:false, msg:err.message } );
+                  return;
+              }
+              callback( {ok:true, msg:"deleted"} );
+          });
+  else client.query(
+        'select * from mdl_bookings_calendar '
+      + ' where eventtype="absent" and userid= ? and julday= ? ' , [ userid,  jd ],
+      function (err, results, fields) {
+          if (err) {
+              callback( { ok:false, msg:err.message } );
+              return;
+          }
+          var abs = results.pop();
+          if (abs) {
+              console.log(abs);
+              if (abs.value != text || abs.name != name) {
+              client.query(
+                  'update mdl_bookings_calendar set name=?,value=? where id=?',[ name,text, abs.id ],
+                  function (err, results, fields) {
+                      if (err) {
+                          callback( { ok:false, msg:err.message } );
+                          return;
+                      }
+                      callback( {ok:true, msg:"updated"} );
+                  });
+              } else {
+                callback( {ok:true, msg:"unchanged"} );
+              }
+          } else {
+            console.log('insert into mdl_bookings_calendar (courseid,userid,julday,eventtype,value,name) values (0,?,?,"absent",?,?)',[userid,jd,text,name]); 
+            client.query(
+                'insert into mdl_bookings_calendar (courseid,userid,julday,eventtype,value,name) values (0,?,?,"absent",?,?)',[userid,jd,text,name],
+                function (err, results, fields) {
+                    if (err) {
+                        callback( { ok:false, msg:err.message } );
+                        return;
+                    }
+                    callback( {ok:true, msg:"inserted"} );
+                });
+          }
+      });
+}
+
+var getabsent = function(callback) {
+  // returns a hash of all absent teach/stud
+  //  {  julday:{ uid:{value:"1,2",name:"Kurs"}, uid:"1,2,3,4,5,6,7,8,9", ... }
+  client.query(
+      'select id,userid,julday,name,value from mdl_bookings_calendar where eventtype = "absent" and julday >= ?',[ db.startjd ],
+      function (err, results, fields) {
+          if (err) {
+              console.log("ERROR: " + err.message);
+              throw err;
+          }
+          var absent = {};
+          for (var i=0,k= results.length; i < k; i++) {
+              var res = results[i];
+              var julday = res.julday;
+              var uid = res.userid;
+              delete res.julday;   // save some space
+              delete res.userid;   // save some space
+              if (!absent[julday]) {
+                absent[julday] = {}
+              }
+              absent[julday][uid] = res;
+          }
+          callback(absent);
+          console.log(absent);
+      });
+}
+
 var savesimple = function(query,callback) {
   // update/insert yearplan/freedays
   var type = query.myid.substring(0,4);
@@ -654,3 +739,5 @@ module.exports.updateTotCoursePlan = updateTotCoursePlan ;
 module.exports.saveTest = saveTest;
 module.exports.getBlocks = getBlocks;
 module.exports.savesimple = savesimple;
+module.exports.saveabsent = saveabsent;
+module.exports.getabsent = getabsent;

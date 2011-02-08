@@ -240,16 +240,42 @@ app.get('/login', function(req, res) {
   });
 });
 
+app.post('/save_absent', function(req, res) {
+    // save absent for given jday - slots
+    if (req.session.user && req.body.userid == req.session.user.id ) {
+      console.log("User saved some data");
+      database.saveabsent(req.body,function(msg) {
+         res.send(msg);
+         delete addons.absent;
+      });
+    } else {
+      res.send({ok:false, msg:"bad user"});
+    }
+});
+
+app.get('/getabsent', function(req, res) {
+    // get absent list
+    var justnow = new Date();
+    if (addons.absent && ((justnow.getTime() - addons.update.absent.getTime())/60000 < 600  )  ) {
+      res.send(addons.absent);
+      var diff = (justnow.getTime() - addons.update.absent.getTime())/60000;
+      console.log("resending tests - diff = " + diff);
+    } else {
+        database.getabsent(function(absent) {
+            addons.absent = absent;
+            addons.update.absent = new Date();
+            res.send(absent);
+          });
+    }
+});
+
 app.post('/save_simple', function(req, res) {
     // save a julday for yearplan or freedays
     if (req.session.user && req.session.user.department == 'Undervisning') {
-      console.log("User saved som data");
+      console.log("User saved some data");
       database.savesimple(req.body,function(msg) {
          res.send(msg);
-         delete addons.plans;
       });
-      /*
-      */
     } else {
       res.send({ok:false, msg:"bad user"});
     }
@@ -297,6 +323,7 @@ app.post('/save_fagplan', function(req, res) {
     }
 
 });
+
 
 app.get('/alltests', function(req, res) {
     // get new tests

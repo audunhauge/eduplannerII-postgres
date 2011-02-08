@@ -21,6 +21,9 @@ var timeregister = {};
 // timeregister lagrer timeplaner slik at de kan vises
 // samlet. Alle timeplanvisere kan push/pop på denne
 
+var absent = {};
+// all teachers who are absent (from current day)
+
 var valgtPlan;          // husker på den sist viste planen
 var memberlist;         // liste over medlemmer i hver gruppe
 var memgr;              // liste over grupper en elev er medlem av
@@ -107,23 +110,23 @@ function take_action() {
         default:
             if (isteach) {
                 setup_teach();
-            } else if (userinfo.maybeteach) {
+            } else  {
                 $j("#login").html('login').click(function(event) {
                     event.preventDefault();
                     get_login();
                 });
             } 
-                $j("#seek").html('<span id="heat"><span class="label">søk:'
-                    + '</span><input id="seeker" class="seeker" type="text" value="" size="18"></span>');
-                $j("#heat").hover(function(event) {
-                      $j("#seeker").focus();
-                    });
-                $j("#seeker").keypress(function(event) {
-                    if (event.keyCode == "13") {
-                        event.preventDefault();
-                        window.location = '/yearplan?navn='+$j("#seeker").val();
-                    }
+            $j("#seek").html('<span id="heat"><span class="label">søk:'
+                + '</span><input id="seeker" class="seeker" type="text" value="" size="18"></span>');
+            $j("#heat").hover(function(event) {
+                  $j("#seeker").focus();
                 });
+            $j("#seeker").keypress(function(event) {
+                if (event.keyCode == "13") {
+                    event.preventDefault();
+                    window.location = '/yearplan?navn='+$j("#seeker").val();
+                }
+            });
 
             break;
     }
@@ -161,7 +164,6 @@ function setup_teach() {
             +    '<li><a id="edheldag"       href="#">Heldag</a></li>'
             +    '<li><a id="edaarsplan"     href="#">Årsplan</a></li>'
             +    '<li><a id="edblokk"        href="#">Blokkskjema</a></li>'
-            +    '<li><a id="edbortfall"     href="#">Bortfall</a></li>'
             +    '<li><a id="edexcurs"       href="#">Ekskursjoner</a></li>'
             + '</ul></li>';
         //$j("#login").html('Admin');
@@ -206,10 +208,6 @@ function setup_teach() {
             $j("#edheldag").click(function(event) {
                 event.preventDefault();
                 edit_heldag();
-            });
-            $j("#edbortfall").click(function(event) {
-                event.preventDefault();
-                edit_bortfall();
             });
          });
 }
@@ -259,8 +257,8 @@ function get_login() {
                 isadmin = (database.userinfo.isadmin);
                 setup_teach();
                 //$j("#login").unbind();
-                show_thisweek();
               }
+              show_thisweek();
             }
         });
     });
@@ -280,9 +278,15 @@ function getusers() {
     students = database.students;
     studentIds = database.studentIds;
     getcourseplans();
+    // hent ut blokkskjema
     $j.getJSON( 'blocks',function (newblocks) {
         blocks = newblocks;
     });
+    // hent ut planlagt fravær for teach
+    $j.getJSON( "/getabsent", 
+         function(data) {
+           absent = data;
+         });
 }
 
 function getcourseplans() {
@@ -480,6 +484,10 @@ $j(document).ready(function() {
         event.preventDefault();
         valg = 'samling';
         vis_samlingtimeplan();
+    });
+    $j("#edbortfall").click(function(event) {
+        event.preventDefault();
+        edit_bortfall(userinfo.id);
     });
     $j("#andreplaner").click(function(event) {
         event.preventDefault();

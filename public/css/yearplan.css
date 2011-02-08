@@ -31,9 +31,45 @@ html { min-height: 100%; margin-bottom: 1px; }
 */
 
 
+div.retainer {
+  position:relative;
+}
+
+div.absent, a.absent {
+  display:block;
+  white-space:nowrap;
+  width:12em;
+  color:#225;
+  font-size:0.9em;
+  background:#fff;
+  text-align:center;
+  padding:3px;
+  margin-left:auto;
+  margin-right:auto;
+  -webkit-border-radius: 2em;
+  -moz-border-radius: 2em;
+  -webkit-box-shadow: 3px 3px 2px rgba(0, 0, 0, .4);
+  -moz-box-shadow: 3px 3px 2px rgba(0, 0, 0, .4);
+}
+
+div.overabs:hover {
+  opacity:0.1;
+}
+div.overabs {
+  position:absolute;
+  background:blue;
+  width:10em;
+  color:white;
+  opacity:0.7;
+  left:0px;
+  top:0px;
+  font-size:10px;
+  height:14px;
+}
+
 #testtime {
    width:16em;
-   padding-bottom:38px;
+   padding-bottom:8px;
 }
 
 table.testtime {
@@ -44,6 +80,10 @@ table.testtime {
 
 table.testtime tr.trac  td {
   background:green;
+}
+table.testtime td {
+  width:8em;
+  text-align:center;
 }
 
 span.cancel, span.ok{
@@ -207,6 +247,10 @@ div.tinyohd {
   background: -moz-linear-gradient(left,#a6A6a6,#224A20);
   background: -webkit-gradient(linear, 0% 0%, 100% 0%, from(#a6A6a6), to(#224A20));
 }
+.gradbackred {
+  background: -moz-linear-gradient(left,#a69090,#4a2220);
+  background: -webkit-gradient(linear, 0% 0%, 100% 0%, from(#a69090), to(#4a2220));
+}
 
 .fixx {
   position:fixed;
@@ -239,6 +283,10 @@ div.tinyohd {
 
 .sized2 {
   width:60em;
+}
+
+.sized3 {
+  width:20em;
 }
 
 .border1 {
@@ -306,6 +354,11 @@ div.posbut {
   position:absolute;
   left:2em;
   top:2em;
+}
+
+div.red {
+  background: -moz-linear-gradient(left,#A6580A,#4A2220);
+  background: -webkit-gradient(linear, 0% 0%, 100% 0%, from(#A6580A), to(#4A2220));
 }
 
 

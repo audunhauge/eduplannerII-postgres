@@ -123,8 +123,8 @@ function show_alleprover(filter,faggrupper) {
     s += "<th>Tor</th><th>Fre</th></tr>";
     var i,j;
     var e;
-    for (jd = database.firstweek; jd < database.lastweek; jd += 7 ) {
-      if (jd < thisweek) continue;
+    for (jd = thisweek; jd < database.lastweek; jd += 7 ) {
+      //if (jd < thisweek) continue;
       s += "<tr>";
       s += '<th><div class="weeknum">'+julian.week(jd)+'</div><br class="clear" /><div class="date">' + formatweekdate(jd) + "</div></th>";
       for (j=0;j<5;j++) {

@@ -124,6 +124,7 @@ function makepop(cell,userlist,username,gruppe,filter,heading) {
 }
 
 function vis_samlingtimeplan() {
+    var jd = database.startjd;
     var s="<div id=\"timeviser\"><h1>Sammensatt timeplan</h1>";
     s+=  '<p>Velg timeplaner fra de andre menyene (elev,lærer,klasse) og '
        + ' marker at du vil ha dem med i samlingen. Kom tilbake til denne sida'
@@ -134,13 +135,13 @@ function vis_samlingtimeplan() {
         timeplan = build_timetable(timeplan,timeregister[i],'','p'+j);
         j++;
     }
-    s += build_plantable('sammensatt gruppe',timeplan,{});
+    s += build_plantable(jd,0,'sammensatt gruppe',timeplan,{});
     s += '</div>';
     $j("#main").html(s);
 }
 
 
-function build_plantable(username,timeplan,xtraplan,filter) {
+function build_plantable(jd,uid,username,timeplan,xtraplan,filter) {
     // lager en html-tabell for timeplanen
     var start = database.starttime;
     var members = username;
@@ -193,7 +194,14 @@ function build_plantable(username,timeplan,xtraplan,filter) {
                        + '</ul></li></ul>';
              }
           }
-          s += "<td>" + cell + xcell + "</td>";
+          if (absent[jd+j] && absent[jd+j][uid]) {
+            var ab = absent[jd+j][uid];
+            var tlist = ab.value.split(',');
+            if ($j.inArray(""+(i+1),tlist) >= 0) {
+              xcell += '<div class="absent overabs">'+ab.name+'</div>';
+            }
+          }
+          s += '<td><div class="retainer">' + cell + xcell + '</div></td>';
        }
        s+= "</tr>";
     }
@@ -217,6 +225,7 @@ function updateMemory() {
 function vistimeplan(data,uid,filter) {
      // viser timeplan med gitt datasett
      var plan = data.plan;
+     var jd = database.startjd;
      plan.prover = add_tests(uid,database.startjd);
      if (memberlist[uid]) {
        // this is a group or class
@@ -259,7 +268,7 @@ function vistimeplan(data,uid,filter) {
      }
      // hent ut normalplanen - skal vises som ren text
      timeplan = build_timetable(timeplan,plan,filter);
-     s += build_plantable(username.trim(),timeplan,xtraplan,filter);
+     s += build_plantable(jd,uid,username.trim(),timeplan,xtraplan,filter);
      return s;
 }
 

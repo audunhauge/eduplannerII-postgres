@@ -18,7 +18,6 @@ function edit_proveplan(fagnavn,plandata,start,stop) {
     var gru = felms[1];
     var elever = memberlist[gru];
     var events = database.aarsplan;
-    var thisweek = database.thisweek;
     var timmy = {};
     var tidy = {};
     // build timetable data for quick reference
@@ -122,8 +121,12 @@ function edit_proveplan(fagnavn,plandata,start,stop) {
     s += "</div>";
     // edit overlay - is shown when we click addnew or on existing test
     s += '<div class="simple_overlay" id="testdialog">'
-        + '<h1>Registrer prøve</h1>'
-        + '<div id="proveform"></div><div id="prolagre" class="close button gui float">Lagre</div> <div id="proavbryt" class="close button gui float">Avbryt</div>'
+        +  '<h1>Registrer prøve</h1>'
+        +  '<div id="proveform"></div>'
+        +  '<div class="centered sized3" >'
+        +   '<div id="prolagre" class="close button gui float">Lagre</div> '
+        +   '<div id="proavbryt" class="close button red gui float">Avbryt</div>'
+        +  '</div>';
         + '</div>';
 
     // render the table
@@ -434,7 +437,7 @@ function edit_heldag() {
     s+=  '<p>Klikk på pluss knappen for å legge til en prøve. Klikk på teksten for å redigere (og slette)<br />';
     s+=  'Klikk utenfor (på hvit bakgrunn) for å avbryte.</p>';
     var events = database.aarsplan;
-    var thisweek = database.thisweek;
+    var thisweek = database.startjd;
     s += "<table class=\"heldag\">";
     s += "<tr><th>Uke</th><th>Man</th><th>Tir</th><th>Ons</th>";
     s += "<th>Tor</th><th>Fre</th></tr>";
@@ -467,11 +470,6 @@ function edit_heldag() {
 }
 
 
-function edit_bortfall() {
-    var s="<div id=\"timeviser\"><h1>Rediger Undervisningsbortfall</h1>";
-    s+=  '<p>Rediger timer - klikk på rutene for å redigere</p>';
-    $j("#main").html(s);
-}
 
 
 function check_heldag(value,settings) {
