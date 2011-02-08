@@ -311,19 +311,32 @@ function pasteIntoThisPlan(fagnavn,egne) {
 function visEnValgtPlan(plandata,egne,start,stop) {
     // viser en plan - du kan redigere dersom du er eier
      var s = '<table class="fagplan" >'
-     + "<tr><th>Uke</th><th>Info</th><th>Tema</th><th>Vurdering</th><th>Mål</th><th>Oppgaver</th><th>Logg/merk</th></tr>";
+     + "<tr><th>Uke</th><th>Info</th><th>Absentia</th><th>Tema</th><th>Vurdering</th><th>Mål</th><th>Oppgaver</th><th>Logg/merk</th></tr>";
     var i,j,e,klass,idd;
     //for (i= thisweek; i < database.lastweek; i += 7) {
     var jd = database.firstweek;
     var tests = coursetests(minfagplan);
+    var felms = minfagplan.split('_');
+    var fag = felms[0];
+    var gru = felms[1];
+    var timmy = {};
+    var tidy = {};
+    // build timetable data for quick reference
+    for (var tt in timetables.course[minfagplan] ) {
+      var tty = timetables.course[minfagplan][tt];
+      if (!timmy[tty[0]]) {
+        timmy[tty[0]] = {};
+        tidy [tty[0]] = [];
+      }
+      if (timmy[ tty[0] ][ tty[1] ]) continue;
+      timmy[ tty[0] ][ tty[1] ] = 1;
+      tidy[ tty[0] ].push(""+(1+tty[1]));
+    }
     var tjd;
+    var elever = memberlist[gru];
     var info = synopsis(minfagplan,plandata,tests);
     for (section in  plandata) {
-        //for (i= 0; i < 47; i++) {
         summary = plandata[section]; 
-        //var dato = datoliste[i] || '';
-        //var elm = dato.split(' ');
-        //var uke = elm[0] || '';
         var uke = julian.week(jd);
         tjd = jd;
         jd += 7;
@@ -339,6 +352,29 @@ function visEnValgtPlan(plandata,egne,start,stop) {
         }
         var testweek = tests[tjd];
         var test = '';
+        var abs = '';
+        var abslist = [];
+        for (var j=0;j<5;j++) {
+            if (absent[tjd+j] && timmy[j]) {  // absent and lesson
+              for (var el in elever) {
+                  var ab = absent[tjd+j];
+                  var elev = elever[el];
+                  if (ab[elev]) { // one of my studs is absent
+                      var slots = ab[elev].value;
+                      for (var sl in slots) {
+                          var slo = slots[sl];
+                          if (timmy[j][+slo]) {
+                              // this stud is absent during course slot
+                              abslist.push( dager[j]+ 'dag ' + students[elev].firstname + ' ' + students[elev].lastname + ' '+ ab[elev].name);
+                              break;
+                          }
+                      }
+                  }
+              }
+            }
+        }
+        if (abslist.length) abs = '<div title="<h3>Bortreist</h3><ul><li>'
+                  +abslist.join('</li><li>')+'</ul>" class="totip absentia">'+abslist.length+'</div>';
         summary += '|||||';
         summary = summary.replace(/(<br>)+/g,"<br>");
         summary = summary.replace(/<br>$/,"");
@@ -355,6 +391,7 @@ function visEnValgtPlan(plandata,egne,start,stop) {
         s += '<tr id="section'+section+'">';
         s += '<th><div class="weeknum">'+julian.week(tjd)+'</div><br class="clear" /><div class="date">' + formatweekdate(tjd) + "</div></th>";
         s += '<td class="synopsis">'+info[+section].tiny+'</td>';
+        s += '<td class="synopsis">'+abs+'</td>';
         s += '<td><div id="'+idd+'0" '+klass+'>' + elements[0] + "</div></td>";
         s += '<td>'+test+'<div id="'+idd+'1" '+klass+'>' + elements[1] + "</div></td>";
         s += '<td><div id="'+idd+'2" '+klass+'>' + elements[2] + "</div></td>";
