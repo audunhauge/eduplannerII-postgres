@@ -205,6 +205,10 @@ function setup_teach() {
                 event.preventDefault();
                 edit_aarsplan();
             });
+            $j("#edexcurs").click(function(event) {
+                event.preventDefault();
+                edit_excursion();
+            });
             $j("#edheldag").click(function(event) {
                 event.preventDefault();
                 edit_heldag();

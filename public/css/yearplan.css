@@ -30,7 +30,6 @@ html { min-height: 100%; margin-bottom: 1px; }
 }
 */
 
-
 div.retainer {
   position:relative;
 }
@@ -44,6 +43,7 @@ div.absent, a.absent, div.absentia {
   background:#fff;
   text-align:center;
   padding:3px;
+  margin-top:2px;
   margin-left:auto;
   margin-right:auto;
   -webkit-border-radius: 2em;
@@ -72,8 +72,8 @@ div.absentia {
 }
 
 #testtime {
-   width:16em;
    padding-bottom:8px;
+   margin-left:5px;
 }
 
 table.testtime {
@@ -231,7 +231,7 @@ div.tinyohd {
 }
 
 .redfont {
-    color:red;
+    color:red !important;
 }
 
 .pinkfont {
