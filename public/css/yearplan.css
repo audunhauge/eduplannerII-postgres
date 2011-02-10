@@ -230,7 +230,7 @@ div.tinyohd {
   -moz-border-radius: 2em;
 }
 
-.redfont {
+.removepart, .redfont {
     color:red !important;
 }
 

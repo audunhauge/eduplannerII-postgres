@@ -289,6 +289,7 @@ function edit_excursion(uid) {
         var active = (actatr) ? actatr.split(',') : [];
         var s = excur(id,wd,active,members);
         $j("#proveform").html(s);
+        /*
         $j("#opp").hide();
         $j("#proveform").delegate("a.oppdater","click",function(event) {
             event.preventDefault();
@@ -296,6 +297,7 @@ function edit_excursion(uid) {
             $j("#proveform").html(s);
             $j("#opp").hide();
           });
+          */
         $j("#proveform").delegate("a.removepart","click",function(event) {
             var enr = $j(this).attr('id');
             var newlist = [];
@@ -304,17 +306,20 @@ function edit_excursion(uid) {
                if (+e != +enr) newlist.push(+e);
             }
             members = newlist;
-            $j(this).parent().hide();
+            $j(this).addClass("addpart");
+            $j(this).removeClass("removepart");
             //s = excur(id,wd,active,members);
             //$j("#proveform").html(s);
-            $j("#opp").show();
+            //$j("#opp").show();
             event.preventDefault();
           });
         $j("#proveform").delegate("a.addpart","click",function(event) {
             var enr = $j(this).attr('id');
             $j(this).parent().hide();
             members.push(enr);
-            $j("#opp").show();
+            $j(this).addClass("removepart");
+            $j(this).removeClass("addpart");
+            //$j("#opp").show();
             event.preventDefault();
           });
         $j("div.velgprove").click(function(){
@@ -347,28 +352,34 @@ function excur(id,wd,active,ulist) {
     var klass = database.classes[kid];
     trinnliste[+klass.substring(0,1)-1].push(klass);
   }
-  var andrevelger = '<ul class="nav"><li><a href="#">Legg til</a><ul>';
+  var andrevelger = '';
+  var total = 0;
   for (var tri in trinnliste) {
     var trinn = trinnliste[tri];
-    andrevelger += '<li> <a href="#"> &nbsp;vg' + (+tri+1) + '</a><ul>';
+    var trinntall = 0;
     for (var kid in trinn) {
       var klass = trinn[kid];
       andrevelger += '<li><a href="#">' + klass + '</a><ul>';
       var bru = memberlist[klass];
+      var brulist = '';
+      var klassetall = 0;
       for (br in bru) {
         var enr = bru[br];
         var mode = 'addpart';
-        if ($j.inArray(""+enr,ulist) >= 0) continue; //mode ='redfont';
+        if ($j.inArray(""+enr,ulist) >= 0) mode ='removepart';
         var elev = students[enr] || {firstname:'NA',lastname:'NA'};
         var einfo = elev.firstname + " " + elev.lastname + " " + enr;
-        andrevelger += '<li><a id="'+enr+'" class="'+mode+'" href="#">' + einfo + '</a></li>';
+        brulist += '<li><a id="'+enr+'" class="'+mode+'" href="#">' + einfo + '</a></li>';
       }
       andrevelger += '</ul></li>';
+      trinntall += klassetall;
     }
-    andrevelger += '</ul></li>';
+    andrevelger += '<li> <a href="#"> &nbsp;vg' + (+tri+1) + ' ' + trinntall + '</a><ul>' + brulist + '</ul></li>';
+    total += trinntall;
   }
-  andrevelger += '</ul></ul>';
+  andrevelger = '<ul class="nav"><li><a href="#">Påmeldt ' + total + '</a><ul>' + andrevelger + '</ul></li></ul>';
 
+  /*
   var deltak = '<ul class="nav"><li><a href="#">deltakere</a><ul>' ;
   for (br in ulist) {
     var enr = ulist[br];
@@ -377,6 +388,7 @@ function excur(id,wd,active,ulist) {
     deltak += '<li><a id="'+enr+'" class="removepart" href="#">' + einfo + '</a></li>';
   }
   deltak += '</ul></li></ul>';
+  */
 
   var s = '<div class="centered" id="testtime" >';
   s +=  '<table border="0"><tr><td>';
@@ -386,9 +398,9 @@ function excur(id,wd,active,ulist) {
     s += '<tr'+( acc ? ' class="trac"' : '') +'"><th>' + i + ' time</th><td><div class="velgprove">'+slots[i]+'</div></td></tr>';
   }
   s += '</table></td><td>'
-  s += deltak+'<br>';
+  //s += deltak+'<br>';
   s += andrevelger;
-  s += '<br><ul id="opp" class="nav"><li><a class="oppdater" href="#">oppdater</a></li></ul>';
+  //s += '<br><ul id="opp" class="nav"><li><a class="oppdater" href="#">oppdater</a></li></ul>';
   s += '</td></table></div>';
   return s;
 }
