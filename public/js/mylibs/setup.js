@@ -166,9 +166,10 @@ function setup_teach() {
             +    '<li><a id="edblokk"        href="#">Blokkskjema</a></li>'
             +    '<li><a id="edexcurs"       href="#">Ekskursjoner</a></li>'
             + '</ul></li>';
-        //$j("#login").html('Admin');
-    } else {
-        //$j("#login").html('Teach');
+    } else if (isteach) {
+        s +=  '<li><a id="rediger" href="#">Rediger</a><ul>'
+            +    '<li><a id="edexcurs"       href="#">Ekskursjoner</a></li>'
+            + '</ul></li>';
     }
     $j("#seek").html('<span id="heat"><span class="label">søk:'
         + '</span><input id="seeker" class="seeker" type="text" value="" size="8"></span>');
@@ -207,7 +208,7 @@ function setup_teach() {
             });
             $j("#edexcurs").click(function(event) {
                 event.preventDefault();
-                edit_excursion();
+                edit_excursion(userinfo.id);
             });
             $j("#edheldag").click(function(event) {
                 event.preventDefault();

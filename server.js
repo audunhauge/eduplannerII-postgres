@@ -240,6 +240,39 @@ app.get('/login', function(req, res) {
   });
 });
 
+app.post('/save_excursion', function(req, res) {
+    // save excursion for given jday - slots
+    // and given set of students
+    /*
+      var idd  = query.jd.substr(3);
+      var jd = idd.split('_')[0];
+      var day = idd.split('_')[1];
+      var text = query.value;
+      var name = query.name;
+      var userid = query.userid;
+      var klass = query.klass;
+    */
+    if (req.session.user && req.body.userid == req.session.user.id && req.session.user.department == 'Undervisning') {
+      console.log("Teacher saving an excursion");
+      var userlist = req.body.userlist;
+      console.log(req.body);
+      var rmsg = {ok:true, msg:""};
+      var ulist = userlist.split(',');
+      function stuffit(msg) {
+          var us = ulist.pop();
+          if (+us > 0) {
+            req.body.userid = +us;
+            database.saveabsent(req.body,stuffit);
+          } else {
+             delete addons.absent;
+             res.send({ok:true, msg:"doneitall"});
+          }
+      };
+      stuffit();
+    } else {
+      res.send({ok:false, msg:"bad user"});
+    }
+});
 app.post('/save_absent', function(req, res) {
     // save absent for given jday - slots
     if (req.session.user && req.body.userid == req.session.user.id ) {

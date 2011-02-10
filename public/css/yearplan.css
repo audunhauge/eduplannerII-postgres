@@ -34,7 +34,7 @@ div.retainer {
   position:relative;
 }
 
-div.absent, a.absent, div.absentia {
+div.absent, a.absentee, a.absent, div.absentia {
   display:block;
   white-space:nowrap;
   width:12em;
@@ -66,6 +66,14 @@ div.overabs {
   font-size:10px;
   height:14px;
 }
+
+a.elev {
+  background:#ddb;
+}
+a.absentee {
+  background:#ccc;
+}
+
 div.absentia {
   width:4em;
   font-size:1em;

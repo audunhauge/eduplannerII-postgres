@@ -103,8 +103,9 @@ function edit_bortfall(uid) {
            save = true;
         }
         if (save) {
+           // klass == 0 for normal absence - otherwise id of teach for an excursion
            $j("#editmsg").html("Lagrer valgte timer ...");
-           $j.post( "/save_absent", { userid:uid, name:$j("#cause").val(),"value":timer.join(','), "jd":testjd },
+           $j.post( "/save_absent", { userid:uid, klass:0, name:$j("#cause").val(),"value":timer.join(','), "jd":testjd },
               function(data) {
                 $j("#editmsg").html(data.msg);
                 if (data.ok) $j.getJSON( "/getabsent", 
@@ -206,19 +207,27 @@ function edit_excursion(uid) {
                 if (!kurs[ab.name]) {
                   kurs[ab.name] = {};
                 }
-                if(!kurs[ab.name][ab.value]) {
-                  kurs[ab.name][ab.value] = [];
+                if(!kurs[ab.name][ab.klass]) {
+                  kurs[ab.name][ab.klass] = {members:[],slots:ab.value};
                 }
-                kurs[ab.name][ab.value].push(a);
+                kurs[ab.name][ab.klass].members.push(a);
               }
             }
           }
           for (var k in kurs) {
             var ku = kurs[k];
-            for (var t in ku) {
-              var tl = ku[t];
-              var tlist = (t == '1,2,3,4,5,6,7,8,9') ? '' : t;
-              weektest[w] += '<a members="'+tl.join(',')+'" title="'+k+'" rel="#testdialog" id="jdw'+(tjd+w)+'_'+w+'" active="'+t+'" class="absent">' + k + " " + tlist + '</a>';
+            for (var owner in ku) {
+              var tl = ku[owner];
+              var tlist = (tl.slots == '1,2,3,4,5,6,7,8,9') ? '' : tl.slots;
+              var klass = "absentee";
+              if (+owner == uid || isadmin ) {
+                klass = "absent";
+              }
+              if (+owner == 0) {
+                klass = "absent elev";
+              }
+              weektest[w] += '<a members="'+tl.members.join(',')+'" title="'+k+'" rel="#testdialog" id="jdw'
+                   +(tjd+w)+'_'+w+'" active="'+tl.slots+'" class="'+klass+'">' + k + " " + tlist + '</a>';
 
             }
           }
@@ -249,6 +258,7 @@ function edit_excursion(uid) {
     // render the table
     $j("#main").html(s);
     // buttons for showing whole plan / from today
+    var members = []; // list of members of this excursion
     var buttons = $j(".close").click(function (event) { 
         var timer = $j.map($j("table.testtime tr.trac th"),function(e,i) {
               return e.innerHTML.split(' ')[0];
@@ -263,17 +273,18 @@ function edit_excursion(uid) {
         }
         if (save) {
            $j("#editmsg").html("Lagrer valgte timer ...");
-           $j.post( "/save_absent", { userid:uid, name:$j("#cause").val(),"value":timer.join(','), "jd":testjd },
+           $j.post( "/save_excursion", { userid:uid, klass:uid, userlist:members.join(','), name:$j("#cause").val(),"value":timer.join(','), "jd":testjd },
               function(data) {
                 $j("#editmsg").html(data.msg);
                 if (data.ok) $j.getJSON( "/getabsent", 
                      function(data) {
                         absent = data;
-                        edit_bortfall(uid);
+                        edit_excursion(uid);
                      });
               });
         } else {
            triggers.eq(1).overlay().close();
+           edit_excursion(uid);
         }
     });
     var triggers = $j("a.addnew,a.absent").click(function() {
@@ -284,20 +295,21 @@ function edit_excursion(uid) {
         var actatr = par.attr("active");
         var info = par.attr("title");
         var membersatr = par.attr("members"); //.split(',');
-        var members = (membersatr) ? membersatr.split(',') : [] ;
+        members = (membersatr) ? membersatr.split(',') : [] ;
         $j("#cause").val(info);
         var active = (actatr) ? actatr.split(',') : [];
         var s = excur(id,wd,active,members);
         $j("#proveform").html(s);
-        /*
         $j("#opp").hide();
         $j("#proveform").delegate("a.oppdater","click",function(event) {
             event.preventDefault();
             s = excur(id,wd,active,members);
             $j("#proveform").html(s);
+            $j("div.velgprove").click(function(){
+               $j(this).parent().parent().toggleClass("trac");
+             });
             $j("#opp").hide();
           });
-          */
         $j("#proveform").delegate("a.removepart","click",function(event) {
             var enr = $j(this).attr('id');
             var newlist = [];
@@ -310,16 +322,16 @@ function edit_excursion(uid) {
             $j(this).removeClass("removepart");
             //s = excur(id,wd,active,members);
             //$j("#proveform").html(s);
-            //$j("#opp").show();
+            $j("#opp").show();
             event.preventDefault();
           });
         $j("#proveform").delegate("a.addpart","click",function(event) {
             var enr = $j(this).attr('id');
-            $j(this).parent().hide();
+            //$j(this).parent().hide();
             members.push(enr);
             $j(this).addClass("removepart");
             $j(this).removeClass("addpart");
-            //$j("#opp").show();
+            $j("#opp").show();
             event.preventDefault();
           });
         $j("div.velgprove").click(function(){
@@ -335,7 +347,7 @@ function edit_excursion(uid) {
 }
 
 function excur(id,wd,active,ulist) {
-  // generate a table for choosing/changing slots for absent students
+  // generate a table for choosing/changing slots for students on excursions
   var uid = database.userinfo.id || 0;
   var slots = ['====','====','====','====','====','====','====','====','====','===='];
   var unplanned = { 1:1,2:1,3:1,4:1,5:1,6:1,7:1,8:1,9:1}
@@ -346,49 +358,53 @@ function excur(id,wd,active,ulist) {
   for (var ww in unplanned) {
      un.push(+ww);
   }
-  //ulist = [ 3384,2982,3511,2928,2951 ];
   var trinnliste = [ [],[],[] ];
   for (var kid in database.classes) {
     var klass = database.classes[kid];
     trinnliste[+klass.substring(0,1)-1].push(klass);
   }
-  var andrevelger = '';
+  var velger= '';
   var total = 0;
   for (var tri in trinnliste) {
     var trinn = trinnliste[tri];
     var trinntall = 0;
+    var klasser = '';
+    var trinnmod = '';
     for (var kid in trinn) {
       var klass = trinn[kid];
-      andrevelger += '<li><a href="#">' + klass + '</a><ul>';
       var bru = memberlist[klass];
-      var brulist = '';
       var klassetall = 0;
+      var studs = '';
+      var klassmod = '';
       for (br in bru) {
         var enr = bru[br];
         var mode = 'addpart';
-        if ($j.inArray(""+enr,ulist) >= 0) mode ='removepart';
+        if ($j.inArray(""+enr,ulist) >= 0) {
+          mode ='removepart';
+          klassetall++;
+          klassmod = 'redfont';
+          trinnmod = 'redfont';
+        }
         var elev = students[enr] || {firstname:'NA',lastname:'NA'};
         var einfo = elev.firstname + " " + elev.lastname + " " + enr;
-        brulist += '<li><a id="'+enr+'" class="'+mode+'" href="#">' + einfo + '</a></li>';
+        studs += '<li><a id="'+enr+'" class="'+mode+'" href="#">' + einfo + '</a></li>';
       }
-      andrevelger += '</ul></li>';
+      klasser += '<li><a class="'+klassmod+'" href="#">' + klass + '&nbsp;' + klassetall + '</a><ul>' + studs + '</ul></li>';
       trinntall += klassetall;
     }
-    andrevelger += '<li> <a href="#"> &nbsp;vg' + (+tri+1) + ' ' + trinntall + '</a><ul>' + brulist + '</ul></li>';
+    velger += '<li> <a class="'+trinnmod+'" href="#"> &nbsp;vg' + (+tri+1) + '&nbsp;' + trinntall + '</a><ul>' + klasser + '</ul></li>';
     total += trinntall;
   }
-  andrevelger = '<ul class="nav"><li><a href="#">Påmeldt ' + total + '</a><ul>' + andrevelger + '</ul></li></ul>';
+  velger = '<ul class="nav"><li><a href="#">Påmeldt:' + total + '</a><ul>' + velger + '</ul></li></ul>';
 
-  /*
   var deltak = '<ul class="nav"><li><a href="#">deltakere</a><ul>' ;
   for (br in ulist) {
     var enr = ulist[br];
     var elev = students[enr] || {firstname:'NA',lastname:'NA'};
     var einfo = elev.firstname + " " + elev.lastname + " " + enr;
-    deltak += '<li><a id="'+enr+'" class="removepart" href="#">' + einfo + '</a></li>';
+    deltak += '<li><a href="#">' + einfo + '</a></li>';
   }
   deltak += '</ul></li></ul>';
-  */
 
   var s = '<div class="centered" id="testtime" >';
   s +=  '<table border="0"><tr><td>';
@@ -398,9 +414,9 @@ function excur(id,wd,active,ulist) {
     s += '<tr'+( acc ? ' class="trac"' : '') +'"><th>' + i + ' time</th><td><div class="velgprove">'+slots[i]+'</div></td></tr>';
   }
   s += '</table></td><td>'
-  //s += deltak+'<br>';
-  s += andrevelger;
-  //s += '<br><ul id="opp" class="nav"><li><a class="oppdater" href="#">oppdater</a></li></ul>';
+  s += deltak+'<br>';
+  s += velger;
+  s += '<br><ul id="opp" class="nav"><li><a id="oppdater" class="oppdater" href="#">oppdater</a></li></ul>';
   s += '</td></table></div>';
   return s;
 }

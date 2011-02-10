@@ -187,10 +187,11 @@ var saveabsent = function(query,callback) {
   var text = query.value;
   var name = query.name;
   var userid = query.userid;
-  //console.log(jd,text,name,userid);
+  var klass = query.klass;
+  console.log("Saving:",jd,text,name,userid,klass);
   if (text == '') client.query(
           'delete from mdl_bookings_calendar'
-      + ' where userid= ? and eventtype="absent" and julday= ? ' , [ userid, jd ],
+      + ' where name = ? and (class=? or class=0 ) and userid= ? and eventtype="absent" and julday= ? ' , [ name,klass,userid, jd ],
           function (err, results, fields) {
               if (err) {
                   callback( { ok:false, msg:err.message } );
@@ -200,7 +201,7 @@ var saveabsent = function(query,callback) {
           });
   else client.query(
         'select * from mdl_bookings_calendar '
-      + ' where eventtype="absent" and userid= ? and julday= ? ' , [ userid,  jd ],
+      + ' where name = ? and (class=? or class=0) and eventtype="absent" and userid= ? and julday= ? ' , [ name,klass, userid,  jd ],
       function (err, results, fields) {
           if (err) {
               callback( { ok:false, msg:err.message } );
@@ -211,7 +212,7 @@ var saveabsent = function(query,callback) {
               console.log(abs);
               if (abs.value != text || abs.name != name) {
               client.query(
-                  'update mdl_bookings_calendar set name=?,value=? where id=?',[ name,text, abs.id ],
+                  'update mdl_bookings_calendar set class=?, name=?,value=? where id=?',[ klass,name,text, abs.id ],
                   function (err, results, fields) {
                       if (err) {
                           callback( { ok:false, msg:err.message } );
@@ -223,9 +224,9 @@ var saveabsent = function(query,callback) {
                 callback( {ok:true, msg:"unchanged"} );
               }
           } else {
-            console.log('insert into mdl_bookings_calendar (courseid,userid,julday,eventtype,value,name) values (0,?,?,"absent",?,?)',[userid,jd,text,name]); 
+            console.log('insert into mdl_bookings_calendar (courseid,userid,julday,eventtype,value,name,class) values (0,?,?,"absent",?,?,?)',[userid,jd,text,name,klass]); 
             client.query(
-                'insert into mdl_bookings_calendar (courseid,userid,julday,eventtype,value,name) values (0,?,?,"absent",?,?)',[userid,jd,text,name],
+                'insert into mdl_bookings_calendar (courseid,userid,julday,eventtype,value,name,class) values (0,?,?,"absent",?,?,?)',[userid,jd,text,name,klass],
                 function (err, results, fields) {
                     if (err) {
                         callback( { ok:false, msg:err.message } );
@@ -241,7 +242,7 @@ var getabsent = function(callback) {
   // returns a hash of all absent teach/stud
   //  {  julday:{ uid:{value:"1,2",name:"Kurs"}, uid:"1,2,3,4,5,6,7,8,9", ... }
   client.query(
-      'select id,userid,julday,name,value from mdl_bookings_calendar where eventtype = "absent" and julday >= ?',[ db.startjd ],
+      'select id,userid,julday,name,value,class as klass from mdl_bookings_calendar where eventtype = "absent" and julday >= ?',[ db.startjd ],
       function (err, results, fields) {
           if (err) {
               console.log("ERROR: " + err.message);
