@@ -179,7 +179,7 @@ var updateTotCoursePlan = function(query,callback) {
       });
 }
 
-var saveabsent = function(query,callback) {
+var saveabsent = function(user,query,callback) {
   // update/insert absent list
   var idd  = query.jd.substr(3);
   var jd = idd.split('_')[0];
@@ -191,7 +191,7 @@ var saveabsent = function(query,callback) {
   console.log("Saving:",jd,text,name,userid,klass);
   if (text == '') client.query(
           'delete from mdl_bookings_calendar'
-      + ' where name = ? and (class=? or class=0 ) and userid= ? and eventtype="absent" and julday= ? ' , [ name,klass,userid, jd ],
+      + ' where name = ? and (? or (class=? or class=0 ) and userid= ?) and eventtype="absent" and julday= ? ' , [ name,user.isadmin,klass,userid, jd ],
           function (err, results, fields) {
               if (err) {
                   callback( { ok:false, msg:err.message } );
@@ -324,6 +324,67 @@ var savesimple = function(query,callback) {
       });
 }
 
+var saveTimetableSlot = function(user,query,callback) {
+  // update/insert test
+
+  var teachid  = query.teachid;
+  var day = query.day;
+  var slot = query.slot;
+  var value = query.val;
+  console.log(teachid,day,slot,value);
+  if (value == '')  { 
+    // dont actually delete anything from timetable
+    /*client.query(
+          'delete from mdl_bookings_calendar'
+      + ' where day = ? and slot = ? and userid = ? and eventtype="timetable" ' , [ courseid,  user.id, julday ],
+          function (err, results, fields) {
+              if (err) {
+                  callback( { ok:false, msg:err.message } );
+                  return;
+              }
+              callback( {ok:true, msg:"deleted"} );
+          }); */
+  } else client.query(
+        'select * from mdl_bookings_calendar '
+      + ' where userid = ? and day = ? and slot = ? and eventtype="timetable" ' , [ teachid,  day, slot ],
+      function (err, results, fields) {
+          if (err) {
+              callback( { ok:false, msg:err.message } );
+              return;
+          }
+          var time = results.pop();
+          if (time) {
+              console.log(time);
+              if (time.value != value) {
+              client.query(
+                  'update mdl_bookings_calendar set value=?,name=? where id=?',[ value,value, time.id ],
+                  function (err, results, fields) {
+                      if (err) {
+                          callback( { ok:false, msg:err.message } );
+                          return;
+                      }
+                      callback( {ok:true, msg:"updated"} );
+                  });
+              } else {
+                callback( {ok:true, msg:"unchanged"} );
+              }
+          } else {
+            /*
+            console.log("inserting new");
+            client.query(
+                'insert into mdl_bookings_calendar (courseid,userid,julday,eventtype,value) values (?,?,?,"prove",?)',[courseid, user.id, julday,tlist],
+                function (err, results, fields) {
+                    if (err) {
+                        callback( { ok:false, msg:err.message } );
+                        return;
+                    }
+                    callback( {ok:true, msg:"inserted"} );
+                });
+                */
+          }
+      });
+}
+
 var saveTest = function(user,query,callback) {
   // update/insert test
 
@@ -418,6 +479,27 @@ var updateCoursePlan = function(query,callback) {
                     callback( {ok:true, msg:"inserted"} );
                 });
           }
+      });
+}
+
+
+
+var getSomeData = function(user,sql,param,callback) {
+  // runs a query and returns the recordset
+  // only allows admin to run this query
+  if (!user || !user.isadmin) {
+    callback("not allowed");
+    return;
+  }
+  if (param == '') param = [];
+  client.query(
+      sql,param,
+      function (err, results, fields) {
+          if (err) {
+              console.log("ERROR: " + err.message);
+              throw err;
+          }
+          callback(results);
       });
 }
 
@@ -742,3 +824,5 @@ module.exports.getBlocks = getBlocks;
 module.exports.savesimple = savesimple;
 module.exports.saveabsent = saveabsent;
 module.exports.getabsent = getabsent;
+module.exports.saveTimetableSlot =  saveTimetableSlot ;
+module.exports.getSomeData = getSomeData ;

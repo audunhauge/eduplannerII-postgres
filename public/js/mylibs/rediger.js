@@ -580,7 +580,7 @@ function update_fagplaner(fagnavn,section,summary) {
 }
 
 function translatebreaks(s) {
-    return s.replace(/<br>/g,"\n");
+    return s.replace(/<br>/g,"\n").replace(/\&nbsp;/g,' ');
 }
 
 function fagplan_enable_editing(lerar,owner) {

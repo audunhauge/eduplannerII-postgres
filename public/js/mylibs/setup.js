@@ -165,6 +165,7 @@ function setup_teach() {
             +    '<li><a id="edaarsplan"     href="#">Årsplan</a></li>'
             +    '<li><a id="edblokk"        href="#">Blokkskjema</a></li>'
             +    '<li><a id="edexcurs"       href="#">Ekskursjoner</a></li>'
+            +    '<li><a id="edcourse"       href="#">Kurs</a></li>'
             + '</ul></li>';
     } else if (isteach) {
         s +=  '<li><a id="rediger" href="#">Rediger</a><ul>'
@@ -201,6 +202,10 @@ function setup_teach() {
             $j("#edfridager").click(function(event) {
                 event.preventDefault();
                 edit_fridager();
+            });
+            $j("#edcourse").click(function(event) {
+                event.preventDefault();
+                managecourse();
             });
             $j("#edaarsplan").click(function(event) {
                 event.preventDefault();

@@ -262,7 +262,7 @@ app.post('/save_excursion', function(req, res) {
           var us = ulist.pop();
           if (+us > 0) {
             req.body.userid = +us;
-            database.saveabsent(req.body,stuffit);
+            database.saveabsent(req.session.user,req.body,stuffit);
           } else {
              delete addons.absent;
              res.send({ok:true, msg:"doneitall"});
@@ -277,13 +277,35 @@ app.post('/save_absent', function(req, res) {
     // save absent for given jday - slots
     if (req.session.user && req.body.userid == req.session.user.id ) {
       console.log("User saved some data");
-      database.saveabsent(req.body,function(msg) {
+      database.saveabsent(req.session.user,req.body,function(msg) {
          res.send(msg);
          delete addons.absent;
       });
     } else {
       res.send({ok:false, msg:"bad user"});
     }
+});
+
+app.post('/create_course', function(req, res) {
+    // create a new course
+    if (req.session.user && req.session.user.isadmin) {
+      console.log("admin creating new course");
+      console.log(req.body);
+      res.send({ok:true, msg:"new course"});
+      //database.saveabsent(req.session.user,req.body,function(msg) {
+      //   res.send(msg);
+      //   delete addons.absent;
+      //});
+    } else {
+      res.send({ok:false, msg:"bad user"});
+    }
+});
+
+app.get('/getsql', function(req, res) {
+    console.log("getting some general data");
+    database.getSomeData(req.session.user, req.query.sql, req.query.param, function(data) {
+      res.send(data);
+    });
 });
 
 app.get('/getabsent', function(req, res) {
@@ -299,6 +321,19 @@ app.get('/getabsent', function(req, res) {
             addons.update.absent = new Date();
             res.send(absent);
           });
+    }
+});
+
+app.post('/save_timetable', function(req, res) {
+    // save a change of timetabledata
+    // teachid,day,slot,value
+    if (req.session.user && req.session.user.isadmin) {
+      console.log("Admin changing a timetable");
+      database.saveTimetableSlot(req.session.user,req.body,function(msg) {
+         res.send(msg);
+      });
+    } else {
+      res.send({ok:false, msg:"bad user"});
     }
 });
 
