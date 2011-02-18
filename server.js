@@ -497,7 +497,7 @@ app.get('/basic', function(req, res) {
         db.lastweek  = (month >8) ? julian.w2j(year+1,26) : julian.w2j(year,26)
         // info about this week
         db.thisjd = julian.greg2jul(month,day,year );
-        db.startjd = 7 * Math.floor(db.thisjd ) / 7);
+        db.startjd = 7 * (Math.floor(db.thisjd ) / 7);
         db.startdate = julian.jdtogregorian(db.startjd);
         db.enddate = julian.jdtogregorian(db.startjd+6);
         db.week = julian.week(db.startjd);
