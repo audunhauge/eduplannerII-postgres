@@ -145,9 +145,11 @@ function build_plantable(jd,uid,username,timeplan,xtraplan,filter) {
     // lager en html-tabell for timeplanen
     var start = database.starttime;
     var members = username;
+    /*
     if (filter == 'group') {
         members = fullname[username] + " " + username;
     }
+    */
     if (memberlist && memberlist[username]) {
         // this is a timetable for a group/class
         // show members as a list in caption (on hover)
@@ -169,11 +171,13 @@ function build_plantable(jd,uid,username,timeplan,xtraplan,filter) {
        s += "<td class=\"time\">"+start[i]+"</td>";
        for (j=0; j<5; j++) {
           cell = '&nbsp;';
+          if (isadmin && filter == 'teach') cell = '<div id="'+uid+'_'+j+"_"+i+'" class="edit">' + cell + '</div>';
           bad = '';         // used to mark bad data, xcell and cell should be exclusive
           xcell = '';
           var header = 'AndreFag';
           if (timeplan[i] && timeplan[i][j]) {
              cell = timeplan[i][j];
+             if (isadmin && filter == 'teach') cell = '<div id="'+uid+'_'+j+"_"+i+'" class="edit">' + cell + '</div>';
              if (filter == 'RAD') {
                 if (cell.substr(0,4) != 'RADG') {
                     cell = '<span class="grey">'+cell+'</span>';
@@ -239,10 +243,13 @@ function vistimeplan(data,uid,filter) {
      var xtraplan = {};
      var i,j;
      var s = '';
-     var cell,userlist,gruppe,popup;
-     var user = (teachers[uid]) ?  teachers[uid] : (students[uid]) ? students[uid] : {firstname:uid,lastname:''};
+     var cell,userlist,gruppe,popup,user,username;
+     if (filter == 'gr' || filter == 'fg') { 
+       user = {firstname:uid,lastname:''};
+     } else {
+       user = (teachers[uid]) ?  teachers[uid] : (students[uid]) ? students[uid] : {firstname:uid,lastname:''};
+     }
      var username = user.firstname + ' ' + user.lastname;
-     var elever = memberlist[uid] || null;
      // hent ut ekstraplanen - skal vises som css:hover
      if (data.xplan) {
         var xplan = data.xplan;
@@ -293,6 +300,27 @@ function vis_valgt_timeplan(user,filter,visfagplan) {
     // if user is name of klass or group then getcourseplan
     s = vistimeplan(userplan,uid,filter);
     $j("#timeplan").html(s);
+    $j('.edit').editable(save_timetable, {
+         indicator : 'Saving...',
+         tooltip   : 'Click to edit...',
+         doformat  : translatebreaks,
+         submit    : 'OK'
+     });
+}
+
+
+function save_timetable(val,opt) {
+   if (isadmin) {
+     var myid = $j(this).attr("id").split('_');
+     var tid  = myid[0];
+     var day  = myid[1];
+     var slot = myid[2];
+     $j.post( "/save_timetable", { "teachid":tid, "day":day, "slot":slot, "val":val },function(msg) {
+           alert(msg);
+         });
+     // we now have the day and slot
+   }
+   return val;
 }
 
 
@@ -325,19 +353,28 @@ function vis_timeplan(s,bru,filter) {
 }
 
 function vis_gruppetimeplan() {
-    var bru = brukerliste[valg];
+    var bru = database.groups;
     var ant = bru.length;
     var s="<div id=\"timeviser\"><h1>Gruppe-timeplaner</h1>";
-    // this div is closed in vis_timeplan
     s+= '<div class="gui" id=\"velg\">Velg gruppen du vil se timeplanen for <select id="velgbruker">';
     s+= '<option value="0"> --velg-- </option>';
+    var sorted = [];
     for (var i=0;i< ant; i++) {
-       var e = bru[i]; 
-       var fagnavn = fullname[e.username];
-       s+= '<option value="'+i+'">' + fagnavn+ " " + e.username  +  "</option>";
+       var e = bru[i], fagnavn = e;
+       if ($j.inArray(e,database.classes) >= 0) continue;
+       if (database.grcourses[e]) {
+         var grc = database.grcourses[e];
+         if (grc.length == 1) fagnavn = grc[0] + "_" + e;
+         sorted.push({text:fagnavn,idx:i});
+       }
+    }
+    sorted.sort(function (a,b) { return (a.text > b.text) ? 1 : -1 });
+    for (var str in sorted) {
+      var elm = sorted[str];
+      s+= '<option value="'+elm.idx+'">' + elm.text  +  "</option>";
     }
     s+= "</select></div>";
-    vis_timeplan(s,bru,'group' );
+    vis_timeplan(s,bru,'gr' );
 }
 
 function vis_klassetimeplan() {
@@ -351,7 +388,7 @@ function vis_klassetimeplan() {
        s+= '<option value="'+i+'">' + e  +  "</option>";
     }
     s+= "</select></div>";
-    vis_timeplan(s,bru,'' );
+    vis_timeplan(s,bru,'kl' );
 }
 
 
@@ -372,12 +409,21 @@ function vis_teachtimeplan() {
     var s='<div id="timeviser"><h1>Lærer-timeplaner</h1>';
     s+= '<div class="gui" id="velg">Velg lærer du vil se timeplanen for <select id="velgbruker">';
     s+= '<option value="0"> --velg-- </option>';
+    $j.get('/getsql',{ sql:"select * from mdl_user", param:''}, function(data) {
+          test = data;
+        });
+    var sorted = [];
     for (var i in teachers) {
        e = teachers[i]; 
-       s+= '<option value="'+i+'">' + e.username + " " + e.lastname + " " + e.firstname  +  "</option>";
+       sorted.push({text:e.username + " " + e.lastname + " " + e.firstname, idx:i});
+    }
+    sorted.sort(function (a,b) { return (a.text > b.text) ? 1 : -1 });
+    for (var str in sorted) {
+      var elm = sorted[str];
+      s+= '<option value="'+elm.idx+'">' + elm.text  +  "</option>";
     }
     s+= "</select></div>";
-    vis_timeplan(s,teachers,'non' );
+    vis_timeplan(s,teachers,'teach' );
 }
 
 function getcourseplan(cgr) {

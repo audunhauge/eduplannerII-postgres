@@ -286,6 +286,28 @@ app.post('/save_absent', function(req, res) {
     }
 });
 
+app.post('/create_course', function(req, res) {
+    // create a new course
+    if (req.session.user && req.session.user.isadmin) {
+      console.log("admin creating new course");
+      console.log(req.body);
+      res.send({ok:true, msg:"new course"});
+      //database.saveabsent(req.session.user,req.body,function(msg) {
+      //   res.send(msg);
+      //   delete addons.absent;
+      //});
+    } else {
+      res.send({ok:false, msg:"bad user"});
+    }
+});
+
+app.get('/getsql', function(req, res) {
+    console.log("getting some general data");
+    database.getSomeData(req.session.user, req.query.sql, req.query.param, function(data) {
+      res.send(data);
+    });
+});
+
 app.get('/getabsent', function(req, res) {
     // get absent list
     var justnow = new Date();
@@ -299,6 +321,19 @@ app.get('/getabsent', function(req, res) {
             addons.update.absent = new Date();
             res.send(absent);
           });
+    }
+});
+
+app.post('/save_timetable', function(req, res) {
+    // save a change of timetabledata
+    // teachid,day,slot,value
+    if (req.session.user && req.session.user.isadmin) {
+      console.log("Admin changing a timetable");
+      database.saveTimetableSlot(req.session.user,req.body,function(msg) {
+         res.send(msg);
+      });
+    } else {
+      res.send({ok:false, msg:"bad user"});
     }
 });
 
@@ -357,6 +392,19 @@ app.post('/save_fagplan', function(req, res) {
 
 });
 
+app.get('/tickets', function(req, res) {
+    // only used by mdd
+    database.gettickets(req.session.user, req.query,function(tickets) {
+            res.send(tickets);
+          });
+});
+
+app.get('/show', function(req, res) {
+    // only used by mdd
+    database.getshow(function(show) {
+            res.send(show);
+          });
+});
 
 app.get('/alltests', function(req, res) {
     // get new tests
@@ -413,6 +461,7 @@ app.get('/blocks', function(req, res) {
           });
 });
 
+
 app.get('/timetables', function(req, res) {
     // timetables dont change much - reuse value
     if (addons.timetable) {
@@ -421,6 +470,12 @@ app.get('/timetables', function(req, res) {
             addons.timetable = timtab;
             res.send(addons.timetable);
           });
+});
+
+app.get('/freedays', function(req, res) {
+    // called when freedays have been changed
+    database.getfreedays(); 
+    res.send("ok");
 });
 
 app.get('/yearplan', function(req, res) {
@@ -441,7 +496,8 @@ app.get('/basic', function(req, res) {
         db.firstweek = (month >8) ? julian.w2j(year,33) : julian.w2j(year-1,33)
         db.lastweek  = (month >8) ? julian.w2j(year+1,26) : julian.w2j(year,26)
         // info about this week
-        db.startjd = 7 * Math.floor(julian.greg2jul(month,day,year ) / 7);
+        db.thisjd = julian.greg2jul(month,day,year );
+        db.startjd = 7 * Math.floor(db.thisjd ) / 7);
         db.startdate = julian.jdtogregorian(db.startjd);
         db.enddate = julian.jdtogregorian(db.startjd+6);
         db.week = julian.week(db.startjd);

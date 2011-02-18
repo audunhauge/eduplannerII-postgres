@@ -194,7 +194,7 @@ var saveabsent = function(user,query,callback) {
   if (text == '') client.query(
           
           'delete from mdl_bookings_calendar'
-      + ' where name = ? and (class=? or class=0 ) and userid= ? and eventtype="absent" and julday= ? ' , [ name,klass,userid, jd ],
+      + ' where name = ? and (? or (class=? or class=0 ) and userid= ?) and eventtype="absent" and julday= ? ' , [ name,user.isadmin,klass,userid, jd ],
           function (err, results, fields) {
               if (err) {
                   callback( { ok:false, msg:err.message } );
@@ -327,6 +327,67 @@ var savesimple = function(query,callback) {
       });
 }
 
+var saveTimetableSlot = function(user,query,callback) {
+  // update/insert test
+
+  var teachid  = query.teachid;
+  var day = query.day;
+  var slot = query.slot;
+  var value = query.val;
+  console.log(teachid,day,slot,value);
+  if (value == '')  { 
+    // dont actually delete anything from timetable
+    /*client.query(
+          'delete from mdl_bookings_calendar'
+      + ' where day = ? and slot = ? and userid = ? and eventtype="timetable" ' , [ courseid,  user.id, julday ],
+          function (err, results, fields) {
+              if (err) {
+                  callback( { ok:false, msg:err.message } );
+                  return;
+              }
+              callback( {ok:true, msg:"deleted"} );
+          }); */
+  } else client.query(
+        'select * from mdl_bookings_calendar '
+      + ' where userid = ? and day = ? and slot = ? and eventtype="timetable" ' , [ teachid,  day, slot ],
+      function (err, results, fields) {
+          if (err) {
+              callback( { ok:false, msg:err.message } );
+              return;
+          }
+          var time = results.pop();
+          if (time) {
+              console.log(time);
+              if (time.value != value) {
+              client.query(
+                  'update mdl_bookings_calendar set value=?,name=? where id=?',[ value,value, time.id ],
+                  function (err, results, fields) {
+                      if (err) {
+                          callback( { ok:false, msg:err.message } );
+                          return;
+                      }
+                      callback( {ok:true, msg:"updated"} );
+                  });
+              } else {
+                callback( {ok:true, msg:"unchanged"} );
+              }
+          } else {
+            /*
+            console.log("inserting new");
+            client.query(
+                'insert into mdl_bookings_calendar (courseid,userid,julday,eventtype,value) values (?,?,?,"prove",?)',[courseid, user.id, julday,tlist],
+                function (err, results, fields) {
+                    if (err) {
+                        callback( { ok:false, msg:err.message } );
+                        return;
+                    }
+                    callback( {ok:true, msg:"inserted"} );
+                });
+                */
+          }
+      });
+}
+
 var saveTest = function(user,query,callback) {
   // update/insert test
 
@@ -424,6 +485,27 @@ var updateCoursePlan = function(query,callback) {
       });
 }
 
+
+
+var getSomeData = function(user,sql,param,callback) {
+  // runs a query and returns the recordset
+  // only allows admin to run this query
+  if (!user || !user.isadmin) {
+    callback("not allowed");
+    return;
+  }
+  if (param == '') param = [];
+  client.query(
+      sql,param,
+      function (err, results, fields) {
+          if (err) {
+              console.log("ERROR: " + err.message);
+              throw err;
+          }
+          callback(results);
+      });
+}
+
 var getBlocks = function(callback) {
   // returns a hash of all blocks (slots for tests for all courses in a block)
   // the first to digits in groupname gives the block
@@ -472,6 +554,56 @@ var getReservations = function(callback) {
           }
           callback(reservations);
           //console.log(reservations);
+      });
+}
+
+var gettickets = function(user,query,callback) {
+  // returns a hash of tickets for show
+  // assumes you give it a callback that assigns the hash
+  client.query(
+      // fetch all shows
+       'SELECT * from mdl_show_tickets where showid=?',[query.showid],
+      function (err, results, fields) {
+          if (err) {
+              console.log("ERROR: " + err.message);
+              throw err;
+          }
+          var tickets = {};
+          for (var i=0,k= results.length; i < k; i++) {
+              var tick = results[i];
+              var julday = tick.jd;
+              delete tick.jd;
+              if (!tickets[julday]) {
+                tickets[julday] = [];
+              }
+              tickets[julday].push(tick);
+          }
+          callback(tickets);
+      });
+}
+
+var getshow = function(callback) {
+  // returns a hash of all shows
+  // assumes you give it a callback that assigns the hash
+  client.query(
+      // fetch all shows
+       'SELECT * from mdl_show',
+      function (err, results, fields) {
+          if (err) {
+              console.log("ERROR: " + err.message);
+              throw err;
+          }
+          var showlist = {};
+          for (var i=0,k= results.length; i < k; i++) {
+              var show = results[i];
+              var userid = show.userid;
+              delete show.userid;
+              if (!showlist[userid]) {
+                showlist[userid] = [];
+              }
+              showlist[userid].push(show);
+          }
+          callback(showlist);
       });
 }
 
@@ -563,7 +695,7 @@ var getTimetables = function(callback) {
       });
 }
 
-var getBasicData = function(client) {
+var getstudents = function() {
   // get some basic data from mysql
   // we want list of all users, list of all courses
   // list of all groups, list of all tests
@@ -589,6 +721,9 @@ var getBasicData = function(client) {
                 }
             }
       });
+}
+
+var getcourses = function() {
   client.query(
       // fetch courses, groups and course:categories
       'select c.id,c.shortname,c.category,count(ra.id) as cc from mdl_role_assignments ra inner join mdl_context x'
@@ -682,6 +817,9 @@ var getBasicData = function(client) {
                   //console.log(db.courseteach);
               });
       });
+}
+
+var getfreedays = function() {
   client.query(
       // fetch free-days
       'select * from mdl_bookings_calendar where eventtype="fridager"',
@@ -695,6 +833,9 @@ var getBasicData = function(client) {
               db.freedays[free.julday] = free.value;
           }
       });
+}
+
+var getyearplan = function() {
   client.query(
       // fetch yearplan events
       'select id,julday,value from mdl_bookings_calendar where eventtype="aarsplan"',
@@ -712,6 +853,9 @@ var getBasicData = function(client) {
           }
           //console.log(db.yearplan);
       });
+}
+
+var getexams = function() {
   client.query(
       // fetch big tests (exams and other big tests - they block a whold day )
       'select id,julday,name,value from mdl_bookings_calendar where eventtype="heldag"',
@@ -729,12 +873,30 @@ var getBasicData = function(client) {
           }
           //console.log(db.heldag);
       });
+}
+
+var getBasicData = function(client) {
+  // get some basic data from mysql
+  // we want list of all users, list of all courses
+  // list of all groups, list of all tests
+  // list of all freedays, list of all bigtests (exams etc)
+  // list of all rooms, array of coursenames (for autocomplete)
+  getstudents();
+  getcourses();
+  getfreedays();
+  getyearplan();
+  getexams();
 };
 
 
 module.exports.db = db;
 module.exports.client = client;
 module.exports.getAllTests = getAllTests;
+module.exports.getstudents = getstudents;
+module.exports.getcourses = getcourses;
+module.exports.getfreedays = getfreedays;
+module.exports.getyearplan = getyearplan;
+module.exports.getexams = getexams;
 module.exports.getReservations = getReservations;
 module.exports.getTimetables = getTimetables;
 module.exports.getCoursePlans = getCoursePlans;
@@ -745,3 +907,7 @@ module.exports.getBlocks = getBlocks;
 module.exports.savesimple = savesimple;
 module.exports.saveabsent = saveabsent;
 module.exports.getabsent = getabsent;
+module.exports.getshow = getshow;
+module.exports.gettickets = gettickets;
+module.exports.saveTimetableSlot =  saveTimetableSlot ;
+module.exports.getSomeData = getSomeData ;

@@ -1,12 +1,14 @@
 // editing functions
 
 
-var minVisning = "#toot";  // valgt visning - slik at vi kan tegne på nytt
+var minVisning = "#rest";  // valgt visning - slik at vi kan tegne på nytt
 var testjd;    // store the current julday for a new test
 var undoid;    // store the id of changed value (so we can update html)
+//var uke = database.week;
 
 function edit_proveplan(fagnavn,plandata,start,stop) {
     // rediger prøveplanen for et fag
+    start = typeof(start) != 'undefined' ?  start : database.week;
     minfagplan = fagnavn;
     var thisblock = fagnavn.split('_')[1].substring(0,2);
     var jd = database.firstweek;
@@ -580,7 +582,7 @@ function update_fagplaner(fagnavn,section,summary) {
 }
 
 function translatebreaks(s) {
-    return s.replace(/<br>/g,"\n");
+    return s.replace(/<br>/g,"\n").replace(/\&nbsp;/g,' ');
 }
 
 function fagplan_enable_editing(lerar,owner) {
