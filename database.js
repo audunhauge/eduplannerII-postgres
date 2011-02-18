@@ -179,7 +179,7 @@ var updateTotCoursePlan = function(query,callback) {
       });
 }
 
-var saveabsent = function(query,callback) {
+var saveabsent = function(user,query,callback) {
   // update/insert absent list
   var idd  = query.jd.substr(3);
   var jd = idd.split('_')[0];
@@ -189,7 +189,10 @@ var saveabsent = function(query,callback) {
   var userid = query.userid;
   var klass = query.klass;
   console.log("Saving:",jd,text,name,userid,klass);
+          console.log('delete from mdl_bookings_calendar'
+      + ' where name = ? and (class=? or class=0 ) and userid= ? and eventtype="absent" and julday= ? ' , [ name,klass,userid, jd ]);
   if (text == '') client.query(
+          
           'delete from mdl_bookings_calendar'
       + ' where name = ? and (class=? or class=0 ) and userid= ? and eventtype="absent" and julday= ? ' , [ name,klass,userid, jd ],
           function (err, results, fields) {
@@ -209,7 +212,7 @@ var saveabsent = function(query,callback) {
           }
           var abs = results.pop();
           if (abs) {
-              console.log(abs);
+              //console.log(abs);
               if (abs.value != text || abs.name != name) {
               client.query(
                   'update mdl_bookings_calendar set class=?, name=?,value=? where id=?',[ klass,name,text, abs.id ],

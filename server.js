@@ -262,7 +262,7 @@ app.post('/save_excursion', function(req, res) {
           var us = ulist.pop();
           if (+us > 0) {
             req.body.userid = +us;
-            database.saveabsent(req.body,stuffit);
+            database.saveabsent(req.session.user,req.body,stuffit);
           } else {
              delete addons.absent;
              res.send({ok:true, msg:"doneitall"});
@@ -277,7 +277,7 @@ app.post('/save_absent', function(req, res) {
     // save absent for given jday - slots
     if (req.session.user && req.body.userid == req.session.user.id ) {
       console.log("User saved some data");
-      database.saveabsent(req.body,function(msg) {
+      database.saveabsent(req.session.user,req.body,function(msg) {
          res.send(msg);
          delete addons.absent;
       });
