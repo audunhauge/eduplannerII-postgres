@@ -554,6 +554,56 @@ var getReservations = function(callback) {
       });
 }
 
+var gettickets = function(user,query,callback) {
+  // returns a hash of tickets for show
+  // assumes you give it a callback that assigns the hash
+  client.query(
+      // fetch all shows
+       'SELECT * from mdl_show_tickets where showid=?',[query.showid],
+      function (err, results, fields) {
+          if (err) {
+              console.log("ERROR: " + err.message);
+              throw err;
+          }
+          var tickets = {};
+          for (var i=0,k= results.length; i < k; i++) {
+              var tick = results[i];
+              var julday = tick.jd;
+              delete tick.jd;
+              if (!tickets[julday]) {
+                tickets[julday] = [];
+              }
+              tickets[julday].push(tick);
+          }
+          callback(tickets);
+      });
+}
+
+var getshow = function(callback) {
+  // returns a hash of all shows
+  // assumes you give it a callback that assigns the hash
+  client.query(
+      // fetch all shows
+       'SELECT * from mdl_show',
+      function (err, results, fields) {
+          if (err) {
+              console.log("ERROR: " + err.message);
+              throw err;
+          }
+          var showlist = {};
+          for (var i=0,k= results.length; i < k; i++) {
+              var show = results[i];
+              var userid = show.userid;
+              delete show.userid;
+              if (!showlist[userid]) {
+                showlist[userid] = [];
+              }
+              showlist[userid].push(show);
+          }
+          callback(showlist);
+      });
+}
+
 var getAllTests = function(callback) {
   // returns a hash of all tests --- same as db.prover, 
   // used to populate db.prover
@@ -642,7 +692,7 @@ var getTimetables = function(callback) {
       });
 }
 
-var getBasicData = function(client) {
+var getstudents = function() {
   // get some basic data from mysql
   // we want list of all users, list of all courses
   // list of all groups, list of all tests
@@ -668,6 +718,9 @@ var getBasicData = function(client) {
                 }
             }
       });
+}
+
+var getcourses = function() {
   client.query(
       // fetch courses, groups and course:categories
       'select c.id,c.shortname,c.category,count(ra.id) as cc from mdl_role_assignments ra inner join mdl_context x'
@@ -761,6 +814,9 @@ var getBasicData = function(client) {
                   //console.log(db.courseteach);
               });
       });
+}
+
+var getfreedays = function() {
   client.query(
       // fetch free-days
       'select * from mdl_bookings_calendar where eventtype="fridager"',
@@ -774,6 +830,9 @@ var getBasicData = function(client) {
               db.freedays[free.julday] = free.value;
           }
       });
+}
+
+var getyearplan = function() {
   client.query(
       // fetch yearplan events
       'select id,julday,value from mdl_bookings_calendar where eventtype="aarsplan"',
@@ -791,6 +850,9 @@ var getBasicData = function(client) {
           }
           //console.log(db.yearplan);
       });
+}
+
+var getexams = function() {
   client.query(
       // fetch big tests (exams and other big tests - they block a whold day )
       'select id,julday,name,value from mdl_bookings_calendar where eventtype="heldag"',
@@ -808,12 +870,30 @@ var getBasicData = function(client) {
           }
           //console.log(db.heldag);
       });
+}
+
+var getBasicData = function(client) {
+  // get some basic data from mysql
+  // we want list of all users, list of all courses
+  // list of all groups, list of all tests
+  // list of all freedays, list of all bigtests (exams etc)
+  // list of all rooms, array of coursenames (for autocomplete)
+  getstudents();
+  getcourses();
+  getfreedays();
+  getyearplan();
+  getexams();
 };
 
 
 module.exports.db = db;
 module.exports.client = client;
 module.exports.getAllTests = getAllTests;
+module.exports.getstudents = getstudents;
+module.exports.getcourses = getcourses;
+module.exports.getfreedays = getfreedays;
+module.exports.getyearplan = getyearplan;
+module.exports.getexams = getexams;
 module.exports.getReservations = getReservations;
 module.exports.getTimetables = getTimetables;
 module.exports.getCoursePlans = getCoursePlans;
@@ -824,5 +904,7 @@ module.exports.getBlocks = getBlocks;
 module.exports.savesimple = savesimple;
 module.exports.saveabsent = saveabsent;
 module.exports.getabsent = getabsent;
+module.exports.getshow = getshow;
+module.exports.gettickets = gettickets;
 module.exports.saveTimetableSlot =  saveTimetableSlot ;
 module.exports.getSomeData = getSomeData ;

@@ -392,6 +392,19 @@ app.post('/save_fagplan', function(req, res) {
 
 });
 
+app.get('/tickets', function(req, res) {
+    // only used by mdd
+    database.gettickets(req.session.user, req.query,function(tickets) {
+            res.send(tickets);
+          });
+});
+
+app.get('/show', function(req, res) {
+    // only used by mdd
+    database.getshow(function(show) {
+            res.send(show);
+          });
+});
 
 app.get('/alltests', function(req, res) {
     // get new tests
@@ -448,6 +461,7 @@ app.get('/blocks', function(req, res) {
           });
 });
 
+
 app.get('/timetables', function(req, res) {
     // timetables dont change much - reuse value
     if (addons.timetable) {
@@ -456,6 +470,12 @@ app.get('/timetables', function(req, res) {
             addons.timetable = timtab;
             res.send(addons.timetable);
           });
+});
+
+app.get('/freedays', function(req, res) {
+    // called when freedays have been changed
+    database.getfreedays(); 
+    res.send("ok");
 });
 
 app.get('/yearplan', function(req, res) {
@@ -476,7 +496,8 @@ app.get('/basic', function(req, res) {
         db.firstweek = (month >8) ? julian.w2j(year,33) : julian.w2j(year-1,33)
         db.lastweek  = (month >8) ? julian.w2j(year+1,26) : julian.w2j(year,26)
         // info about this week
-        db.startjd = 7 * Math.floor(julian.greg2jul(month,day,year ) / 7);
+        db.thisjd = julian.greg2jul(month,day,year );
+        db.startjd = 7 * Math.floor(db.thisjd ) / 7);
         db.startdate = julian.jdtogregorian(db.startjd);
         db.enddate = julian.jdtogregorian(db.startjd+6);
         db.week = julian.week(db.startjd);

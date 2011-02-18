@@ -16,6 +16,8 @@ var showplan  = gup("plan") || '';         // dersom ?plan=3it5_3402 da vises de
 var dager = "Man Tir Ons Tor Fre Merknad".split(" ");
 var eier;               // eier av siste timeplan (navn osv)
 
+var show = {};   // list over all shows indexed by userid
+
 var timetables = {};
 var timeregister = {};
 // timeregister lagrer timeplaner slik at de kan vises
@@ -110,23 +112,7 @@ function take_action() {
         default:
             if (isteach) {
                 setup_teach();
-            } else  {
-                $j("#login").html('login').click(function(event) {
-                    event.preventDefault();
-                    get_login();
-                });
-            } 
-            $j("#seek").html('<span id="heat"><span class="label">søk:'
-                + '</span><input id="seeker" class="seeker" type="text" value="" size="18"></span>');
-            $j("#heat").hover(function(event) {
-                  $j("#seeker").focus();
-                });
-            $j("#seeker").keypress(function(event) {
-                if (event.keyCode == "13") {
-                    event.preventDefault();
-                    window.location = '/yearplan?navn='+$j("#seeker").val();
-                }
-            });
+            }
 
             break;
     }
@@ -157,7 +143,7 @@ function setup_teach() {
     }
     romvalg += '</ul>';
     var s = '<li><a id="romres" href="#">Romreservering</a>'+romvalg+'</li>'
-            + '<li><a id="starb" href="#">Starb</a></li>';
+           + ''; // + '<li><a id="starb" href="#">Starb</a></li>';
     if (isadmin) {
         s +=  '<li><a id="rediger" href="#">Rediger</a><ul>'
             +    '<li><a id="edfridager"     href="#">Fridager</a></li>'
@@ -255,23 +241,79 @@ function get_login() {
         var password = $j("#pwd").val();
         $j.get( '/login',{"username":username, "password":password }, function(uinfo) {
             if (uinfo && uinfo.id > 0) {
-              database.userinfo = userinfo = uinfo;
-              // if user.id > 0 then we are logged in
-              // add new and dainty things to the menu
-              // same as isteach
+              afterloggin(uinfo);
               if (userinfo.department == 'Undervisning') {
-                fullname = userinfo.firstname + ' ' + userinfo.lastname;
-                user = fullname;
-                userinfo.fullname = fullname;
-                isteach = true;
-                isadmin = (database.userinfo.isadmin);
                 setup_teach();
-                //$j("#login").unbind();
               }
               show_thisweek();
             }
         });
     });
+}
+
+function belongsToCategory(uid,cat) {
+  // return true if user has a course in this category
+  if (timetables.teach && timetables.teach[uid]) {
+    // we have a teach 
+    var minefag = database.teachcourse[uid];
+    for (var j in minefag) {
+      var fagcourse = minefag[j];
+      var faggruppe = fagcourse.split('_');
+      var fag = faggruppe[0];
+      if (fag == 'KOMO') continue;
+      if (+database.category[fag] == +cat) {
+        console.log(fag);
+        return true;
+      }
+    }
+  } else {
+    // this is a stud
+    var usergr = database.memgr[uid] || null;
+    if (usergr) {
+      for (var i in usergr) {
+        var group = usergr[i];
+        var fagliste = database.grcourses[group];
+        for (var k in fagliste) {
+          var fag = fagliste[k];
+          if (+database.category[fag] == +cat) return true;
+        }
+      }
+    } 
+  }
+  return false;
+}
+
+function afterloggin(uinfo) {
+    uinfo.mdd = belongsToCategory(uinfo.id,10);
+    database.userinfo = userinfo = uinfo;
+    // if user.id > 0 then we are logged in
+    // add new and dainty things to the menu
+    // same as isteach
+    if (userinfo.mdd) {
+       $j.get( '/show', function(showlist) {
+          show = showlist;
+          s =  '<li><a id="show" href="#">Show</a><ul>'
+              +    '<li><a id="editshow"       href="#">Rediger show</a></li>'
+              +    '<li><a id="tickets"       href="#">Billettsalg</a></li>'
+              + '</ul></li>';
+          $j("#nav").append(s);
+          $j("#editshow").click(function(event) {
+              event.preventDefault();
+              editshow(userinfo.id);
+          });
+          $j("#tickets").click(function(event) {
+              event.preventDefault();
+              tickets(userinfo.id);
+          });
+         });
+    }
+    if (userinfo.department == 'Undervisning') {
+      fullname = userinfo.firstname + ' ' + userinfo.lastname;
+      user = fullname;
+      userinfo.fullname = fullname;
+      isteach = true;
+      isadmin = (database.userinfo.isadmin);
+    }
 }
 
 var prevtitle;
@@ -394,27 +436,16 @@ $j(document).ready(function() {
                   // if user.id > 0 then we are logged in
                   // add new and dainty things to the menu
                   // same as isteach
-                  database.userinfo = userinfo = uinfo;
-                  if (userinfo.department == 'Undervisning') {
-                    fullname = userinfo.firstname + ' ' + userinfo.lastname;
-                    user = fullname;
-                    userinfo.fullname = fullname;
-                    isteach = true;
-                    //isadmin = (userinfo.isadmin == 'y');
-                    isadmin = (database.userinfo.isadmin);
-                    take_action();
-                  }
+                  afterloggin(uinfo)
                } else {
                     userinfo = database.userinfo || { firstname:"", lastname:"", department:"", isadmin:false };
                     fullname = userinfo.firstname + " " + userinfo.lastname;
-                    //isteach = (userinfo.department == 'Undervisning');
                     userinfo.maybeteach = (userinfo.department == 'Undervisning');
                     isteach = false;
-                    //isadmin = userinfo.isadmin;
                     isadmin = false;
-                    take_action();
                     prevtitle = $j("#htitle").html();
                }
+               take_action();
                if (action == 'default') {
                  show_thisweek();
                }
@@ -502,6 +533,21 @@ $j(document).ready(function() {
     $j("#andreplaner").click(function(event) {
         event.preventDefault();
         vis_andreplaner();
+    });
+    $j("#login").html('login').click(function(event) {
+        event.preventDefault();
+        get_login();
+    });
+    $j("#seek").html('<span id="heat"><span class="label">søk:'
+        + '</span><input id="seeker" class="seeker" type="text" value="" size="18"></span>');
+    $j("#heat").hover(function(event) {
+          $j("#seeker").focus();
+        });
+    $j("#seeker").keypress(function(event) {
+        if (event.keyCode == "13") {
+            event.preventDefault();
+            window.location = '/yearplan?navn='+$j("#seeker").val();
+        }
     });
 });
 

@@ -30,6 +30,31 @@ html { min-height: 100%; margin-bottom: 1px; }
 }
 */
 
+#ramme {
+  position:relative;
+}
+
+#showlist {
+  position:relative;
+  width:16em;
+  height:30em;
+}
+#salg {
+  position:absolute;
+  top:2em;
+  left:18em;
+  width:36em;
+}
+#accu {
+  position:absolute;
+  top:2em;
+  left:34em;
+  width:30em;
+  border:solid gray 1px;
+  height:20em;
+}
+
+
 #cmanager {
   height:20em;
 }
@@ -391,6 +416,10 @@ div.button:active {
   -moz-box-shadow:none;
 }
 
+div.bigbu {
+  width:15em;
+}
+
 div.posbut {
   position:absolute;
   left:2em;
@@ -400,6 +429,11 @@ div.posbut {
 div.red {
   background: -moz-linear-gradient(left,#A6580A,#4A2220);
   background: -webkit-gradient(linear, 0% 0%, 100% 0%, from(#A6580A), to(#4A2220));
+}
+
+div.blue {
+  background: -moz-linear-gradient(left,#6558aA,#4A2220);
+  background: -webkit-gradient(linear, 0% 0%, 100% 0%, from(#6558aA), to(#4A2220));
 }
 
 
