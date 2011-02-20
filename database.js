@@ -192,7 +192,6 @@ var saveabsent = function(user,query,callback) {
           console.log('delete from mdl_bookings_calendar'
       + ' where name = ? and (class=? or class=0 ) and userid= ? and eventtype="absent" and julday= ? ' , [ name,klass,userid, jd ]);
   if (text == '') client.query(
-          
           'delete from mdl_bookings_calendar'
       + ' where name = ? and (? or (class=? or class=0 ) and userid= ?) and eventtype="absent" and julday= ? ' , [ name,user.isadmin,klass,userid, jd ],
           function (err, results, fields) {
@@ -445,6 +444,33 @@ var saveTest = function(user,query,callback) {
           }
       });
 }
+
+var selltickets = function(user,query,callback) {
+    console.log(query);
+    var julday = julian.greg2jul(month,day,year);
+    var showid = query.showid;
+    var type = query.type;
+    var accu = query.accu.split('|');
+    var now = new Date();
+    var jn = now.getHours()*100 + now.getMinutes();
+    var values = [];
+    for (var i in accu) {
+        var elm = accu[i].split(',');
+        values.push('('+showid+',"'+elm[0]+'",'+elm[1]+',"'+type+'",'+elm[2]+','+jn+','+julday+','+user.id+')' );
+    }
+    var valuelist = values.join(',');
+    //console.log('insert into mdl_show_tickets (showid,showtime,price,kk,ant,saletime,jd,userid) values ' + values);
+    client.query(
+        'insert into mdl_show_tickets (showid,showtime,price,kk,ant,saletime,jd,userid) values ' + values,
+        function (err, results, fields) {
+            if (err) {
+                callback( { ok:false, msg:err.message } );
+                return;
+            }
+            callback( {ok:true, msg:"inserted"} );
+        });
+}
+
 
 var updateCoursePlan = function(query,callback) {
   // update courseplan for given section
@@ -908,6 +934,7 @@ module.exports.savesimple = savesimple;
 module.exports.saveabsent = saveabsent;
 module.exports.getabsent = getabsent;
 module.exports.getshow = getshow;
+module.exports.selltickets = selltickets ;
 module.exports.gettickets = gettickets;
 module.exports.saveTimetableSlot =  saveTimetableSlot ;
 module.exports.getSomeData = getSomeData ;
