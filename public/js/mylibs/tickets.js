@@ -102,7 +102,6 @@ function tickets(userid) {
     });
     $j(".betaling").click(function() {
 
-        $j("#accu").html('<li>Lagrer data ....</li>');
         $j("#bekreft").hide();
         $j("#salg").hide();
         $j(".voksen").removeClass("chosen");
@@ -119,18 +118,27 @@ function tickets(userid) {
         for (var asho in accu) {
             for (var apri in accu[asho]) {
                 var antb = accu[asho][apri];
+                if (antb == undefined) continue;
                 if (+antb != 0) {
                    accumul.push(asho+','+pricecost[apri]+','+antb);
                 }
             }
         }
-        $j.post('/buytickets',{showid:ashow.idx, accu:accumul.join('|'), type:type },function(resp) {
+        if (accumul.length > 0) {
+          $j("#accu").html('<li>Lagrer data ....</li>');
+          $j.post('/buytickets',{showid:ashow.idx, accu:accumul.join('|'), type:type },function(resp) {
                $j("#salg").show(); 
                var s = resp.msg;
                $j("#accu").html(s);
                $j("#showlist").removeClass("murky");
                accu = {};
             });
+        } else {
+          $j("#accu").html('Ingen data å lagre');
+          $j("#salg").show(); 
+          $j("#showlist").removeClass("murky");
+          accu = {};
+        }
 
       });
   });

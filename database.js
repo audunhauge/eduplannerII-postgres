@@ -450,6 +450,7 @@ var selltickets = function(user,query,callback) {
     var julday = julian.greg2jul(month,day,year);
     var showid = query.showid;
     var type = query.type;
+    //console.log(query.accu);
     var accu = query.accu.split('|');
     var now = new Date();
     var jn = now.getHours()*100 + now.getMinutes();
@@ -623,11 +624,19 @@ var getshow = function(callback) {
           for (var i=0,k= results.length; i < k; i++) {
               var show = results[i];
               var userid = show.userid;
-              delete show.userid;
+              var aut = show.authlist.split(',');
               if (!showlist[userid]) {
                 showlist[userid] = [];
               }
               showlist[userid].push(show);
+              for (var au in aut) {
+                autid = aut[au];
+                if (!showlist[autid]) {
+                  showlist[autid] = [];
+                }
+                showlist[autid].push(show);
+
+              }
           }
           callback(showlist);
       });
