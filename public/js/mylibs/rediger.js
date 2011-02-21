@@ -367,7 +367,7 @@ function visEnValgtPlan(plandata,egne,start,stop) {
                           var slo = slots[sl];
                           if (timmy[j][+slo]) {
                               // this stud is absent during course slot
-                              abslist.push( dager[j]+ 'dag ' + students[elev].firstname + ' ' + students[elev].lastname + ' '+ ab[elev].name);
+                              abslist.push( dager[j]+ 'dag&nbsp;' + students[elev].firstname + '&nbsp;' + students[elev].lastname + '&nbsp;'+ ab[elev].name);
                               break;
                           }
                       }
