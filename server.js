@@ -160,7 +160,7 @@ var assets = assetManager({
 		}
 	}
 });
-var port = 3000;
+var port = 80;
 var app = module.exports = express.createServer();
 
 
@@ -211,11 +211,6 @@ app.get('/500', function (req, res) {
 });
 
 // Your routes
-app.get('/', function(req, res) {
-	var locals = { 'key': 'value' };
-	locals = dummyHelper.add_overlay(app, req, locals);
-	res.render('index', locals);
-});
 
 var users = require('./users');
 
@@ -494,6 +489,10 @@ app.get('/yearplan', function(req, res) {
 	var locals = { 'key': 'value' };
 	locals = dummyHelper.add_overlay(app, req, locals);
 	res.render('yearplan/index', locals);
+});
+
+app.get('/', function(req, res) {
+  res.redirect('/yearplan');
 });
 
 app.get('/basic', function(req, res) {
