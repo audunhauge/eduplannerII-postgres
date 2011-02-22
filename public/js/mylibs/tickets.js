@@ -113,7 +113,7 @@ function tickets(userid) {
         var type =$j(this).html();
         if (!sold[ashow.name]) sold[ashow.name] = [];
         sold[ashow.name].push({acc:accu, time:new Date(), type:type, pricecost:pricecost });
-        showsummary(ashow.name);
+        showsummary();
         var accumul = [];
         for (var asho in accu) {
             for (var apri in accu[asho]) {
@@ -146,33 +146,55 @@ function tickets(userid) {
   
 }
 
-function showsummary(showname) {
-    var s = '<h3>'+showname+'</h3>'
-      +  '<table class="summary"><caption>Siste 14 dager</caption><tr><td>Kort</td><td>'+kksum.kort+' kr</td><td>Kontant</td><td>'+kksum.kontant+' kr</td></tr></table>'
-      + '<table class="summary">'
-      + '<caption>Solgt denne omgang</caption>';
-    var tsum=0;
-    for (var aki in sold[showname]) {
-        var akko = sold[showname][aki].acc;
-        var time = sold[showname][aki].time;
-        var type = sold[showname][aki].type;
-        var pc = sold[showname][aki].pricecost;
-        var sum=0;
-        for (var asho in akko) {
-            for (var apri in akko[asho]) {
-                var antb = akko[asho][apri];
-                if (+antb != 0) {
-                   sum += +antb * +pc[apri];
-                }
-                s += '<tr><td>' + akko[asho][apri] + '</td><td>' + apri + '</td><td>'+ asho + '</td>' + '</tr>'; 
+function showsummary() {
+  /*
+  $j.get( '/tickets', {showid:showid },function(tickets) {
+    s = '<table>';
+    s += '<tr><th>Show</th><th>Kort</th><th>Kontant</th></tr>';
+    var tsum = 0;
+    var antall = 0;
+    kksum = { kort:0, kontant:0 };
+    var s = '';
+    for (var i in tickets) {
+       if (+i > database.startjd - 14) {
+         var tics = tickets[i];
+            for (var j in tics) {
+                ti = tics[j];
+                antall += +ti.ant;
+                tsum += +ti.ant * +ti.price;
+                kksum[ti.kk.toLowerCase()] += +ti.ant * +ti.price;
             }
-        }
-        s += '<tr><th>'+type+'</th><th>'+sum+'kr</th><th>'+time.toLocaleTimeString()+'</th></tr>';
-        tsum += sum;
+       }
     }
-    s += '<tr><td>Totalt</td><td>'+tsum+' kr</td><td></td></tr>';
+    for (var shname in sold) {
+      var korts = 0, kontants = 0;
+      for (var aki in sold[shname]) {
+          var akko = sold[showname][aki].acc;
+          var time = sold[showname][aki].time;
+          var type = sold[showname][aki].type;
+          var pc = sold[showname][aki].pricecost;
+          var sum=0;
+          for (var asho in akko) {
+              for (var apri in akko[asho]) {
+                  var antb = akko[asho][apri];
+                  if (+antb != 0) {
+                     if (type == 'Kort') {
+                       korts += +antb * +pc[apri];
+                     } else {
+                       kontants += +antb * +pc[apri];
+                     }
+                  }
+              }
+          }
+          s += '<tr><th>'+showname+'</th><th>'+korts+'kr</th><th>'+kontants+'</th></tr>';
+          kortsum += korts; kontantsum += kontants;
+      }
+    }
+    s += '<tr><td>Totalt</td><th>'+kortsum+' kr</td><th>'+kontantsum+'</th></tr>';
     s += '</table>';
     $j("#summarytext").html(s);
+  });
+  */
 }
 
 function showchoice() {
@@ -236,25 +258,9 @@ function showaccu() {
 
 
 function salg(userid,showid,idx) {
-  $j.get( '/tickets', {showid:showid },function(tickets) {
-    var tsum = 0;
-    var antall = 0;
-    kksum = { kort:0, kontant:0 };
-    var s = '';
-    for (var i in tickets) {
-       if (+i > database.startjd - 14) {
-         var tics = tickets[i];
-            for (var j in tics) {
-                ti = tics[j];
-                antall += +ti.ant;
-                tsum += +ti.ant * +ti.price;
-                kksum[ti.kk.toLowerCase()] += +ti.ant * +ti.price;
-            }
-       }
-    }
     var mylist = show[userid];
     ashow = mylist[idx];
-    showsummary(ashow.name);
+    showsummary();
     $j(".voksen").hide();
     $j(".showtime").hide();
     var showtimes = ashow.showtime.split(',');
@@ -269,6 +275,5 @@ function salg(userid,showid,idx) {
        pricecost[price] = cost;
        $j("#pri"+pri).show().html(price).attr("price",cost);
     }
-  });
 }
 

@@ -301,6 +301,17 @@ function edit_excursion(uid) {
         var s = excur(id,wd,active,members);
         $j("#proveform").html(s);
         $j("#opp").hide();
+        $j("#proveform").delegate("a.togglegroup","click",function(event) {
+            var gru = $j(this).attr('id');
+            gru = gru.split('_')[1] || gru;
+            members = [];
+            for (var i in memberlist[gru]) {
+               var e = memberlist[gru][i];
+               members.push(""+e);
+            }
+            $j("#opp").show();
+            event.preventDefault();
+          });
         $j("#proveform").delegate("a.oppdater","click",function(event) {
             event.preventDefault();
             s = excur(id,wd,active,members);
@@ -314,8 +325,8 @@ function edit_excursion(uid) {
             var enr = $j(this).attr('id');
             var newlist = [];
             for (var i in members) {
-               var e = members[i];
-               if (+e != +enr) newlist.push(+e);
+               var e = +members[i];
+               if (+e != +enr) newlist.push(""+e);
             }
             members = newlist;
             $j(this).addClass("addpart");
@@ -328,7 +339,7 @@ function edit_excursion(uid) {
         $j("#proveform").delegate("a.addpart","click",function(event) {
             var enr = $j(this).attr('id');
             //$j(this).parent().hide();
-            members.push(enr);
+            members.push(""+enr);
             $j(this).addClass("removepart");
             $j(this).removeClass("addpart");
             $j("#opp").show();
@@ -352,7 +363,7 @@ function excur(id,wd,active,ulist) {
   var slots = ['====','====','====','====','====','====','====','====','====','===='];
   var unplanned = { 1:1,2:1,3:1,4:1,5:1,6:1,7:1,8:1,9:1}
   for (var ac in active) {
-    delete unplanned[ +active[ac] ];
+    delete unplanned[ +active[+ac] ];
   }
   var un = [];
   for (var ww in unplanned) {
@@ -406,6 +417,37 @@ function excur(id,wd,active,ulist) {
   }
   deltak += '</ul></li></ul>';
 
+  // legg til gruppevelger - kan velge en hel gruppe om gangen
+  var bru = database.groups;
+  var ant = bru.length;
+  var coursegroups = [];
+  for (var i=0;i< ant; i++) {
+       var e = bru[i], fagnavn = e;
+       //if ($j.inArray(e,database.classes) >= 0) continue;
+       if (database.grcourses[e]) {
+         var grc = database.grcourses[e];
+         if (grc.length == 1) fagnavn = grc[0] + "_" + e;
+         coursegroups.push(fagnavn);
+       }
+    }
+  trinnliste = { 1:[],2:[],3:[],'E':[] };
+  for (var grui in coursegroups) {
+    var gru = coursegroups[grui];
+    if (!trinnliste[gru.substring(0,1)]) trinnliste[gru.substring(0,1)] = [];
+    trinnliste[gru.substring(0,1)].push(gru);
+  }
+  var gruppevelger = '<ul class="nav"><li><a href="#">Grupper</a><ul>' ;
+  for (var tri in trinnliste) {
+    klasser = '';
+    var groups = '';
+    for (var grui in trinnliste[tri]) {
+        var gru = trinnliste[tri][grui];
+        groups += '<li><a id="'+gru+'" class="togglegroup" href="#">' + gru + '</a></li>';
+    }
+    gruppevelger += '<li><a class="" href="#">vg' + tri + '</a><ul>' + groups + '</ul></li>';
+  }
+  gruppevelger += '</ul></li></ul>';
+
   var s = '<div class="centered" id="testtime" >';
   s +=  '<table border="0"><tr><td>';
   s +=  '<table class="testtime" >';
@@ -415,7 +457,8 @@ function excur(id,wd,active,ulist) {
   }
   s += '</table></td><td>'
   s += deltak+'<br>';
-  s += velger;
+  s += velger+'<br>';
+  s += gruppevelger;
   s += '<br><ul id="opp" class="nav"><li><a id="oppdater" class="oppdater" href="#">oppdater</a></li></ul>';
   s += '</td></table></div>';
   return s;
