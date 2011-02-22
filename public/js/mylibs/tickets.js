@@ -44,6 +44,7 @@ function tickets(userid) {
     + '   </div>'
     + ' </div>';
     $j("#main").html(s);
+    showsummary();
     $j("#showtitle").click(function(event) {
         event.preventDefault();
         $j("#summary").toggle();
@@ -147,54 +148,38 @@ function tickets(userid) {
 }
 
 function showsummary() {
-  /*
-  $j.get( '/tickets', {showid:showid },function(tickets) {
+  $j.get( '/tickets', function(tickets) {
     s = '<table>';
-    s += '<tr><th>Show</th><th>Kort</th><th>Kontant</th></tr>';
-    var tsum = 0;
+    s += '<theader><tr><th>Show</th><th>Kort</th><th>Kontant</th></tr></theader>';
+    s += '<tbody>';
     var antall = 0;
-    kksum = { kort:0, kontant:0 };
-    var s = '';
+    var tsum = 0;
+    var tab = {};
+    //kksum = { kort:0, kontant:0 };
     for (var i in tickets) {
-       if (+i > database.startjd - 14) {
+       if (+i == database.thisjd) {
          var tics = tickets[i];
             for (var j in tics) {
-                ti = tics[j];
+                var ti = tics[j];
+                if (!tab[ti.name]) tab[ti.name] ={ kort:0, kontant:0 };
                 antall += +ti.ant;
                 tsum += +ti.ant * +ti.price;
-                kksum[ti.kk.toLowerCase()] += +ti.ant * +ti.price;
+                tab[ti.name][ti.kk.toLowerCase()] += +ti.ant * +ti.price;
             }
        }
     }
-    for (var shname in sold) {
-      var korts = 0, kontants = 0;
-      for (var aki in sold[shname]) {
-          var akko = sold[showname][aki].acc;
-          var time = sold[showname][aki].time;
-          var type = sold[showname][aki].type;
-          var pc = sold[showname][aki].pricecost;
-          var sum=0;
-          for (var asho in akko) {
-              for (var apri in akko[asho]) {
-                  var antb = akko[asho][apri];
-                  if (+antb != 0) {
-                     if (type == 'Kort') {
-                       korts += +antb * +pc[apri];
-                     } else {
-                       kontants += +antb * +pc[apri];
-                     }
-                  }
-              }
-          }
-          s += '<tr><th>'+showname+'</th><th>'+korts+'kr</th><th>'+kontants+'</th></tr>';
-          kortsum += korts; kontantsum += kontants;
-      }
+    var kortsum = 0, kontantsum = 0;
+    for (var sho in tab) {
+        var kk = tab[sho];
+          s += '<tr><td>'+sho+'</td><td>'+kk.kort+'</td><td>'+kk.kontant+'</td></tr>';
+          kortsum += kk.kort;
+          kontantsum += kk.kontant;
     }
-    s += '<tr><td>Totalt</td><th>'+kortsum+' kr</td><th>'+kontantsum+'</th></tr>';
+    s += '</tbody>';
+    s += '<tfooter><tr><th>Totalt</th><td>'+kortsum+' </td><td>'+kontantsum+'</td></tr></tfooter>';
     s += '</table>';
     $j("#summarytext").html(s);
   });
-  */
 }
 
 function showchoice() {
