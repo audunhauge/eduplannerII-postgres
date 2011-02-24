@@ -44,6 +44,7 @@ function tickets(userid) {
     + '   </div>'
     + ' </div>';
     $j("#main").html(s);
+    showsummary();
     $j("#showtitle").click(function(event) {
         event.preventDefault();
         $j("#summary").toggle();
@@ -146,28 +147,36 @@ function tickets(userid) {
   
 }
 
-function showsummary(delta) {
-  $j.get( '/tickets', {showid:showid },function(ssl) {
-    s = '<div id="prev"> &lt; </div><div id="next"> &gt; </div>'
-    s += '<table>';
-    s += '<tr><th>Show</th><th>Kort</th><th>Kontant</th></tr>';
-    var tsum = 0;
+  function showsummary() {
+  $j.get( '/tickets', function(tickets) {
+    s = '<table>';
+    s += '<theader><tr><th>Show</th><th>Kort</th><th>Kontant</th></tr></theader>';
+    s += '<tbody>';
     var antall = 0;
-    kksum = { kort:0, kontant:0 };
-    var s = '';
-    delta = typeof(delta) != 'undefined' ?  +delta : 0;
-    for (var i in ssl) {
-       if (+i == database.thisjd + delta ) {
-         var tics = ssl[i];
+    var tsum = 0;
+    var tab = {};
+    //kksum = { kort:0, kontant:0 };
+    for (var i in tickets) {
+       if (+i == database.thisjd) {
+         var tics = tickets[i];
             for (var j in tics) {
-                ti = tics[j];
+                var ti = tics[j];
+                if (!tab[ti.name]) tab[ti.name] ={ kort:0, kontant:0 };
                 antall += +ti.ant;
                 tsum += +ti.ant * +ti.price;
-                kksum[ti.kk.toLowerCase()] += +ti.ant * +ti.price;
+                tab[ti.name][ti.kk.toLowerCase()] += +ti.ant * +ti.price;
             }
        }
     }
-    s += '<tr><td>Totalt</td><th>'+kksum['kort']+' kr</td><th>'+kksum['kontant']+'</th></tr>';
+    var kortsum = 0, kontantsum = 0;
+    for (var sho in tab) {
+        var kk = tab[sho];
+          s += '<tr><td>'+sho+'</td><td>'+kk.kort+'</td><td>'+kk.kontant+'</td></tr>';
+          kortsum += kk.kort;
+          kontantsum += kk.kontant;
+    }
+    s += '</tbody>';
+    s += '<tfooter><tr><th>Totalt</th><td>'+kortsum+' </td><td>'+kontantsum+'</td></tr></tfooter>';
     s += '</table>';
     $j("#summarytext").html(s);
   });
