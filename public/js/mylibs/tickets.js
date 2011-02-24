@@ -147,9 +147,14 @@ function tickets(userid) {
   
 }
 
-  function showsummary() {
+function showsummary(delta) {
+  delta = typeof(delta) != 'undefined' ?  +delta : 0;
+  var mydate = julian.jdtogregorian(database.thisjd+delta);
+  var datetxt = mydate.day +'/'+mydate.month +'/'+  mydate.year;
   $j.get( '/tickets', function(tickets) {
-    s = '<table>';
+    s = '<div class="button blue" id="prev">&lt;</div><div class="button blue "id="next">&gt;</div>';
+    s += '<table class="centered">';
+    s += '<caption>'+datetxt+'</caption>';
     s += '<theader><tr><th>Show</th><th>Kort</th><th>Kontant</th></tr></theader>';
     s += '<tbody>';
     var antall = 0;
@@ -157,7 +162,7 @@ function tickets(userid) {
     var tab = {};
     //kksum = { kort:0, kontant:0 };
     for (var i in tickets) {
-       if (+i == database.thisjd) {
+       if (+i == database.thisjd+delta) {
          var tics = tickets[i];
             for (var j in tics) {
                 var ti = tics[j];
@@ -179,6 +184,12 @@ function tickets(userid) {
     s += '<tfooter><tr><th>Totalt</th><td>'+kortsum+' </td><td>'+kontantsum+'</td></tr></tfooter>';
     s += '</table>';
     $j("#summarytext").html(s);
+    $j("#next").click(function() {
+          showsummary(delta+1);
+        });
+    $j("#prev").click(function() {
+          showsummary(delta-1);
+        });
   });
 }
 
