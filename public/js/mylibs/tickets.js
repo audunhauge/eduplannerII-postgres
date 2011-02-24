@@ -146,18 +146,19 @@ function tickets(userid) {
   
 }
 
-function showsummary() {
-  /*
-  $j.get( '/tickets', {showid:showid },function(tickets) {
-    s = '<table>';
+function showsummary(delta) {
+  $j.get( '/tickets', {showid:showid },function(ssl) {
+    s = '<div id="prev"> &lt; </div><div id="next"> &gt; </div>'
+    s += '<table>';
     s += '<tr><th>Show</th><th>Kort</th><th>Kontant</th></tr>';
     var tsum = 0;
     var antall = 0;
     kksum = { kort:0, kontant:0 };
     var s = '';
-    for (var i in tickets) {
-       if (+i > database.startjd - 14) {
-         var tics = tickets[i];
+    delta = typeof(delta) != 'undefined' ?  +delta : 0;
+    for (var i in ssl) {
+       if (+i == database.thisjd + delta ) {
+         var tics = ssl[i];
             for (var j in tics) {
                 ti = tics[j];
                 antall += +ti.ant;
@@ -166,35 +167,10 @@ function showsummary() {
             }
        }
     }
-    for (var shname in sold) {
-      var korts = 0, kontants = 0;
-      for (var aki in sold[shname]) {
-          var akko = sold[showname][aki].acc;
-          var time = sold[showname][aki].time;
-          var type = sold[showname][aki].type;
-          var pc = sold[showname][aki].pricecost;
-          var sum=0;
-          for (var asho in akko) {
-              for (var apri in akko[asho]) {
-                  var antb = akko[asho][apri];
-                  if (+antb != 0) {
-                     if (type == 'Kort') {
-                       korts += +antb * +pc[apri];
-                     } else {
-                       kontants += +antb * +pc[apri];
-                     }
-                  }
-              }
-          }
-          s += '<tr><th>'+showname+'</th><th>'+korts+'kr</th><th>'+kontants+'</th></tr>';
-          kortsum += korts; kontantsum += kontants;
-      }
-    }
-    s += '<tr><td>Totalt</td><th>'+kortsum+' kr</td><th>'+kontantsum+'</th></tr>';
+    s += '<tr><td>Totalt</td><th>'+kksum['kort']+' kr</td><th>'+kksum['kontant']+'</th></tr>';
     s += '</table>';
     $j("#summarytext").html(s);
   });
-  */
 }
 
 function showchoice() {

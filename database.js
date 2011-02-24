@@ -589,7 +589,7 @@ var gettickets = function(user,query,callback) {
   // assumes you give it a callback that assigns the hash
   client.query(
       // fetch all shows
-       'SELECT * from mdl_show_tickets where showid=?',[query.showid],
+       'SELECT * from mdl_show_tickets order by showid',
       function (err, results, fields) {
           if (err) {
               console.log("ERROR: " + err.message);
