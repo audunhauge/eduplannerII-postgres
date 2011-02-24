@@ -99,7 +99,8 @@ div.rotated {
   width:28em;
   overflow:auto;
   border:solid gray 1px;
-  height:20em;
+  height:24em;
+  background: url(http://i.imgur.com/CtfoD.png) no-repeat center;
 }
 #accu tr td {
     padding:3px;
