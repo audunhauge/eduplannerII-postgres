@@ -38,7 +38,7 @@ html { min-height: 100%; margin-bottom: 1px; }
 }
 
 table.summary {
-    width:20em;
+    /*width:20em;*/
 }
 table.summary td {
     border:none;
@@ -639,6 +639,7 @@ div.memory {
   width:9em;
   height:3em;
   overflow:hidden;
+  z-index:10000;
 }
 
 div.memory:hover {

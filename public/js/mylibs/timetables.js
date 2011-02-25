@@ -39,13 +39,13 @@ function show_thisweek() {
     $j("#timeplan").html(s);
     if (timetables.course) {
         var userplan = getuserplan(uid);
-        s = vistimeplan(userplan,uid,'');
+        s = vistimeplan(userplan,uid,'','isuser');
         $j("#timeplan").append(s);
     } else $j.getJSON( "/timetables", 
         function(data) {
             timetables = data;
             var userplan = getuserplan(uid);
-            s = vistimeplan(userplan,uid,'');
+            s = vistimeplan(userplan,uid,'','isuser');
             $j("#timeplan").append(s);
             updateFagplanMenu();
         });
@@ -67,8 +67,9 @@ function build_timetable(timeplan,plan,filter,planspan) {
         if (!timeplan[pt[1]]) {    // ingen rad definert ennå
             timeplan[pt[1]] = {};  // ny rad
         }
-        if (timeplan[pt[1]][pt[0]]) {  // vi har allerede lagra et fag
-            continue;                  // ungår dobbeltfag
+        if (!planspan && timeplan[pt[1]][pt[0]]) continue; // only add multiple if we hav planspan
+        if (!timeplan[pt[1]][pt[0]]) {    // no data assigned yet
+           timeplan[pt[1]][pt[0]] = '';   // place empty string so we can += later
         }
         if (plan.prover[ pt[1] ] && plan.prover[ pt[1] ] [ pt[0] ] ) {
           if (spanstart) {
@@ -80,8 +81,9 @@ function build_timetable(timeplan,plan,filter,planspan) {
         }
         room = (pt[4] && filter != 'RAD' ) ? "&nbsp;<span class=\"rombytte\">=&gt;&nbsp;" + pt[4] + "</span>" : '&nbsp;'+pt[3] ;
         cell += room;
-
-        timeplan[pt[1]][pt[0]] = spa + cell + sto; 
+        if (timeplan[pt[1]][pt[0]] == spa + cell + sto) continue;
+        // don't add if we already have exact same data
+        timeplan[pt[1]][pt[0]] += spa + cell + sto; 
      }
      return timeplan;
 }
@@ -226,12 +228,12 @@ function updateMemory() {
 }
 
 
-function vistimeplan(data,uid,filter) {
+function vistimeplan(data,uid,filter,isuser) {
      // viser timeplan med gitt datasett
      var plan = data.plan;
      var jd = database.startjd;
      plan.prover = add_tests(uid,database.startjd);
-     if (memberlist[uid]) {
+     if (isuser != 'isuser' && memberlist[uid]) {
        // this is a group or class
        var elever = memberlist[uid];
        var andre = getOtherCG(elever); 
@@ -294,6 +296,7 @@ function intersect(a,b) {
 
 function vis_valgt_timeplan(user,filter,visfagplan) {
     // gitt en userid vil denne hente og vise en timeplan
+    eier = user;
     visfagplan = typeof(visfagplan) != 'undefined' ? true : false;
     var userplan = (user.id) ? getuserplan(user.id) : getcourseplan(user) ;
     var uid = user.id || user;
@@ -544,6 +547,7 @@ function grouptest(prover,grouplist,jd) {
         var elm = pro.value.split(',');  // get the slots for this test
         for (var k in elm) {
           var slot = +elm[k]-1;
+          if (slot < 0) slot = 0;
           if (!prover[slot]) {    // ingen rad definert ennå
               prover[slot] = {};  // ny rad
           }

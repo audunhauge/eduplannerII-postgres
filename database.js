@@ -263,7 +263,7 @@ var getabsent = function(callback) {
               absent[julday][uid] = res;
           }
           callback(absent);
-          console.log(absent);
+          //console.log(absent);
       });
 }
 
@@ -447,7 +447,9 @@ var saveTest = function(user,query,callback) {
 
 var selltickets = function(user,query,callback) {
     console.log(query);
-    var julday = julian.greg2jul(month,day,year);
+    var today = new Date();
+    var m = today.getMonth()+1; var d = today.getDate(); var y = today.getFullYear();
+    var julday = julian.greg2jul(m,d,y);
     var showid = query.showid;
     var type = query.type;
     //console.log(query.accu);

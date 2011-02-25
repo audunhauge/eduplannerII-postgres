@@ -423,10 +423,11 @@ $j(document).ready(function() {
                // present a list of links for user to choose from
                var s = '<h4>Velg fra lista</h4>';
                data.userinfo = data.ulist[0];
-               s += '<div class="gradback centered sized1"><ul><li>' + $j.map(data.ulist,function(e,i) {
-                    return ('<a href="/yearplan?navn='+e.firstname 
-                      + ' ' + e.lastname+'">' + e.firstname + ' ' + e.lastname + '</a>');
-                 }).join('</li><li>') + '</li></ul></div>';
+               s += '<div class="gradback centered sized1"><table class="summary"><caption>'+data.ulist.length+'</caption><tr>' + $j.map(data.ulist,function(e,i) {
+                    e.gr = e.gr || '';
+                    return ('<td><a href="/yearplan?navn='+e.firstname 
+                      + ' ' + e.lastname+'">' + e.firstname + ' ' + e.lastname +  '</a></td><td>' + e.department + '</td><td> ' + e.institution +'</td><td>'+ e.gr + '</td>');
+                 }).join('</tr><tr>') + '</tr></table></div>';
                action = 'velg';
                $j("#main").html(s);
            }

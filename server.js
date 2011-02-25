@@ -17,18 +17,56 @@ function findUser(firstname,lastname) {
   // try students first (studs may shadow teach)
   var list = [];
   if (lastname == '') {
+    // just one search word
+    // we try department,institution
       var any = new RegExp(firstname.trim(),"i");
+      var plain = firstname.trim().toUpperCase();
       for (var i in db.students) {
         var s = db.students[i];
         if (s.lastname.match(any) || s.firstname.match(any) || s.department.match(any)  || s.institution.match(any)) {
-           list.push(s);
+           if (s) list.push(s);
         }
       }
       for (var j in db.teachers) {
         var t = db.teachers[j];
         if (t.lastname.match(any) || t.firstname.match(any) || t.department.match(any)  || t.institution.match(any)) {
-           list.push(t);
+           if (t) list.push(t);
         }
+      }
+      if (db.memlist[plain]) {
+        // the searchterm matches a groupname
+        //var gr = courseteach[firstname.trim()].split('_')[1];
+        var studlist = db.memlist[plain];
+        for (j in studlist) {
+          var s = db.students[studlist[j]];
+           if (s) list.push(s);
+        }
+      } else { 
+          if (db.coursesgr[plain]) {
+          // the searchterm matches a coursename
+          var grlist = db.coursesgr[plain];
+          // all groups for this course
+          for (i in grlist) {
+            var gr = grlist[i];
+            var tl = db.courseteach[plain+'_'+gr].teach;
+            for (var k in tl) {
+              t = db.teachers[tl[k]];
+              if (t) {
+                t.gr = gr;
+                list.unshift(t);
+              }
+            }
+            var studlist = db.memlist[gr];
+            for (j in studlist) {
+              var s = db.students[studlist[j]];
+              if (s) {
+                s.gr = gr;
+                list.push(s);
+              }  
+            }
+          }
+        }
+
       }
   } else {
       firstname = firstname.trim();
@@ -38,7 +76,7 @@ function findUser(firstname,lastname) {
       for (var i in db.students) {
         var s = db.students[i];
         if (s.firstname.toLowerCase() == firstname && s.lastname.toLowerCase() == lastname) {
-           list.push(s);
+           if (s) list.push(s);
            return list;
         }
       }
@@ -47,7 +85,7 @@ function findUser(firstname,lastname) {
       for (var j in db.teachers) {
         var t = db.teachers[j];
         if (t.firstname.toLowerCase() == firstname && t.lastname.toLowerCase() == lastname) {
-           list.push(t);
+           if (t) list.push(t);
            return list;
         }
       }
@@ -57,14 +95,14 @@ function findUser(firstname,lastname) {
       for (var i in db.students) {
         var s = db.students[i];
         if ( s.firstname.match(fn) && s.lastname.match(ln)) {
-           list.push(s);
+           if (s) list.push(s);
         }
       }
       console.log("regexp scanning teach");
       for (var j in db.teachers) {
         var t = db.teachers[j];
         if ( t.firstname.match(fn) && t.lastname.match(ln)) {
-           list.push(t);
+           if (t) list.push(t);
         }
       }
   }
@@ -524,7 +562,7 @@ app.get('/basic', function(req, res) {
           var fn = nameparts.join(' ');
           if (fn == '') { fn = ln; ln = '' };
           var ulist = findUser(fn,ln);
-          console.log(ulist);
+          //console.log(ulist);
           db_copy.userinfo = (ulist.length == 1) ? ulist[0] : { uid:0 };
           db_copy.ulist = ulist;
           //console.log(db_copy.userinfo);
