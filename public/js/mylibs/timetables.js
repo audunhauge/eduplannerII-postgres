@@ -67,7 +67,7 @@ function build_timetable(timeplan,plan,filter,planspan) {
         if (!timeplan[pt[1]]) {    // ingen rad definert ennå
             timeplan[pt[1]] = {};  // ny rad
         }
-        if (!planspan && timeplan[pt[1]][pt[0]]) continue; // only add multiple if we hav planspan
+        if (!planspan && timeplan[pt[1]][pt[0]]) continue; // only add multiple if we have planspan
         if (!timeplan[pt[1]][pt[0]]) {    // no data assigned yet
            timeplan[pt[1]][pt[0]] = '';   // place empty string so we can += later
         }
