@@ -356,6 +356,8 @@ function visEnValgtPlan(plandata,egne,start,stop) {
         var test = '';
         var abs = '';
         var abslist = [];
+        var days = {};
+        var cause = {};
         for (var j=0;j<5;j++) {
             if (absent[tjd+j] && timmy[j]) {  // absent and lesson
               for (var el in elever) {
@@ -367,7 +369,10 @@ function visEnValgtPlan(plandata,egne,start,stop) {
                           var slo = slots[sl];
                           if (timmy[j][+slo]) {
                               // this stud is absent during course slot
-                              abslist.push( dager[j]+ 'dag&nbsp;' + students[elev].firstname + '&nbsp;' + students[elev].lastname + '&nbsp;'+ ab[elev].name);
+                              //abslist.push( dager[j]+ 'dag&nbsp;' + students[elev].firstname + '&nbsp;' + students[elev].lastname + '&nbsp;'+ ab[elev].name);
+                              abslist.push( students[elev].firstname + '&nbsp;' + students[elev].lastname );
+                              days[ dager[j] ] = 1;
+                              cause[ ab[elev].name ] = 1;
                               break;
                           }
                       }
@@ -375,8 +380,17 @@ function visEnValgtPlan(plandata,egne,start,stop) {
               }
             }
         }
-        if (abslist.length) abs = '<div title="<h3>Bortreist</h3><ul><li>'
-                  +abslist.join('</li><li>')+'</ul>" class="totip absentia">'+abslist.length+'</div>';
+        if (abslist.length) {
+          var causedays = '';
+          for (var cc in cause) {
+            causedays += cc + ' ';
+          }
+          for (var dd in days) {
+            causedays += dd + ' ';
+          }
+          abs = '<div title="<h3>'+causedays+'</h3><table><tr><td>'
+                  +abslist.join('</td></tr><tr><td>')+'</tr></table>" class="totip absentia">'+abslist.length+'</div>';
+        }
         summary += '|||||';
         summary = summary.replace(/(<br>)+/g,"<br>");
         summary = summary.replace(/<br>$/,"");

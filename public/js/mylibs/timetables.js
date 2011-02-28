@@ -1,28 +1,37 @@
 //show timetables
-function show_thisweek() {
+function show_date(jd) {
+  var startjd = 7 * Math.floor(jd  / 7);
+  var startdate = julian.jdtogregorian(startjd);
+  var enddate = julian.jdtogregorian(startjd+6);
+  if (startdate.year == enddate.year) {
+     var dato = "" + startdate.day + "." + startdate.month 
+         + "-" + enddate.day + "." + enddate.month + " " + startdate.year;
+  } else {
+     var dato = "" + startdate.day + "." + startdate.month + "." + startdate.year + " - "
+                + enddate.day + "." + enddate.month + "." + enddate.year;
+  }
+  return dato;
+}
+
+function show_thisweek(delta) {
     // viser denne uka, årsplanen + timeplan
     //var uid = userinfo.id;
+    delta = typeof(delta) != 'undefined' ?  +delta : 0;  // vis timeplan for en anne uke
     var uid = database.userinfo.id || 0;
-    var s='<div id="timeviser"><h1>'+user+'</h1>';
+    var s='<div id="timeviser"><h1 id="oskrift">'+user+'</h1>';
     s+= '<div id="timeplan"></div>';
+    s+= '<div id="weekly"></div>';
     s+= "</div>";
     $j("#main").html(s);
     // last inn årsplan-data for denne uka
     //var enr = uid
     var userlist = '';
     var e;
-    var thisweek = database.startjd;
-    if (database.startdate.year = database.enddate.year) {
-        var dato = "" + database.startdate.day + "." + database.startdate.month 
-            + "-" + database.enddate.day + "." + database.enddate.month + " " + database.startdate.year;
-    } else {
-        var dato = "" + database.startdate.day + "." + database.startdate.month + "." + database.startdate.year + " - "
-                  + database.enddate.day + "." + database.enddate.month + "." + database.enddate.year;
-    }
+    var thisweek = database.startjd + delta*7;
+    var dato = show_date(thisweek);
     s = '<table class="timeplan" >';
     var header = [];
     e = database.yearplan[Math.floor(thisweek/7)] || { days:[]} ;
-    s += "<caption>Uke "+julian.week(thisweek)+' <span title="'+thisweek+'" class="dato">'+dato+' </span></caption>';
     for (var j=0;j<6;j++) {
         header[j] = e.days[j] || '';
     }
@@ -36,17 +45,33 @@ function show_thisweek() {
         s += "<th class=\"dayinfo\">" + header[i] + "</th>";
     }
     s += "</tr></table>";
-    $j("#timeplan").html(s);
+    $j("#weekly").html(s);
     if (timetables.course) {
-        var userplan = getuserplan(uid);
-        s = vistimeplan(userplan,uid,'','isuser');
-        $j("#timeplan").append(s);
+      var userplan = getuserplan(uid);
+      s = vistimeplan(userplan,uid,'','isuser',delta);
+      $j("#timeplan").html(s);
+      $j("#oskrift").html('Uke '+julian.week(thisweek)+' <span title="'+thisweek+'" class="dato">'+show_date(thisweek)+'</span>');
+      $j("#nxt").click(function() {
+          if (database.startjd+7*delta < database.lastweek+7)
+            show_thisweek(delta+1);
+          });
+      $j("#prv").click(function() {
+          if (database.startjd+7*delta > database.firstweek-7)
+            show_thisweek(delta-1);
+          });
     } else $j.getJSON( "/timetables", 
         function(data) {
             timetables = data;
             var userplan = getuserplan(uid);
-            s = vistimeplan(userplan,uid,'','isuser');
-            $j("#timeplan").append(s);
+            s = vistimeplan(userplan,uid,'','isuser',delta);
+            $j("#timeplan").html(s);
+            $j("#oskrift").html('Uke '+julian.week(thisweek)+' <span title="'+thisweek+'" class="dato">'+show_date(thisweek)+'</span>');
+            $j("#nxt").click(function() {
+                  show_thisweek(delta+1);
+                });
+            $j("#prv").click(function() {
+                  show_thisweek(delta-1);
+                });
             updateFagplanMenu();
         });
 }
@@ -161,7 +186,8 @@ function build_plantable(jd,uid,username,timeplan,xtraplan,filter) {
     }
     var i,j;
     var s = '<table class="timeplan">';
-    s += "<caption>Timeplan for "+members+"</caption>";
+    members = '<div class="button blue" id="prv">&lt;</div>'+members+'<div class="button blue "id="nxt">&gt;</div>';
+    s += '<caption><div style="position:relative;">Timeplan for '+members+"</div></caption>";
     s += "<tr><th>&nbsp;</th>";
     for (i=0;i<5;i++) {
         s += "<th>" + dager[i] + "</th>";
@@ -207,6 +233,9 @@ function build_plantable(jd,uid,username,timeplan,xtraplan,filter) {
               xcell += '<div class="absent overabs">'+ab.name+'</div>';
             }
           }
+          if (database.freedays[jd+j]) {
+              cell = '<div class="timeplanfree">'+database.freedays[jd+j]+'</div>';
+          }
           s += '<td><div class="retainer">' + cell + xcell + '</div></td>';
        }
        s+= "</tr>";
@@ -228,57 +257,58 @@ function updateMemory() {
 }
 
 
-function vistimeplan(data,uid,filter,isuser) {
-     // viser timeplan med gitt datasett
-     var plan = data.plan;
-     var jd = database.startjd;
-     plan.prover = add_tests(uid,database.startjd);
-     if (isuser != 'isuser' && memberlist[uid]) {
-       // this is a group or class
-       var elever = memberlist[uid];
-       var andre = getOtherCG(elever); 
-       plan.prover = grouptest(plan.prover, andre.gru, database.startjd);
+function vistimeplan(data,uid,filter,isuser,delta) {
+  delta = typeof(delta) != 'undefined' ?  +delta : 0;  // vis timeplan for en anne uke
+  // viser timeplan med gitt datasett
+  var plan = data.plan;
+  var jd = database.startjd + 7*delta;
+  plan.prover = add_tests(uid,jd);
+  if (isuser != 'isuser' && memberlist[uid]) {
+    // this is a group or class
+    var elever = memberlist[uid];
+    var andre = getOtherCG(elever); 
+    plan.prover = grouptest(plan.prover, andre.gru, database.startjd);
+  }
+  // TODO change from startjd to parameter set by user
+  valgtPlan = plan;        // husk denne slik at vi kan lagre i timeregister
+  var timeplan = {};
+  var xtraplan = {};
+  var i,j;
+  var s = '';
+  var cell,userlist,gruppe,popup,user,username;
+  if (filter == 'gr' || filter == 'fg') { 
+    user = {firstname:uid,lastname:''};
+  } else {
+    user = (teachers[uid]) ?  teachers[uid] : (students[uid]) ? students[uid] : {firstname:uid,lastname:''};
+  }
+  var username = user.firstname + ' ' + user.lastname;
+  // hent ut ekstraplanen - skal vises som css:hover
+  if (data.xplan) {
+     var xplan = data.xplan;
+     for (i=0; i< xplan.length;i++) {
+         var pt = xplan[i];
+         // pt = [1,7,"1mt5_1st2","a002","",1361]
+         var cell = pt[2].replace(' ','_');
+         gruppe = cell.split('_')[1];
+         // add in tests for group
+         if (!xtraplan[pt[1]]) {
+             xtraplan[pt[1]] = {};
+         }
+         if (!xtraplan[pt[1]][pt[0]]) xtraplan[pt[1]][pt[0]] = [];
+         userlist = intersect(memberlist[gruppe],elever);
+         if (plan.prover[pt[1]] && plan.prover[pt[1]][pt[0]]) {
+             if ($j.inArray(gruppe,plan.prover[pt[1]][pt[0]]) != -1) {
+               cell = '<span class="redfont">'+cell+'</span>';
+             }
+         }
+         popup = makepop(cell,userlist,username,gruppe,filter);
+         xtraplan[pt[1]][pt[0]].push(popup);
      }
-     // TODO change from startjd to parameter set by user
-     valgtPlan = plan;        // husk denne slik at vi kan lagre i timeregister
-     var timeplan = {};
-     var xtraplan = {};
-     var i,j;
-     var s = '';
-     var cell,userlist,gruppe,popup,user,username;
-     if (filter == 'gr' || filter == 'fg') { 
-       user = {firstname:uid,lastname:''};
-     } else {
-       user = (teachers[uid]) ?  teachers[uid] : (students[uid]) ? students[uid] : {firstname:uid,lastname:''};
-     }
-     var username = user.firstname + ' ' + user.lastname;
-     // hent ut ekstraplanen - skal vises som css:hover
-     if (data.xplan) {
-        var xplan = data.xplan;
-        for (i=0; i< xplan.length;i++) {
-            var pt = xplan[i];
-            // pt = [1,7,"1mt5_1st2","a002","",1361]
-            var cell = pt[2].replace(' ','_');
-            gruppe = cell.split('_')[1];
-            // add in tests for group
-            if (!xtraplan[pt[1]]) {
-                xtraplan[pt[1]] = {};
-            }
-            if (!xtraplan[pt[1]][pt[0]]) xtraplan[pt[1]][pt[0]] = [];
-            userlist = intersect(memberlist[gruppe],elever);
-            if (plan.prover[pt[1]] && plan.prover[pt[1]][pt[0]]) {
-                if ($j.inArray(gruppe,plan.prover[pt[1]][pt[0]]) != -1) {
-                  cell = '<span class="redfont">'+cell+'</span>';
-                }
-            }
-            popup = makepop(cell,userlist,username,gruppe,filter);
-            xtraplan[pt[1]][pt[0]].push(popup);
-        }
-     }
-     // hent ut normalplanen - skal vises som ren text
-     timeplan = build_timetable(timeplan,plan,filter);
-     s += build_plantable(jd,uid,username.trim(),timeplan,xtraplan,filter);
-     return s;
+  }
+  // hent ut normalplanen - skal vises som ren text
+  timeplan = build_timetable(timeplan,plan,filter);
+  s += build_plantable(jd,uid,username.trim(),timeplan,xtraplan,filter);
+  return s;
 }
 
 
@@ -294,21 +324,32 @@ function intersect(a,b) {
 }
 
 
-function vis_valgt_timeplan(user,filter,visfagplan) {
+function vis_valgt_timeplan(user,filter,visfagplan,isuser,delta) {
     // gitt en userid vil denne hente og vise en timeplan
+    delta = typeof(delta) != 'undefined' ?  +delta : 0;  // vis timeplan for en anne uke
     eier = user;
     visfagplan = typeof(visfagplan) != 'undefined' ? true : false;
     var userplan = (user.id) ? getuserplan(user.id) : getcourseplan(user) ;
     var uid = user.id || user;
     // if user is name of klass or group then getcourseplan
-    s = vistimeplan(userplan,uid,filter);
+    s = vistimeplan(userplan,uid,filter,isuser,delta);
     $j("#timeplan").html(s);
+    var current = database.startjd + 7*delta;
+    $j("#oskrift").html('Uke '+julian.week(current)+' <span title="'+current+'" class="dato">'+show_date(current)+'</span>');
     $j('.edit').editable(save_timetable, {
          indicator : 'Saving...',
          tooltip   : 'Click to edit...',
          doformat  : translatebreaks,
          submit    : 'OK'
      });
+    $j("#nxt").click(function() {
+          if (database.startjd+7*delta < database.lastweek+7)
+             vis_valgt_timeplan(user,filter,visfagplan,isuser,delta+1);
+        });
+    $j("#prv").click(function() {
+          if (database.startjd+7*delta > database.firstweek+7)
+             vis_valgt_timeplan(user,filter,visfagplan,isuser,delta-1);
+        });
 }
 
 
@@ -327,7 +368,7 @@ function save_timetable(val,opt) {
 }
 
 
-function vis_timeplan(s,bru,filter) {
+function vis_timeplan(s,bru,filter,isuser) {
     // filter is used by vistimeplan to filter members of groups
     // so that when we look at a class - then we only see class members
     // in lists for other groups
@@ -347,11 +388,11 @@ function vis_timeplan(s,bru,filter) {
     });
     $j("#velgbruker").keyup(function() {
        var idx = $j("#velgbruker option:selected").val();
-       vis_valgt_timeplan(bru[idx],filter,true);
+       vis_valgt_timeplan(bru[idx],filter,true,isuser);
     });
     $j("#velgbruker").change(function() {
        var idx = $j("#velgbruker option:selected").val();
-       vis_valgt_timeplan(bru[idx],filter,true);
+       vis_valgt_timeplan(bru[idx],filter,true,isuser);
     });
 }
 
@@ -377,13 +418,13 @@ function vis_gruppetimeplan() {
       s+= '<option value="'+elm.idx+'">' + elm.text  +  "</option>";
     }
     s+= "</select></div>";
-    vis_timeplan(s,bru,'gr' );
+    vis_timeplan(s,bru,'gr','' );
 }
 
 function vis_klassetimeplan() {
     var bru = database.classes;
     var ant = bru.length;
-    var s="<div id=\"timeviser\"><h1>Klasse-timeplaner</h1>";
+    var s='<div id="timeviser"><h1 id="oskrift">Klasse-timeplaner</h1>';
     s+= '<div class="gui" id=\"velg\">Velg klassen du vil se timeplanen for <select id="velgbruker">';
     s+= '<option value="0"> --velg-- </option>';
     for (i=0;i< ant; i++) {
@@ -391,12 +432,12 @@ function vis_klassetimeplan() {
        s+= '<option value="'+i+'">' + e  +  "</option>";
     }
     s+= "</select></div>";
-    vis_timeplan(s,bru,'kl' );
+    vis_timeplan(s,bru,'kl','' );
 }
 
 
 function vis_elevtimeplan() {
-    var s="<div id=\"timeviser\"><h1>Elev-timeplaner</h1>";
+    var s='<div id="timeviser"><h1 id="oskrift">Elev-timeplaner</h1>';
     s+= '<div class="gui" id=\"velg\">Velg elev du vil se timeplanen for <select id="velgbruker">';
     s+= '<option value="0"> --velg-- </option>';
     for (var i in studentIds) {
@@ -405,11 +446,11 @@ function vis_elevtimeplan() {
        s+= '<option value="'+idx+'">' + e.department + " " + " " + e.institution+ " " + e.lastname + " " + e.firstname  +  "</option>";
     }
     s+= "</select></div>";
-    vis_timeplan(s,students,'non' );
+    vis_timeplan(s,students,'non','isuser' );
 }
 
 function vis_teachtimeplan() {
-    var s='<div id="timeviser"><h1>Lærer-timeplaner</h1>';
+    var s='<div id="timeviser"><h1 id="oskrift">Lærer-timeplaner</h1>';
     s+= '<div class="gui" id="velg">Velg lærer du vil se timeplanen for <select id="velgbruker">';
     s+= '<option value="0"> --velg-- </option>';
     $j.get('/getsql',{ sql:"select * from mdl_user", param:''}, function(data) {
@@ -426,7 +467,7 @@ function vis_teachtimeplan() {
       s+= '<option value="'+elm.idx+'">' + elm.text  +  "</option>";
     }
     s+= "</select></div>";
-    vis_timeplan(s,teachers,'teach' );
+    vis_timeplan(s,teachers,'teach','isuser' );
 }
 
 function getcourseplan(cgr) {
