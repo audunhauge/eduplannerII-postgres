@@ -591,7 +591,7 @@ var gettickets = function(user,query,callback) {
   // assumes you give it a callback that assigns the hash
   client.query(
       // fetch all shows
-       'SELECT sho.name,ti.* from mdl_show_tickets ti inner join mdl_show sho on (sho.idx = ti.showid)',
+       'SELECT u.firstname,u.lastname,u.department,sho.name,ti.* from mdl_show_tickets ti inner join mdl_show sho on (sho.idx = ti.showid) inner join mdl_user u on (u.id = ti.userid)',
       function (err, results, fields) {
           if (err) {
               console.log("ERROR: " + err.message);

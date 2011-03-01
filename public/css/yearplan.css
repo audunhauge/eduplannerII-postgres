@@ -175,6 +175,20 @@ div.retainer {
   position:relative;
 }
 
+#total_log {
+  position:relative;
+}
+
+div.whitehand {
+  position:absolute;
+  opacity:0.2;
+  top:-40px;
+  left:190px;
+  width:180px;
+  height:41px;
+  background:transparent url(/img/whitehand.png) no-repeat;
+}
+
 div.absent, a.absentee, a.absent, div.absentia {
   display:block;
   white-space:nowrap;

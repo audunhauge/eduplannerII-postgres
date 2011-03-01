@@ -25,11 +25,12 @@ function tickets(userid) {
     show = showlist;
     accu = {};
     var s = '<h1><a class="button" href="#" id="showtitle">Billettsalg</a></h1>'
-    + '<div class="simple_overlay" id="summary"><div id="summarytext">Her har vi det</div><div id="closer"></div></div>'
+    + '<div class="simple_overlay" id="summary"><div id="summarytext"></div><div id="closer"></div></div>'
     + ' <div id="ramme" class="border1 sized1 gradback centered" >'
-    + '   <h3> Velg show</h3>'
+    + '   <h3 id="total_log" > &nbsp;<a title="Klikk for å vise salgslog" href="#">Velg show</a><div class="whitehand" ><p><p>Klikk for salgslogg</div></h3>'
     + '   <div id="showlist">'  
     + '   </div>'
+      
     + '   <div id="salg" >'  
     + '   </div>'
     + '   <div id="userchoice" >'  
@@ -44,13 +45,20 @@ function tickets(userid) {
     + '   </div>'
     + ' </div>';
     $j("#main").html(s);
+    $j(".whitehand").animate({ left:'100',top:'0', opacity: 1.0 },3000, function() { $j(this).fadeOut() } );
     showsummary();
     $j("#showtitle").click(function(event) {
         event.preventDefault();
+        showsummary();
         $j("#summary").toggle();
       });
     $j("#closer").click(function() {
         $j("#summary").hide();
+      });
+    $j("#total_log").click(function(event) {
+        event.preventDefault();
+        totallog();
+        $j("#summary").toggle();
       });
 
 
@@ -145,6 +153,35 @@ function tickets(userid) {
   });
   
   
+}
+
+function totallog() {
+  var mydate = julian.jdtogregorian(database.thisjd);
+  var datetxt = mydate.day +'/'+mydate.month +'/'+  mydate.year;
+  $j.get( '/tickets', function(tickets) {
+    s = '<div class="button blue" id="prev">&lt;</div><div class="button blue "id="next">&gt;</div>';
+    s += '<table class="centered">';
+    s += '<caption>'+datetxt+'</caption>';
+    s += '<theader><tr><th>Show</th><th>Tid</th><th>Selger</th><th>Betaling</th><th>Antall</th><th>Pris</tr></theader>';
+    s += '<tbody>';
+    for (var i in tickets) {
+       if (+i >  database.thisjd-24) {
+         var tics = tickets[i];
+         mydate = julian.jdtogregorian(+i);
+         datetxt = mydate.day +'/'+mydate.month +'/'+  mydate.year;
+         s += '<tr><th colspan="6">'+datetxt+'</th></tr>';
+         for (var j in tics) {
+             var ti = tics[j];
+             var selger = ti.firstname + '' + ti.lastname;
+             selger = '<span title="'+selger+'">'+ti.lastname.substring(0,2)+ti.firstname.substring(0,2) + '</span>';
+             s += '<tr><td>'+ti.name+'</td><td>'+(+ti.saletime+500)+'</td><td>'+selger+'</td><td>'+ti.kk+'</td><td>'+ti.ant+'</td><td>'+ti.price+'</td></tr>';
+         }
+       }
+    }
+    s += '</tbody>';
+    s += '</table>';
+    $j("#summarytext").html(s);
+  });
 }
 
 function showsummary(delta) {
