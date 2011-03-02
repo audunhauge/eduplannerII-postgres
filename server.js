@@ -282,9 +282,11 @@ app.get('/login', function(req, res) {
       return;
   }
   users.authenticate(client,req.query.username, req.query.password, function(user) {
+    console.log(user);
     if (user) {
       req.session.user = user;
       res.send(user);
+      return;
     }
     res.send({id:0});
   });

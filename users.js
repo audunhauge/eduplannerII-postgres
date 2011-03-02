@@ -33,6 +33,7 @@ module.exports.authenticate = function(client, login, password, callback) {
                 }
                 if (md5pwd == user.password) {
                     user.isadmin = admin[login] || false;
+                    console.log("USER loggin");
                     console.log(user);
                     callback(user);
                     return;
