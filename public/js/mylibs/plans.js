@@ -89,9 +89,21 @@ function synopsis(coursename,plandata,tests) {
   return synop;
 }
 
-function vis_fagplaner(data) {
+function vis_fagplaner(uid,jd) {
     // viser fagplaner for valgt bruker
-     if (data.fag) {
+    var minefag = getfagliste(uid);
+    var s = '';
+    for (var id in minefag) {
+      var plandata = courseplans[minefag[id]];
+      for (section in  plandata) {
+          summary = plandata[section]; 
+          //var uke = julian.week(jd);
+          s += summary;
+      }
+    }
+    return s;
+    return minefag.length;
+    if (data.fag) {
         var fagliste = data.fag;
         var s = '<table class="fagplaner">';
         s += '<caption>Fagplaner</caption>';
@@ -305,13 +317,7 @@ function show_all(thisweek) {
     $j(".totip").tooltip();
 }
 
-
-
-function updateFagplanMenu() {
-    // denne funksjonen kjøres ved onready etter at timeplanen for brukeren er lest
-    // den oppdaterer menyen MinePlaner med en liste med fag
-    // <a id="mineplaner"   href="#">Mine fagplaner</a>
-    var uid = database.userinfo.id || 0;
+function getfagliste(uid) {
     var minefag = [];
     if (timetables.teach[uid]) {
       // we have a teach 
@@ -331,6 +337,16 @@ function updateFagplanMenu() {
         }
       } 
     }
+    return minefag;
+}
+
+
+function updateFagplanMenu() {
+    // denne funksjonen kjøres ved onready etter at timeplanen for brukeren er lest
+    // den oppdaterer menyen MinePlaner med en liste med fag
+    // <a id="mineplaner"   href="#">Mine fagplaner</a>
+    var uid = database.userinfo.id || 0;
+    var minefag = getfagliste(uid);
     var s = '<a id="mineplaner"   href="#">Mine fag</a><ul>';
     if (isteach) {
       s += '<li><a href="#">Planer</a><ul>';
@@ -349,6 +365,7 @@ function updateFagplanMenu() {
         s += '</ul></li>';
     }
     s += '</ul>';
+    database.userinfo.minefag = minefag;
     $j("#teachmenu").html(s);
     //$j("#mineplaner").after('<li><a href="">Prøveplaner</a></li>');
     for (var i in minefag) {

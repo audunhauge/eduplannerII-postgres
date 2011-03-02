@@ -45,6 +45,7 @@ function show_thisweek(delta) {
         s += "<th class=\"dayinfo\">" + header[i] + "</th>";
     }
     s += "</tr></table>";
+    if (timetables.teach) s += vis_fagplaner(uid,thisweek);
     $j("#weekly").html(s);
     if (timetables.course) {
       var userplan = getuserplan(uid);
@@ -325,17 +326,20 @@ function intersect(a,b) {
 }
 
 
+
+
 function vis_valgt_timeplan(user,filter,visfagplan,isuser,delta) {
     // gitt en userid vil denne hente og vise en timeplan
     delta = typeof(delta) != 'undefined' ?  +delta : 0;  // vis timeplan for en anne uke
+    var current = database.startjd + 7*delta;
     eier = user;
     visfagplan = typeof(visfagplan) != 'undefined' ? true : false;
     var userplan = (user.id) ? getuserplan(user.id) : getcourseplan(user) ;
     var uid = user.id || user;
     // if user is name of klass or group then getcourseplan
     s = vistimeplan(userplan,uid,filter,isuser,delta);
+    if (visfagplan) s += vis_fagplaner(user.id,current);
     $j("#timeplan").html(s);
-    var current = database.startjd + 7*delta;
     $j("#oskrift").html('Uke '+julian.week(current)+' <span title="'+current+'" class="dato">'+show_date(current)+'</span>');
     $j('.edit').editable(save_timetable, {
          indicator : 'Saving...',
