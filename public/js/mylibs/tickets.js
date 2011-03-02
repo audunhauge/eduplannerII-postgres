@@ -174,7 +174,7 @@ function totallog() {
              var ti = tics[j];
              var selger = ti.firstname + '' + ti.lastname;
              selger = '<span title="'+selger+'">'+ti.lastname.substring(0,2)+ti.firstname.substring(0,2) + '</span>';
-             s += '<tr><td>'+ti.name+'</td><td>'+(+ti.saletime+500)+'</td><td>'+selger+'</td><td>'+ti.kk+'</td><td>'+ti.ant+'</td><td>'+ti.price+'</td></tr>';
+             s += '<tr><td>'+ti.name+'</td><td>'+(+ti.saletime+600)+'</td><td>'+selger+'</td><td>'+ti.kk+'</td><td>'+ti.ant+'</td><td>'+ti.price+'</td></tr>';
          }
        }
     }

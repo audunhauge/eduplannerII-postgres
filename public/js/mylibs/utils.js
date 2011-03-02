@@ -1,6 +1,5 @@
 // some utility functions
 
-
 function formatweekdate(jd) {
     // given a julian day will return 3.4 - 9.4 
     var greg = julian.jdtogregorian(jd);

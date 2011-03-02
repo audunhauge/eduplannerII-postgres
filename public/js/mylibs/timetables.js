@@ -235,6 +235,7 @@ function build_plantable(jd,uid,username,timeplan,xtraplan,filter) {
           }
           if (database.freedays[jd+j]) {
               cell = '<div class="timeplanfree">'+database.freedays[jd+j]+'</div>';
+              xcell = '';
           }
           s += '<td><div class="retainer">' + cell + xcell + '</div></td>';
        }
@@ -267,14 +268,13 @@ function vistimeplan(data,uid,filter,isuser,delta) {
     // this is a group or class
     var elever = memberlist[uid];
     var andre = getOtherCG(elever); 
-    plan.prover = grouptest(plan.prover, andre.gru, database.startjd);
+    plan.prover = grouptest(plan.prover, andre.gru, jd);
   }
   // TODO change from startjd to parameter set by user
   valgtPlan = plan;        // husk denne slik at vi kan lagre i timeregister
   var timeplan = {};
   var xtraplan = {};
   var i,j;
-  var s = '';
   var cell,userlist,gruppe,popup,user,username;
   if (filter == 'gr' || filter == 'fg') { 
     user = {firstname:uid,lastname:''};
@@ -307,8 +307,9 @@ function vistimeplan(data,uid,filter,isuser,delta) {
   }
   // hent ut normalplanen - skal vises som ren text
   timeplan = build_timetable(timeplan,plan,filter);
-  s += build_plantable(jd,uid,username.trim(),timeplan,xtraplan,filter);
-  return s;
+  //var ss = build_plantable(jd,uid,username.trim(),timeplan,xtraplan,filter);
+  var ss = build_plantable(jd,uid,$j.trim(username),timeplan,xtraplan,filter);
+  return ss;
 }
 
 
@@ -549,7 +550,7 @@ function getuserplan(uid) {
   return [];
 }
 
-function coursetests(coursename) {  
+function coursetests(coursename,jd) {  
   // returns list of tests for given course
   // { jdmonday:[{day:0..4, slots:"1,2,3"}]  }
   // the key is jd for monday each week with test, value is list of tests {day,slots}

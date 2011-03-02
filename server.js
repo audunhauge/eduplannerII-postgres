@@ -114,10 +114,27 @@ process.addListener('uncaughtException', function (err, stack) {
 	console.log('Caught exception: ' + err);
 	console.log(err.stack.split('\n'));
 });
+
+/*
 var connect = require('connect');
+var MemStore = require('./memory');
+*/
 var assetManager = require('connect-assetmanager');
 var assetHandler = require('connect-assetmanager-handlers');
-var MemStore = require('connect/middleware/session/memory');
+
+var sys = require('sys'),
+    connect = require('connect'),
+    MemoryStore = connect.session.MemoryStore;
+
+// One minute
+var minute = 60000;
+
+// Setup memory store
+var memory = new connect.session.MemoryStore({
+    reapInterval: minute
+  , maxAge: minute * 2
+});
+
 var express = require('express');
 var dummyHelper = require('./lib/dummy-helper');
 var SocketServer = require('./lib/socket-server');
@@ -214,7 +231,7 @@ app.configure(function() {
 	app.use(connect.bodyDecoder());
 	app.use(connect.logger({ format: ':req[x-real-ip]\t:status\t:method\t:url\t' }));
         app.use(express.cookieDecoder());
-        app.use(express.session({store: MemStore( {
+        app.use(express.session({store: new MemoryStore( {
             reapInterval: 60000 * 10
           }),secret:"jalla"}));
 	app.use(assets);

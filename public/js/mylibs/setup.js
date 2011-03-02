@@ -30,6 +30,7 @@ var valgtPlan;          // husker på den sist viste planen
 var memberlist;         // liste over medlemmer i hver gruppe
 var memgr;              // liste over grupper en elev er medlem av
 
+var heldag;
 var teachers;
 var students;
 var reservations;       // all reservations (future) for rooms
@@ -262,7 +263,6 @@ function belongsToCategory(uid,cat) {
       var fag = faggruppe[0];
       if (fag == 'KOMO') continue;
       if (+database.category[fag] == +cat) {
-        console.log(fag);
         return true;
       }
     }
