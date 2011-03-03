@@ -89,25 +89,40 @@ function synopsis(coursename,plandata,tests) {
   return synop;
 }
 
-function vis_fagplaner(uid,jd) {
+function vis_fagplaner(uid,thisjd) {
     // viser fagplaner for valgt bruker
     var minefag = getfagliste(uid);
-    var s = '';
+    var s = '<table class="fagplaner">';
+    s += '<caption>Fagplaner</caption>';
+    s += '<tr><th>Fag</th><th>Tema</th><th>Vurdering</th><th>Mål</th><th>Oppgaver</th><th>Log/Merk</th></tr>';
+    var harplan = '';
     for (var id in minefag) {
       var plandata = courseplans[minefag[id]];
+      var jd = database.firstweek;
       for (section in  plandata) {
-          summary = plandata[section]; 
-          //var uke = julian.week(jd);
-          s += summary;
+          if (jd == thisjd) {
+            var summary = plandata[section]+'|||||'; 
+            summary = summary.replace(/&amp;nbsp;/g,' ');
+            summary = summary.replace(/\<br\>/g,' ');
+            summary = summary.replace(/\<p\>/g,' ');
+            summary = summary.replace(/\<p\>/g,' ');
+            var elm = summary.split('|');
+            var tema       = elm[0];
+            var vurdering  = elm[1];
+            var maal       = elm[2];
+            var oppgaver   = elm[3];
+            var logg       = elm[4];
+            s += '<tr class="'+harplan+'" ><td>' + minefag[id] + '</td><td>'+ tema + '</td><td>' + vurdering + '</td>'
+               + '<td>' + maal + '</td><td>' + oppgaver + '</td><td>' + logg + '</td></tr>';
+            break;
+          }
+          jd += 7;
       }
     }
     return s;
     return minefag.length;
     if (data.fag) {
         var fagliste = data.fag;
-        var s = '<table class="fagplaner">';
-        s += '<caption>Fagplaner</caption>';
-        s += '<tr><th>Fag</th><th>Tema</th><th>Vurdering</th><th>Mål</th><th>Oppgaver</th><th>Log/Merk</th></tr>';
         var i;
         for (i=0; i<fagliste.length; i++) {
             var f = fagliste[i];

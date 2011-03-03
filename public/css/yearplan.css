@@ -745,7 +745,10 @@ table.fagplaner, table.timeplan {
   margin-left:1em;
   border-collapse:collapse;
   border: 1px solid black;
-  width:54em;
+  width:700px;
+}
+table.fagplaner {
+  font-size:0.8em;
 }
 
 table.timeplan td.time { font-size:0.65em; width:6.5em; }
