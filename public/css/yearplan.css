@@ -82,6 +82,24 @@ div.rotated {
   position:relative;
 }
 
+#sectionimg {
+  position:absolute;
+  left:30%;
+  top:20px;
+  width:400px;
+  height:400px;
+  z-index:20000;
+  opacity:0.3;
+}
+
+.sect1 {
+  background: url(../img/feynewtgaus.png) no-repeat center;
+}
+
+.sect2 {
+  background: url(http://i.imgur.com/CtfoD.png) no-repeat center;
+}
+
 #showlist {
   position:relative;
   width:16em;

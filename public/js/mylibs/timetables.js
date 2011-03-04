@@ -45,7 +45,20 @@ function show_thisweek(delta) {
         s += "<th class=\"dayinfo\">" + header[i] + "</th>";
     }
     s += "</tr></table>";
-    if (timetables.teach) s += vis_fagplaner(uid,thisweek);
+    if (timetables.teach) {s += vis_fagplaner(uid,thisweek);
+      var minefag = getfagliste(uid);
+      var sect = "";
+      var mostly = {};
+      var mos = 0;
+      for (var i in minefag) {
+         var fag = minefag[i];
+         var cat = database.category[fag];
+         if (!mostly[cat]) mostly[cat] = 0;
+         mostly[cat]++;
+         if (mostly[cat] >= mos) mos = mostly[cat];
+      }
+      s += '<div id="sectionimg" class="sect'+mos+'"></div>';
+    }
     $j("#weekly").html(s);
     if (timetables.course) {
       var userplan = getuserplan(uid);

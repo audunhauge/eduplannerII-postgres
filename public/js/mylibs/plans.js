@@ -120,23 +120,6 @@ function vis_fagplaner(uid,thisjd) {
       }
     }
     return s;
-    return minefag.length;
-    if (data.fag) {
-        var fagliste = data.fag;
-        var i;
-        for (i=0; i<fagliste.length; i++) {
-            var f = fagliste[i];
-            var summary = Url.decode(f.summary+'||||');
-            summary = summary.replace(/<br><br>/g,"<br>");
-            summary = summary.replace(/<br><br>/g,"<br>");
-            summary = summary.replace(/<br>$/,"").split('\|');
-            s += '<tr class="'+f.harplan+'" ><td>' + f.shortname + '</td><td>'+ summary[0] + '</td><td>' + summary[1] + '</td>';
-            s += '<td>' + summary[2] + '</td><td>' + summary[3] + '</td><td>' + summary[4] + '</td></tr>';
-        }
-        s+= "</table>";
-        return s;
-     } 
-     return '';
 }
 
 function show_alleprover(filter,faggrupper) {
