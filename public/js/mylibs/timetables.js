@@ -29,7 +29,7 @@ function show_thisweek(delta) {
     var e;
     var thisweek = database.startjd + delta*7;
     var dato = show_date(thisweek);
-    s = '<table class="timeplan" >';
+    s = '<table id="mytime" class="timeplan" >';
     var header = [];
     e = database.yearplan[Math.floor(thisweek/7)] || { days:[]} ;
     for (var j=0;j<6;j++) {
@@ -45,25 +45,33 @@ function show_thisweek(delta) {
         s += "<th class=\"dayinfo\">" + header[i] + "</th>";
     }
     s += "</tr></table>";
-    if (timetables.teach) {s += vis_fagplaner(uid,thisweek);
+    $j("#weekly").html(s);
+    var mos = 0;
+    if (timetables.teach) {
+      s += vis_fagplaner(uid,thisweek);
       var minefag = getfagliste(uid);
       var sect = "";
-      var mostly = {};
-      var mos = 0;
+      var mostly = {0:0};
       for (var i in minefag) {
-         var fag = minefag[i];
+         var fag = minefag[i].split('_')[0];
          var cat = database.category[fag];
          if (!mostly[cat]) mostly[cat] = 0;
          mostly[cat]++;
-         if (mostly[cat] >= mos) mos = mostly[cat];
+         if (mostly[cat] >= mostly[mos]) mos = cat;
       }
-      s += '<div id="sectionimg" class="sect'+mos+'"></div>';
+      //s += '<div id="sectionimg" class="sect'+mos+'"></div>';
     }
-    $j("#weekly").html(s);
     if (timetables.course) {
       var userplan = getuserplan(uid);
       s = vistimeplan(userplan,uid,'','isuser',delta);
       $j("#timeplan").html(s);
+      $j("#timeplan table.timeplan").addClass('sect'+mos);
+      $j(".totip").tooltip();
+      $j(".goto").click(function() {
+              var fagnavn = $j(this).attr("tag");
+              var plandata = courseplans[fagnavn];
+              visEnPlan(fagnavn,plandata);
+          } );
       $j("#oskrift").html('Uke '+julian.week(thisweek)+' <span title="'+thisweek+'" class="dato">'+show_date(thisweek)+'</span>');
       $j("#nxt").click(function() {
           if (database.startjd+7*delta < database.lastweek+7)
@@ -79,6 +87,13 @@ function show_thisweek(delta) {
             var userplan = getuserplan(uid);
             s = vistimeplan(userplan,uid,'','isuser',delta);
             $j("#timeplan").html(s);
+            $j("#timeplan table.timeplan").addClass('sect'+mos);
+            $j(".goto").click(function() {
+                    var fagnavn = $j(this).attr("tag");
+                    var plandata = courseplans[fagnavn];
+                    visEnPlan(fagnavn,plandata);
+                } );
+            $j(".totip").tooltip();
             $j("#oskrift").html('Uke '+julian.week(thisweek)+' <span title="'+thisweek+'" class="dato">'+show_date(thisweek)+'</span>');
             $j("#nxt").click(function() {
                   show_thisweek(delta+1);
@@ -99,13 +114,17 @@ function build_timetable(timeplan,plan,filter,planspan) {
      var spanend   = typeof(planspan) != 'undefined' ? '</span>' : '';
      var spa,sto;
      var i,j,pt,room,cell;
+     var clean = {};  // just coursename - no formating
      for (i=0; i< plan.length;i++) {
         spa = spanstart; sto = spanend;
         pt = plan[i];
         cell = pt[2].replace(' ','_');
         if (!timeplan[pt[1]]) {    // ingen rad definert ennå
             timeplan[pt[1]] = {};  // ny rad
+            clean[pt[1]] = {};  // ny rad
         }
+        clean[pt[1]][pt[0]] = cell;
+        cell = '<span tag="'+cell+'" class="goto">'+cell+'</span>';
         if (!planspan && timeplan[pt[1]][pt[0]]) continue; // only add multiple if we have planspan
         if (!timeplan[pt[1]][pt[0]]) {    // no data assigned yet
            timeplan[pt[1]][pt[0]] = '';   // place empty string so we can += later
@@ -124,7 +143,7 @@ function build_timetable(timeplan,plan,filter,planspan) {
         // don't add if we already have exact same data
         timeplan[pt[1]][pt[0]] += spa + cell + sto; 
      }
-     return timeplan;
+     return {timeplan:timeplan, clean:clean };
 }
 
 
@@ -207,18 +226,22 @@ function build_plantable(jd,uid,username,timeplan,xtraplan,filter) {
         s += "<th>" + dager[i] + "</th>";
     }
     s += "</tr>";
-    var cell,xcell,bad;
+    var cell,xcell,bad,subject;
     for (i=0; i<10; i++) {
        s+= "<tr>";
        s += "<td class=\"time\">"+start[i]+"</td>";
        for (j=0; j<5; j++) {
           cell = '&nbsp;';
-          if (isadmin && filter == 'teach') cell = '<div id="'+uid+'_'+j+"_"+i+'" class="edit">' + cell + '</div>';
+          if (isadmin && filter == 'teach')  { 
+              cell = '<div id="'+uid+'_'+j+"_"+i+'" class="edit">' + cell + '</div>';
+          } 
           bad = '';         // used to mark bad data, xcell and cell should be exclusive
           xcell = '';
+          subject = '';    // no students for this lesson
+          var abslist = [];  // studs who are absent for this day-slot
           var header = 'AndreFag';
-          if (timeplan[i] && timeplan[i][j]) {
-             cell = timeplan[i][j];
+          if (timeplan.timeplan[i] && timeplan.timeplan[i][j]) {
+             cell = timeplan.timeplan[i][j];
              if (isadmin && filter == 'teach') cell = '<div id="'+uid+'_'+j+"_"+i+'" class="edit">' + cell + '</div>';
              if (filter == 'RAD') {
                 if (cell.substr(0,4) != 'RADG') {
@@ -227,6 +250,7 @@ function build_plantable(jd,uid,username,timeplan,xtraplan,filter) {
              }
              bad = ' bad';
              header = 'x';
+             subject = timeplan.clean[i][j].split('_')[1] || '';
           }
           if (xtraplan[i] && xtraplan[i][j]) {
              var xp = xtraplan[i][j];
@@ -240,18 +264,43 @@ function build_plantable(jd,uid,username,timeplan,xtraplan,filter) {
                        + '</ul></li></ul>';
              }
           }
-          if (absent[jd+j] && absent[jd+j][uid]) {
-            var ab = absent[jd+j][uid];
-            var tlist = ab.value.split(',');
-            if ($j.inArray(""+(i+1),tlist) >= 0) {
-              xcell += '<div class="absent overabs">'+ab.name+'</div>';
+          if (absent[jd+j]) {
+            if (absent[jd+j][uid]) {
+              var ab = absent[jd+j][uid];
+              var tlist = ab.value.split(',');
+              if ($j.inArray(""+(i+1),tlist) >= 0) {
+                xcell += '<div class="absent overabs">'+ab.name+'</div>';
+              }
+            }
+            if (subject) {
+              var elever = memberlist[subject];
+              for (var el in elever) {
+                  var ab = absent[jd+j];
+                  var elev = elever[el];
+                  if (ab[elev]) { // one of my studs is absent
+                      var slots = ab[elev].value;
+                      for (var sl in slots) {
+                          var slo = slots[sl];
+                          if (+slo-1 == i) {
+                              // this stud is absent during course slot
+                              abslist.push( students[elev].firstname + '&nbsp;' + students[elev].lastname );
+                              break;
+                          }
+                      }
+                  }
+              }
             }
           }
           if (database.freedays[jd+j]) {
               cell = '<div class="timeplanfree">'+database.freedays[jd+j]+'</div>';
               xcell = '';
           }
-          s += '<td><div class="retainer">' + cell + xcell + '</div></td>';
+          var abs = '';
+          if (abslist.length) {
+            abs = '<div title="<table><tr><td>'
+                    +abslist.join('</td></tr><tr><td>')+'</tr></table>" class="tinytiny totip absentia">'+abslist.length+'</div>';
+          }
+          s += '<td><div class="retainer">' + cell + xcell + abs +'</div></td>';
        }
        s+= "</tr>";
     }
@@ -353,6 +402,13 @@ function vis_valgt_timeplan(user,filter,visfagplan,isuser,delta) {
     s = vistimeplan(userplan,uid,filter,isuser,delta);
     if (visfagplan) s += vis_fagplaner(user.id,current);
     $j("#timeplan").html(s);
+    $j(".totip").tooltip();
+    $j(".goto").click(function() {
+              var fagnavn = $j(this).attr("tag");
+              var plandata = courseplans[fagnavn];
+              visEnPlan(fagnavn,plandata);
+          } );
+
     $j("#oskrift").html('Uke '+julian.week(current)+' <span title="'+current+'" class="dato">'+show_date(current)+'</span>');
     $j('.edit').editable(save_timetable, {
          indicator : 'Saving...',

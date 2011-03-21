@@ -139,7 +139,7 @@ a { color: #333; }
         background: -moz-linear-gradient(top,  #fff,  #cfcfcf);
         font-size:1.0em;
         color:green;
-        z-index:100;
+        z-index:9000;
      
         display: none;
         margin: 0;
@@ -224,7 +224,7 @@ a { color: #333; }
         float: left;
         position: relative;
         list-style: none;
-        z-index:100;
+        z-index:9000;
     }
     /* main level link */
     #nav a {

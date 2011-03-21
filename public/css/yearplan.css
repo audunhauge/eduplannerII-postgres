@@ -88,15 +88,15 @@ div.rotated {
   top:20px;
   width:400px;
   height:400px;
-  z-index:20000;
+  z-index:2000;
   opacity:0.3;
 }
 
-.sect1 {
+.sect2, .sect3, .sect4 {
   background: url(../img/feynewtgaus.png) no-repeat center;
 }
 
-.sect2 {
+.sect10 {
   background: url(http://i.imgur.com/CtfoD.png) no-repeat center;
 }
 
@@ -511,6 +511,12 @@ div.helper { border:solid yellow 1px; background:yellow; width:20px; height:16px
 div.date    { width:5em; padding:2px; font-size:0.7em; white-space:nowrap; }
 div.weeknum { width:2em; padding:2px; float:left; }
 td.synopsis { width:10px !important; font-size:0.7em; white-space:nowrap; }
+div.tinytiny { 
+  width:6px !important; 
+  font-size:0.6em; 
+  white-space:nowrap; 
+  display:inline;
+}
 
 
 a.button, div.button {

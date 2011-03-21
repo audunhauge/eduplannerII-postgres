@@ -23,15 +23,17 @@ function edit_proveplan(fagnavn,plandata,start,stop) {
     var timmy = {};
     var tidy = {};
     // build timetable data for quick reference
-    for (var tt in timetables.course[fagnavn] ) {
-      var tty = timetables.course[fagnavn][tt];
-      if (!timmy[tty[0]]) {
-        timmy[tty[0]] = {};
-        tidy [tty[0]] = [];
+    if (timetables) {
+      for (var tt in timetables.course[fagnavn] ) {
+        var tty = timetables.course[fagnavn][tt];
+        if (!timmy[tty[0]]) {
+          timmy[tty[0]] = {};
+          tidy [tty[0]] = [];
+        }
+        if (timmy[ tty[0] ][ tty[1] ]) continue;
+        timmy[ tty[0] ][ tty[1] ] = 1;
+        tidy[ tty[0] ].push(""+(1+tty[1]));
       }
-      if (timmy[ tty[0] ][ tty[1] ]) continue;
-      timmy[ tty[0] ][ tty[1] ] = 1;
-      tidy[ tty[0] ].push(""+(1+tty[1]));
     }
     var s = '<div id="proveplan">';
     s += '<h1>Prøveplan</h1>';
@@ -227,7 +229,7 @@ function visEnPlan(fagnavn,plandata,egne) {
            return (teachers[e].firstname + " " + teachers[e].lastname);
         }).join(', ');
     var s='<div id="fagplan">';
-    s += '<h1><a class="copylink" href="yearplan.html?plan='+fagnavn+'">'+ fagnavn  +'</a></h1>';
+    s += '<h1><a class="copylink" href="yearplan?plan='+fagnavn+'">'+ fagnavn  +'</a></h1>';
     s += '<h3 class="textcenter" >'+ myteachers  +'</h3>';
     if (isteach && egne) {
         s += '<div id="saveme" class="button fixx">Lagre</div>'
@@ -324,15 +326,17 @@ function visEnValgtPlan(plandata,egne,start,stop) {
     var timmy = {};
     var tidy = {};
     // build timetable data for quick reference
-    for (var tt in timetables.course[minfagplan] ) {
-      var tty = timetables.course[minfagplan][tt];
-      if (!timmy[tty[0]]) {
-        timmy[tty[0]] = {};
-        tidy [tty[0]] = [];
+    if (timetables.course) {
+      for (var tt in timetables.course[minfagplan] ) {
+        var tty = timetables.course[minfagplan][tt];
+        if (!timmy[tty[0]]) {
+          timmy[tty[0]] = {};
+          tidy [tty[0]] = [];
+        }
+        if (timmy[ tty[0] ][ tty[1] ]) continue;
+        timmy[ tty[0] ][ tty[1] ] = 1;
+        tidy[ tty[0] ].push(""+(1+tty[1]));
       }
-      if (timmy[ tty[0] ][ tty[1] ]) continue;
-      timmy[ tty[0] ][ tty[1] ] = 1;
-      tidy[ tty[0] ].push(""+(1+tty[1]));
     }
     var tjd;
     var elever = memberlist[gru];

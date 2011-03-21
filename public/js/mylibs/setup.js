@@ -25,6 +25,9 @@ var timeregister = {};
 
 var absent = {};
 // all teachers who are absent (from current day)
+// and all students
+// {  julday:{ userid:{id,klass,name,value }, ..}, ... }
+// if klass != 0 then this is id of teach who takes studs on trip
 
 var valgtPlan;          // husker på den sist viste planen
 var memberlist;         // liste over medlemmer i hver gruppe
@@ -62,6 +65,7 @@ var linktilrom = [];    // liste over alle rom
 
 function take_action() {
     // decide what to show at startup based on action parameter
+    if (showplan) { action = 'plan'; }
     switch(action) {
         case 'raad':
             valg = 'teach';
@@ -106,9 +110,14 @@ function take_action() {
             break;
 
         case 'plan':
-            // planen er allerede på skjermen
-            // en **if (action == 'default')** i setup.js
-            // har unngått at vi overskriver planen
+            if (showplan != '') {
+                 $j.getJSON( "/timetables", 
+                    function(data) {
+                        timetables = data;
+                        getcourseplans();
+                    });
+
+            }
         case 'default':
         default:
             if (isteach) {
@@ -384,6 +393,21 @@ function getcourseplans() {
       }
       $j("#htitle").html(prevtitle);
       // updateFagplanMenu();
+      if (showplan != '') {
+          action = 'plan';
+          coursename = showplan.toUpperCase();
+          if (courseplans[coursename]) {
+                  var plandata = courseplans[coursename];
+                  visEnPlan(coursename,plandata);
+                  $j("#htitle").html("Fagplan");
+          } else {
+                  // vi fant ingen plan - vis standard
+                  $j("#main").html("Ukjent plan "+alan);
+                  action = 'default';
+                  show_thisweek();
+          }
+      
+      }
 
   });
 }            
@@ -391,29 +415,6 @@ function getcourseplans() {
 
 
 $j(document).ready(function() {
-    if (showplan != '') {
-        // vi viser planen for faget først - setter opp
-        // de andre fine greiene etterpå
-        action = 'plan';
-        plan = showplan.toUpperCase();
-        var url = 'aarsplan/php/getfagplaner.php';
-        $j.getJSON( url, { fagnavn:plan },
-        function(data) {
-            fagplaner = data;
-            if (fagplaner.fagliste[plan]) {
-                var plandata = fagplaner.fagliste[plan];
-                var datoliste = fagplaner.wdates;
-                visEnPlan(plan,plandata,datoliste);
-                $j("#htitle").html("Fagplan");
-            } else {
-                // vi fant ingen plan - vis standard
-                $j("#main").html("Ukjent plan "+plan);
-                action = 'default';
-                show_thisweek();
-            }
-        });
-    
-    }
     $j.getJSON( "/basic",{ navn:user }, 
          function(data) {
            database = data;
@@ -426,7 +427,8 @@ $j(document).ready(function() {
                s += '<div class="gradback centered sized1"><table class="summary"><caption>'+data.ulist.length+'</caption><tr>' + $j.map(data.ulist,function(e,i) {
                     e.gr = e.gr || '';
                     return ('<td><a href="/yearplan?navn='+e.firstname 
-                      + ' ' + e.lastname+'">' + e.firstname + ' ' + e.lastname +  '</a></td><td>' + e.department + '</td><td> ' + e.institution +'</td><td>'+ e.gr + '</td>');
+                      + ' ' + e.lastname+'">' + e.firstname + ' ' + e.lastname +  '</a></td><td>' 
+                      + e.department + '</td><td> ' + e.institution +'</td><td>'+ e.gr + '</td>');
                  }).join('</tr><tr>') + '</tr></table></div>';
                action = 'velg';
                $j("#main").html(s);
