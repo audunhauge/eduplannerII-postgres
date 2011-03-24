@@ -359,10 +359,22 @@ function visEnValgtPlan(plandata,egne,start,stop) {
         var testweek = tests[tjd];
         var test = '';
         var abs = '';
-        var abslist = [];
-        var days = {};
-        var cause = {};
         for (var j=0;j<5;j++) {
+            var days = {};
+            var cause = {};
+            var absentDueTest = [];
+            var abslist = [];
+            var elever = memberlist[gru];
+            var andre = getOtherCG(elever);
+            absentDueTest[j] = getAbsentBecauseTest(tjd+j,andre);
+            if (absentDueTest[j] && absentDueTest[j].length > 0) {
+              for (var abs in absentDueTest[j]) {
+                for (var el in absentDueTest[j][abs].elever) {
+                 var elev = absentDueTest[j][abs].elever[el]; 
+                 abslist.push( students[elev].firstname + '&nbsp;' + students[elev].lastname );
+                }
+              }
+            }
             if (absent[tjd+j] && timmy[j]) {  // absent and lesson
               for (var el in elever) {
                   var ab = absent[tjd+j];
@@ -383,17 +395,17 @@ function visEnValgtPlan(plandata,egne,start,stop) {
                   }
               }
             }
-        }
-        if (abslist.length) {
-          var causedays = '';
-          for (var cc in cause) {
-            causedays += cc + ' ';
-          }
-          for (var dd in days) {
-            causedays += dd + ' ';
-          }
-          abs = '<div title="<h3>'+causedays+'</h3><table><tr><td>'
-                  +abslist.join('</td></tr><tr><td>')+'</tr></table>" class="totip absentia">'+abslist.length+'</div>';
+            if (abslist.length) {
+              var causedays = '';
+              for (var cc in cause) {
+                causedays += cc + ' ';
+              }
+              for (var dd in days) {
+                causedays += dd + ' ';
+              }
+              abs += '<div title="<h3>'+causedays+'</h3><table><tr><td>'
+                      +abslist.join('</td></tr><tr><td>')+'</tr></table>" class="totip absentia">'+abslist.length+'</div>';
+            }
         }
         summary += '|||||';
         summary = summary.replace(/(<br>)+/g,"<br>");

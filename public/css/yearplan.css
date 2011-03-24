@@ -88,15 +88,27 @@ div.rotated {
   top:20px;
   width:400px;
   height:400px;
-  z-index:2000;
-  opacity:0.3;
+  z-index:0;
+  opacity:0.5;
 }
 
-.sect2, .sect3, .sect4 {
+.sect1, .sect2, .sect4 {
   background: url(../img/feynewtgaus.png) no-repeat center;
 }
 
+.sect3 {
+  background: url(../img/maxweber.png) no-repeat center;
+}
+
+.sect2 {
+  background: url(../img/ferdinandsaussure.png) no-repeat center;
+}
+
 .sect10 {
+  background: url(../img/mozart_wolfgang.png) no-repeat center;
+}
+
+.sect11, .sect12 {
   background: url(http://i.imgur.com/CtfoD.png) no-repeat center;
 }
 
@@ -189,7 +201,7 @@ tr.accuminus  { background:#944; }
   padding:2px;
 }
 
-div.retainer {
+.retainer {
   position:relative;
 }
 
@@ -429,6 +441,7 @@ div.tinyohd {
 .gradback {
   background: -moz-linear-gradient(top,#AFC4E3,#E0E9FC 50%,white 100%);
   background: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#AFC4E3), to(#FFFFFF), color-stop(.4,#E0E9FC));
+  padding-top:4px;
 }
 
 .gradbackgreen {
@@ -475,6 +488,10 @@ div.tinyohd {
 
 .sized2 {
   width:60em;
+}
+
+.sized25 {
+  width:30em;
 }
 
 .sized3 {

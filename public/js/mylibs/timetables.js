@@ -19,6 +19,7 @@ function show_thisweek(delta) {
     delta = typeof(delta) != 'undefined' ?  +delta : 0;  // vis timeplan for en anne uke
     var uid = database.userinfo.id || 0;
     var s='<div id="timeviser"><h1 id="oskrift">'+user+'</h1>';
+    s+= '<div id="sectionimg"></div>';
     s+= '<div id="timeplan"></div>';
     s+= '<div id="weekly"></div>';
     s+= "</div>";
@@ -65,7 +66,7 @@ function show_thisweek(delta) {
       var userplan = getuserplan(uid);
       s = vistimeplan(userplan,uid,'','isuser',delta);
       $j("#timeplan").html(s);
-      $j("#timeplan table.timeplan").addClass('sect'+mos);
+      $j("#sectionimg").addClass('sect'+mos);
       $j(".totip").tooltip();
       $j(".goto").click(function() {
               var fagnavn = $j(this).attr("tag");
@@ -87,7 +88,7 @@ function show_thisweek(delta) {
             var userplan = getuserplan(uid);
             s = vistimeplan(userplan,uid,'','isuser',delta);
             $j("#timeplan").html(s);
-            $j("#timeplan table.timeplan").addClass('sect'+mos);
+            $j("#timeplan").addClass('sect'+mos);
             $j(".goto").click(function() {
                     var fagnavn = $j(this).attr("tag");
                     var plandata = courseplans[fagnavn];
@@ -129,16 +130,23 @@ function build_timetable(timeplan,plan,filter,planspan) {
         if (!timeplan[pt[1]][pt[0]]) {    // no data assigned yet
            timeplan[pt[1]][pt[0]] = '';   // place empty string so we can += later
         }
-        if (plan.prover[ pt[1] ] && plan.prover[ pt[1] ] [ pt[0] ] ) {
-          if (spanstart) {
-            spa = '<span class="'+planspan+' timeprove">';
-          } else {
-            spa = '<span class="timeprove">';
-            sto = '</span>';
-          }
-        }
         room = (pt[4] && filter != 'RAD' ) ? "&nbsp;<span class=\"rombytte\">=&gt;&nbsp;" + pt[4] + "</span>" : '&nbsp;'+pt[3] ;
         cell += room;
+        if (plan.prover[ pt[1] ] && plan.prover[ pt[1] ] [ pt[0] ] ) {
+          if (plan.prover[ pt[1] ] [ pt[0] ] != 1 ) {
+              spa = '<span class="timeprove">';
+              cell = plan.prover[ pt[1] ] [ pt[0] ];
+              cell = cell.replace('eksamen','eks');
+              sto = '</span>';
+          } else {
+            if (spanstart) {
+              spa = '<span class="'+planspan+' timeprove">';
+            } else {
+              spa = '<span class="timeprove">';
+              sto = '</span>';
+            }
+          }
+        }
         if (timeplan[pt[1]][pt[0]] == spa + cell + sto) continue;
         // don't add if we already have exact same data
         timeplan[pt[1]][pt[0]] += spa + cell + sto; 
@@ -201,15 +209,26 @@ function vis_samlingtimeplan() {
 }
 
 
+function getAbsentBecauseTest(jd,fagliste) {
+  // given a list of courses
+  // returns a list of absent students for given week
+  var heldag = [];
+  var hd = database.heldag[jd];
+  for (fag in hd) {
+    if ($j.inArray(fag.toUpperCase(),fagliste.fag) != -1) {
+      heldag.push( { hd:fag+' '+hd[fag],elever:fagliste.fagelev[fag] } );
+    }
+  } 
+  return heldag;
+}        
+
+
 function build_plantable(jd,uid,username,timeplan,xtraplan,filter) {
     // lager en html-tabell for timeplanen
+    var absentDueTest = [];
+      // absentDueTest[j][course] => absentlist
     var start = database.starttime;
     var members = username;
-    /*
-    if (filter == 'group') {
-        members = fullname[username] + " " + username;
-    }
-    */
     if (memberlist && memberlist[username]) {
         // this is a timetable for a group/class
         // show members as a list in caption (on hover)
@@ -251,6 +270,13 @@ function build_plantable(jd,uid,username,timeplan,xtraplan,filter) {
              bad = ' bad';
              header = 'x';
              subject = timeplan.clean[i][j].split('_')[1] || '';
+             if (!absentDueTest[j]) 
+               absentDueTest[j] = {}; 
+             if (!absentDueTest[j][subject]) {
+               var elever = memberlist[subject];
+               var andre = getOtherCG(elever);
+               absentDueTest[j][subject] = getAbsentBecauseTest(jd+j,andre);
+             }
           }
           if (xtraplan[i] && xtraplan[i][j]) {
              var xp = xtraplan[i][j];
@@ -263,6 +289,14 @@ function build_plantable(jd,uid,username,timeplan,xtraplan,filter) {
                        + xcell
                        + '</ul></li></ul>';
              }
+          }
+          if (absentDueTest[j] && absentDueTest[j][subject] && absentDueTest[j][subject].length > 0) {
+            for (var abs in absentDueTest[j][subject]) {
+              for (var el in absentDueTest[j][subject][abs].elever) {
+               var elev = absentDueTest[j][subject][abs].elever[el]; 
+               abslist.push( students[elev].firstname + '&nbsp;' + students[elev].lastname );
+              }
+            }
           }
           if (absent[jd+j]) {
             if (absent[jd+j][uid]) {
@@ -580,6 +614,7 @@ function getOtherCG(studlist) {
   // are connected to these studs
     var fag = [];
     var gru = [];
+    var fagelev = {};
     for (var eid in studlist) {
         var elev = studlist[eid];
         var egru = memgr[elev];
@@ -591,13 +626,15 @@ function getOtherCG(studlist) {
             var fgru = database.grcourses[eg];
             for (var fid in fgru) {
               var efg = fgru[fid];
+              if (!fagelev[efg]) fagelev[efg] = [];
+              fagelev[efg].push(elev);
               if ($j.inArray(efg,fag) == -1) {
                   fag.push(efg);
               }
             }
         }
     }
-    return {fag:fag, gru:gru };
+    return {fag:fag, gru:gru, fagelev:fagelev };
 }    
 
 function getuserplan(uid) {
@@ -685,7 +722,22 @@ function add_tests(uid,jd) {
   if (uid.length) return prover;  // this is not a user id (most likely a course/group)
   var mysubj = getUserSubj(uid);  // list of courses - groups for this stud
   prover.tests = {};   // store info about test indexed by jd for next 4 weeks
+  var faggrupper = getUserSubj(uid);
   for (var day = 0; day<28; day++) {
+    if (!timetables.teach[uid]) {
+      var hd =  database.heldag[jd+day] || {} ;
+      for (fag in hd) {
+          if (faggrupper[fag]) {
+            prover.tests[jd+day] = { shortname:fag,value:hd[fag] };
+            for (var dd=0; dd < 9; dd++) {
+              if (!prover[dd]) {    // ingen rad definert ennå
+                  prover[dd] = {};  // ny rad
+              }
+              prover[dd][day] = fag + ' ' + hd[fag];
+            }
+          }
+      } 
+    }
     if (alleprover[jd + day]) {
       for (var pr in alleprover[jd + day]) {
         var pro = alleprover[jd + day][pr];

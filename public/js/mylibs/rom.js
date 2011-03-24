@@ -1,13 +1,16 @@
 // funksjoner for å vise romreservering
 
 
-function rom_reservering(room) {
+function rom_reservering(room,delta) {
     // vis timeplan for room med reserveringer
+    // delta is offset from current day
+    delta = typeof(delta) != 'undefined' ?  +delta : 0;
+    var current = database.startjd+delta*7;
     var data = getRoomPlan(room);
     var plan = data.plan;
     var timetable = [ [],[],[],[],[],[],[] ];
     if (reservations) {
-        for (var jd = database.startjd; jd < database.startjd+7; jd++) {
+        for (var jd = database.startjd+delta*7; jd < database.startjd+(1+delta)*7; jd++) {
             if (reservations[jd]) {
                 var reslist = reservations[jd];
                 for (var r in reslist) {
@@ -37,8 +40,15 @@ function rom_reservering(room) {
       timetable[day][slot] = course + ' <span title="'+teachname+'">' + teach.firstname.substr(0,4) + teach.lastname.substr(0,4) + '</span>';
     }
     var s = '<div class="sized1 centered gradback">'
+            + '<h1 id="oskrift"></h1>'
+            + '<div id="makeres" class="sized25 textcenter centered" >'
+            +   '<label>Melding :<input id="restext" type="text" /></label>'
+            +   '<div id="saveres" class="button float gui" >Reserver</div>'
+            + '</div><br>'
             + '<table class="sized2 centered border1">'
-            + '<caption>' + room + '</caption>'
+            + '<caption class="retainer" ><div class="button blue" id="prv">&lt;</div>'
+            + room 
+            + '<div class="button blue "id="nxt">&gt;</div></caption>'
             + '<tr><th class="time">Time</th><th>Man</th><th>Tir</th><th>Ons</th>'
             + '<th>Tor</th><th>Fre</th></tr>';
     for (i= 0; i < 15; i++) {
@@ -52,6 +62,20 @@ function rom_reservering(room) {
     }
     s += "</table></div>";
     $j("#main").html(s);
+    $j("#oskrift").html('Uke '+julian.week(current)+' <span title="'+current+'" class="dato">'+show_date(current)+'</span>');
+    $j("#saveres").click(function(event) {
+        event.preventDefault();
+        rom_reservering(room,delta);
+    });
+    $j("#nxt").click(function() {
+          if (database.startjd+7*delta < database.lastweek+7)
+            rom_reservering(room,delta+1);
+          });
+    $j("#prv").click(function() {
+          if (database.startjd+7*delta > database.firstweek-7)
+            rom_reservering(room,delta-1);
+          });
+
 }
 
 

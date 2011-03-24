@@ -4,6 +4,7 @@ var db = database.db;
 var client = database.client;
 db.starttime = '8.05 - 8.45,8.45 - 9.25,9.35 - 10.15,10.20 - 11.00,11.25 - 12.05,12.10 - 12.50,12.50 - 13.30,13.40 - 14.20,14.25 - 15.05,15.05'.split(',');
 
+
 var addons = {}
 // extra data that we send AFTER the main page has been drawn
 // this so that the page seems more responsive

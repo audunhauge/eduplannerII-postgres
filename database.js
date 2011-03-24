@@ -63,13 +63,15 @@ client.connect(function(err, results) {
 var getCoursePlans = function(callback) {
   client.query(
             'SELECT distinct concat(u.id,c.id,s.section) as idd, u.id as uid, u.username, c.id, u.institution'
-          + ' ,c.startdate,c.shortname,c.numsections,s.section,s.summary '
+          + ' ,c.startdate,c.shortname,c.numsections,s.section,s.summary,c.cost '
           + '   FROM mdl_role_assignments ra '
           + '        INNER JOIN mdl_user u ON u.id=ra.userid '
           + '        INNER JOIN mdl_context x ON x.id=ra.contextid '
           + '        INNER JOIN mdl_course c ON x.instanceid=c.id '
           + '        LEFT OUTER JOIN mdl_course_sections s ON s.course=c.id'
-          + '   WHERE c.category in (2,3,4,6,10) '
+          //+ '   WHERE c.category in (2,3,4,6,10) '
+          //  cost is the category for each course
+          + '   WHERE c.cost in (1,2,3,4,10,11,12) '
           + '        AND ra.roleid = 3 '
           + '        AND s.section != 0 '
           + '        AND (isnull(s.summary) OR ( s.section < 50 AND s.section > 0)) '
@@ -591,7 +593,8 @@ var gettickets = function(user,query,callback) {
   // assumes you give it a callback that assigns the hash
   client.query(
       // fetch all shows
-       'SELECT u.firstname,u.lastname,u.department,sho.name,ti.* from mdl_show_tickets ti inner join mdl_show sho on (sho.idx = ti.showid) inner join mdl_user u on (u.id = ti.userid)',
+       'SELECT u.firstname,u.lastname,u.department,sho.name,ti.* from mdl_show_tickets ti inner join mdl_show sho '
+       + 'on (sho.idx = ti.showid) inner join mdl_user u on (u.id = ti.userid)',
       function (err, results, fields) {
           if (err) {
               console.log("ERROR: " + err.message);
@@ -763,7 +766,7 @@ var getstudents = function() {
 var getcourses = function() {
   client.query(
       // fetch courses, groups and course:categories
-      'select c.id,c.shortname,c.category,count(ra.id) as cc from mdl_role_assignments ra inner join mdl_context x'
+      'select c.id,c.shortname,c.category,c.cost,count(ra.id) as cc from mdl_role_assignments ra inner join mdl_context x'
         + '  ON (x.id=ra.contextid and ra.roleid  = 5) inner join mdl_course c ON x.instanceid=c.id '
         + '                        group by c.id having cc > 2 order by cc',
       function (err, results, fields) {
@@ -780,7 +783,7 @@ var getcourses = function() {
               var cname = elm[0];
               var group = elm[1];
               db.course.push(cname);
-              db.category[cname] = course.category;
+              db.category[cname] = course.cost;
               if (!ghash[group]) {
                 db.groups.push(group);
                 ghash[group] = 1;

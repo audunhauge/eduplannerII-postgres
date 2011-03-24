@@ -165,7 +165,7 @@ function totallog() {
     s += '<theader><tr><th>Show</th><th>Tid</th><th>Selger</th><th>Betaling</th><th>Antall</th><th>Pris</tr></theader>';
     s += '<tbody>';
     for (var i in tickets) {
-       if (+i >  database.thisjd-24) {
+       if (+i >  database.thisjd-124) {
          var tics = tickets[i];
          mydate = julian.jdtogregorian(+i);
          datetxt = mydate.day +'/'+mydate.month +'/'+  mydate.year;
