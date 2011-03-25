@@ -259,6 +259,7 @@ function build_plantable(jd,uid,username,timeplan,xtraplan,filter) {
           subject = '';    // no students for this lesson
           var abslist = [];  // studs who are absent for this day-slot
           var header = 'AndreFag';
+          var already = {};  // to avoid doubles
           if (timeplan.timeplan[i] && timeplan.timeplan[i][j]) {
              cell = timeplan.timeplan[i][j];
              if (isadmin && filter == 'teach') cell = '<div id="'+uid+'_'+j+"_"+i+'" class="edit">' + cell + '</div>';
@@ -294,7 +295,11 @@ function build_plantable(jd,uid,username,timeplan,xtraplan,filter) {
             for (var abs in absentDueTest[j][subject]) {
               for (var el in absentDueTest[j][subject][abs].elever) {
                var elev = absentDueTest[j][subject][abs].elever[el]; 
-               abslist.push( students[elev].firstname + '&nbsp;' + students[elev].lastname );
+               if (students[elev] && !already[elev] ) {
+                 already[elev] = 1;
+                 abslist.push(short_sweet_name(elev));
+                 //abslist.push( students[elev].firstname + '&nbsp;' + students[elev].lastname );
+               }
               }
             }
           }
@@ -311,13 +316,15 @@ function build_plantable(jd,uid,username,timeplan,xtraplan,filter) {
               for (var el in elever) {
                   var ab = absent[jd+j];
                   var elev = elever[el];
-                  if (ab[elev]) { // one of my studs is absent
+                  if (ab[elev] && !already[elev] ) { // one of my studs is absent
                       var slots = ab[elev].value;
                       for (var sl in slots) {
                           var slo = slots[sl];
                           if (+slo-1 == i) {
                               // this stud is absent during course slot
-                              abslist.push( students[elev].firstname + '&nbsp;' + students[elev].lastname );
+                              //abslist.push( students[elev].firstname + '&nbsp;' + students[elev].lastname );
+                              abslist.push(short_sweet_name(elev));
+                              already[elev] = 1;
                               break;
                           }
                       }
@@ -330,9 +337,11 @@ function build_plantable(jd,uid,username,timeplan,xtraplan,filter) {
               xcell = '';
           }
           var abs = '';
-          if (abslist.length) {
-            abs = '<div title="<table><tr><td>'
-                    +abslist.join('</td></tr><tr><td>')+'</tr></table>" class="tinytiny totip absentia">'+abslist.length+'</div>';
+          if (timetables.teach[uid]) {
+            if (abslist.length) {
+              abs = '<div title="<table><tr><td>'
+                      +abslist.join('</td></tr><tr><td>')+'</tr></table>" class="tinytiny totip absentia">'+abslist.length+'</div>';
+            }
           }
           s += '<td><div class="retainer">' + cell + xcell + abs +'</div></td>';
        }

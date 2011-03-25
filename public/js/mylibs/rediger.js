@@ -360,18 +360,23 @@ function visEnValgtPlan(plandata,egne,start,stop) {
         var test = '';
         var abs = '';
         for (var j=0;j<5;j++) {
+          if (timmy[j] ) {
             var days = {};
             var cause = {};
-            var absentDueTest = [];
             var abslist = [];
+            var already = {};  // to avoid doubles
             var elever = memberlist[gru];
             var andre = getOtherCG(elever);
-            absentDueTest[j] = getAbsentBecauseTest(tjd+j,andre);
-            if (absentDueTest[j] && absentDueTest[j].length > 0) {
-              for (var abs in absentDueTest[j]) {
-                for (var el in absentDueTest[j][abs].elever) {
-                 var elev = absentDueTest[j][abs].elever[el]; 
-                 abslist.push( students[elev].firstname + '&nbsp;' + students[elev].lastname );
+            var absentDueTest = getAbsentBecauseTest(tjd+j,andre);
+            if (absentDueTest && absentDueTest.length > 0) {
+              for (var absi in absentDueTest) {
+                for (var el in absentDueTest[absi].elever) {
+                 var elev = absentDueTest[absi].elever[el]; 
+                 if (students[elev] && !already[elev] ) {
+                    already[elev] = 1;
+                    cause[ absentDueTest[absi].hd ] = 1;
+                    abslist.push(short_sweet_name(elev));
+                 }
                 }
               }
             }
@@ -383,7 +388,7 @@ function visEnValgtPlan(plandata,egne,start,stop) {
                       var slots = ab[elev].value;
                       for (var sl in slots) {
                           var slo = slots[sl];
-                          if (timmy[j][+slo]) {
+                          if (timmy[j][+slo-1]) {
                               // this stud is absent during course slot
                               //abslist.push( dager[j]+ 'dag&nbsp;' + students[elev].firstname + '&nbsp;' + students[elev].lastname + '&nbsp;'+ ab[elev].name);
                               abslist.push( students[elev].firstname + '&nbsp;' + students[elev].lastname );
@@ -396,16 +401,17 @@ function visEnValgtPlan(plandata,egne,start,stop) {
               }
             }
             if (abslist.length) {
-              var causedays = '';
-              for (var cc in cause) {
-                causedays += cc + ' ';
-              }
-              for (var dd in days) {
-                causedays += dd + ' ';
-              }
-              abs += '<div title="<h3>'+causedays+'</h3><table><tr><td>'
-                      +abslist.join('</td></tr><tr><td>')+'</tr></table>" class="totip absentia">'+abslist.length+'</div>';
+                  var causedays = '';
+                  for (var cc in cause) {
+                    causedays += cc + ' ';
+                  }
+                  for (var dd in days) {
+                    causedays += dd + ' ';
+                  }
+                  abs += '<div title="<h3>'+causedays+'</h3><table><tr><td>'
+                          +abslist.join('</td></tr><tr><td>')+'</tr></table>" class="float weeny totip absentia">'+abslist.length+'</div>';
             }
+           }
         }
         summary += '|||||';
         summary = summary.replace(/(<br>)+/g,"<br>");
@@ -433,6 +439,15 @@ function visEnValgtPlan(plandata,egne,start,stop) {
     }
     s += "</table>";
     return s;
+}
+
+function short_sweet_name(stuid) {
+  // returns a shortened name for a student
+  // [ -] replaced by nbps. firstname chopped to 15 chars
+  // lastname chopped to 15 chars
+  if (!students[stuid]) return '';
+  return students[stuid].firstname.replace(" ","&nbsp;").replace("-","&nbsp;").substring(0,15) + '&nbsp;' 
+         + students[stuid].lastname.substring(0,15)+ '&nbsp;' + students[stuid].department;
 }
 
 function edit_aarsplan() {
