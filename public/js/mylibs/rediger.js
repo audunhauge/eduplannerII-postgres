@@ -374,6 +374,7 @@ function visEnValgtPlan(plandata,egne,start,stop) {
                  var elev = absentDueTest[absi].elever[el]; 
                  if (students[elev] && !already[elev] ) {
                     already[elev] = 1;
+                    days[ dager[j] ] = 1;
                     cause[ absentDueTest[absi].hd ] = 1;
                     abslist.push(short_sweet_name(elev));
                  }
