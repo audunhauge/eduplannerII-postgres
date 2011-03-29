@@ -61,6 +61,8 @@ var fullname;           // lagrer fagnavn delen av gruppenavnet - fullname["3403
 var category;           // 3inf5:4, 2SCD5:10  - kategori for faget 2=vg1,3=vg2,4=vg3,10=mdd
 var fagautocomp;        // liste over alle gyldige fagnavn - brukes til autocomplete
 var linktilrom = [];    // liste over alle rom
+
+var promises = {};      // hash of promises that functions may fulfill when they have recieved data
   
 
 function take_action() {
@@ -407,6 +409,13 @@ function getcourseplans() {
                   show_thisweek();
           }
       
+      }
+      if (promises.allplans) {
+        // some functions have some actions pending on my data
+        for (var p in promises.allplans) {
+          promises.allplans[p]();
+        }
+        delete promises.allplans;
       }
 
   });

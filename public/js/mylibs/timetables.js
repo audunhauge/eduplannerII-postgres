@@ -47,24 +47,30 @@ function show_thisweek(delta) {
     }
     s += "</tr></table>";
     $j("#weekly").html(s);
-    var mos = 0;
-    if (timetables.teach) {
-      s += vis_fagplaner(uid,thisweek);
-      var minefag = getfagliste(uid);
-      var sect = "";
-      var mostly = {0:0};
-      for (var i in minefag) {
-         var fag = minefag[i].split('_')[0];
-         var cat = database.category[fag];
-         if (!mostly[cat]) mostly[cat] = 0;
-         mostly[cat]++;
-         if (mostly[cat] >= mostly[mos]) mos = cat;
-      }
-      //s += '<div id="sectionimg" class="sect'+mos+'"></div>';
-    }
+    var planliste = '';
     if (timetables.course) {
+      var courseplan = addonCoursePlans(delta);
+      addonTimePlan(delta,courseplan.mos);
+      $j("#timeplan").append(courseplan.plan);
+    } else {
+      if (!promises.allplans) promises.allplans = [];
+      promises["allplans"].push(function() { var courseplan = addonCoursePlans(delta); $j("#timeplan").append(courseplan.plan); });
+      $j.getJSON( "/timetables", 
+        function(data) {
+            timetables = data;
+            var courseplan = addonCoursePlans(delta);
+            addonTimePlan(delta,courseplan.mos);
+            // $j("#timeplan").append(courseplan.plan);
+            updateFagplanMenu();
+        });
+    }
+}
+
+function addonTimePlan(delta,mos) {
+      var thisweek = database.startjd + delta*7;
+      var uid = database.userinfo.id || 0;
       var userplan = getuserplan(uid);
-      s = vistimeplan(userplan,uid,'','isuser',delta);
+      var s = vistimeplan(userplan,uid,'','isuser',delta);
       $j("#timeplan").html(s);
       $j("#sectionimg").addClass('sect'+mos);
       //$j(".totip").tooltip();
@@ -83,29 +89,27 @@ function show_thisweek(delta) {
           if (database.startjd+7*delta > database.firstweek-7)
             show_thisweek(delta-1);
           });
-    } else $j.getJSON( "/timetables", 
-        function(data) {
-            timetables = data;
-            var userplan = getuserplan(uid);
-            s = vistimeplan(userplan,uid,'','isuser',delta);
-            $j("#timeplan").html(s);
-            $j("#timeplan").addClass('sect'+mos);
-            $j(".goto").click(function() {
-                    var fagnavn = $j(this).attr("tag");
-                    var plandata = courseplans[fagnavn];
-                    visEnPlan(fagnavn,plandata);
-                } );
-            //$j(".totip").tooltip();
-            $j(".totip").tooltip({position:"bottom right" } );
-            $j("#oskrift").html('Uke '+julian.week(thisweek)+' <span title="'+thisweek+'" class="dato">'+show_date(thisweek)+'</span>');
-            $j("#nxt").click(function() {
-                  show_thisweek(delta+1);
-                });
-            $j("#prv").click(function() {
-                  show_thisweek(delta-1);
-                });
-            updateFagplanMenu();
-        });
+}
+
+function addonCoursePlans(delta) {
+    var thisweek = database.startjd + delta*7;
+    var uid = database.userinfo.id || 0;
+    var planliste = '';
+    var mos = 0;
+    if (timetables.teach) {
+      planliste = vis_fagplaner(uid,thisweek);
+      var minefag = getfagliste(uid);
+      var sect = "";
+      var mostly = {0:0};
+      for (var i in minefag) {
+         var fag = minefag[i].split('_')[0];
+         var cat = database.category[fag];
+         if (!mostly[cat]) mostly[cat] = 0;
+         mostly[cat]++;
+         if (mostly[cat] >= mostly[mos]) mos = cat;
+      }
+    } 
+    return {plan:planliste,mos:mos };
 }
 
 
@@ -121,7 +125,7 @@ function build_timetable(timeplan,plan,filter,planspan) {
      for (i=0; i< plan.length;i++) {
         spa = spanstart; sto = spanend;
         pt = plan[i];
-        cell = pt[2].replace(' ','_');
+        if (pt[2]) cell = pt[2].replace(' ','_');
         if (!timeplan[pt[1]]) {    // ingen rad definert ennå
             timeplan[pt[1]] = {};  // ny rad
             clean[pt[1]] = {};  // ny rad

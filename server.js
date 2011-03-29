@@ -17,6 +17,7 @@ function findUser(firstname,lastname) {
   // search for a user given firstname and lastname
   // try students first (studs may shadow teach)
   var list = [];
+  var seen = {};
   if (lastname == '') {
     // just one search word
     // we try department,institution
@@ -24,14 +25,22 @@ function findUser(firstname,lastname) {
       var plain = firstname.trim().toUpperCase();
       for (var i in db.students) {
         var s = db.students[i];
+        if (seen[s.id]) continue;
         if (s.lastname.match(any) || s.firstname.match(any) || s.department.match(any)  || s.institution.match(any)) {
-           if (s) list.push(s);
+           if (s) {
+             list.push(s);
+             seen[s.id] = 1;
+           }
         }
       }
       for (var j in db.teachers) {
         var t = db.teachers[j];
+        if (seen[t.id]) continue;
         if (t.lastname.match(any) || t.firstname.match(any) || t.department.match(any)  || t.institution.match(any)) {
-           if (t) list.push(t);
+           if (t) {
+             list.push(t);
+             seen[t.id] = 1;
+           }
         }
       }
       if (db.memlist[plain]) {
@@ -40,7 +49,11 @@ function findUser(firstname,lastname) {
         var studlist = db.memlist[plain];
         for (j in studlist) {
           var s = db.students[studlist[j]];
-           if (s) list.push(s);
+          if (seen[s.id]) continue;
+          if (s) {
+             list.push(s);
+             seen[s.id] = 1;
+          }
         }
       } else { 
           if (db.coursesgr[plain]) {
