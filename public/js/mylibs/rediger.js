@@ -136,7 +136,8 @@ function edit_proveplan(fagnavn,plandata,start,stop) {
     // render the table
     $j("#main").html(s);
     // add tooltips
-    $j(".totip").tooltip();
+    //$j(".totip").tooltip();
+    $j(".totip").tooltip({position:"bottom right" } );
 
     // buttons for showing whole plan / from today
     var uke = database.week;
@@ -272,20 +273,23 @@ function visEnPlan(fagnavn,plandata,egne) {
     $j("#toot").click(function() {
         var plan = visEnValgtPlan(plandata,egne,33,26);
         $j("#planviser").html(plan);
-        $j(".totip").tooltip();
+        //$j(".totip").tooltip();
+        $j(".totip").tooltip({position:"bottom right" } );
         fagplan_enable_editing(isteach,egne);
         minVisning = "#toot";
     });
     $j("#rest").click(function() {
         var plan = visEnValgtPlan(plandata,egne,uke,26);
         $j("#planviser").html(plan);
-        $j(".totip").tooltip();
+        //$j(".totip").tooltip();
+        $j(".totip").tooltip({position:"bottom right" } );
         fagplan_enable_editing(isteach,egne);
         minVisning = "#rest";
     });
     var plan = visEnValgtPlan(plandata,egne,uke,26);
     $j("#planviser").html(plan);
-    $j(".totip").tooltip();
+    //$j(".totip").tooltip();
+    $j(".totip").tooltip({position:"bottom right" } );
     fagplan_enable_editing(isteach,egne);
 
 

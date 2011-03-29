@@ -67,7 +67,8 @@ function show_thisweek(delta) {
       s = vistimeplan(userplan,uid,'','isuser',delta);
       $j("#timeplan").html(s);
       $j("#sectionimg").addClass('sect'+mos);
-      $j(".totip").tooltip();
+      //$j(".totip").tooltip();
+      $j(".totip").tooltip({position:"bottom right" } );
       $j(".goto").click(function() {
               var fagnavn = $j(this).attr("tag");
               var plandata = courseplans[fagnavn];
@@ -94,7 +95,8 @@ function show_thisweek(delta) {
                     var plandata = courseplans[fagnavn];
                     visEnPlan(fagnavn,plandata);
                 } );
-            $j(".totip").tooltip();
+            //$j(".totip").tooltip();
+            $j(".totip").tooltip({position:"bottom right" } );
             $j("#oskrift").html('Uke '+julian.week(thisweek)+' <span title="'+thisweek+'" class="dato">'+show_date(thisweek)+'</span>');
             $j("#nxt").click(function() {
                   show_thisweek(delta+1);
@@ -445,7 +447,7 @@ function vis_valgt_timeplan(user,filter,visfagplan,isuser,delta) {
     s = vistimeplan(userplan,uid,filter,isuser,delta);
     if (visfagplan) s += vis_fagplaner(user.id,current);
     $j("#timeplan").html(s);
-    $j(".totip").tooltip();
+    $j(".totip").tooltip({position:"bottom right" } );
     $j(".goto").click(function() {
               var fagnavn = $j(this).attr("tag");
               var plandata = courseplans[fagnavn];
