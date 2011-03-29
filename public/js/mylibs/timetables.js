@@ -142,6 +142,11 @@ function build_timetable(timeplan,plan,filter,planspan) {
           if (plan.prover[ pt[1] ] [ pt[0] ] != 1 ) {
               spa = '<span class="timeprove">';
               cell = plan.prover[ pt[1] ] [ pt[0] ];
+              if ($j.isArray(cell)) {
+                //cell = cell.join(' ');
+                // this is a group - just assign subj+room
+                cell = clean[pt[1]][pt[0]] + room;
+              }
               cell = cell.replace('eksamen','eks');
               sto = '</span>';
           } else {
