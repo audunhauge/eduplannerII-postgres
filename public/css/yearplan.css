@@ -1,5 +1,8 @@
 
-html { min-height: 100%; margin-bottom: 1px; }
+html { 
+  min-height: 100%; margin-bottom: 1px; 
+  overflow-y: scroll;
+}
 
 .simple_overlay {
         display:none;
