@@ -194,7 +194,7 @@ function generate(id,wd,active,tty) {
   // generate a table for choosing/changing slots for a test
   var uid = database.userinfo.id || 0;
   var timetab = timetables.teach[uid];
-  var slots = ['','','','','','','','','',''];
+  var slots = ['===','===','===','===','===','===','===','===','===','==='];
   for (var i = 0; i<timetab.length; i++) {
       var elm = timetab[i];
       if (+elm[0] == +wd) slots[+elm[1]+1] = elm[2];
