@@ -396,10 +396,12 @@ function visEnValgtPlan(plandata,egne,start,stop) {
                           if (timmy[j][+slo-1]) {
                               // this stud is absent during course slot
                               //abslist.push( dager[j]+ 'dag&nbsp;' + students[elev].firstname + '&nbsp;' + students[elev].lastname + '&nbsp;'+ ab[elev].name);
-                              abslist.push( students[elev].firstname + '&nbsp;' + students[elev].lastname );
-                              days[ dager[j] ] = 1;
-                              cause[ ab[elev].name ] = 1;
-                              break;
+                              if (students[elev]) {
+                                abslist.push( students[elev].firstname + '&nbsp;' + students[elev].lastname );
+                                days[ dager[j] ] = 1;
+                                cause[ ab[elev].name ] = 1;
+                                break;
+                              }
                           }
                       }
                   }
