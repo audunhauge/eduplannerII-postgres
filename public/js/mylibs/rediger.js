@@ -200,7 +200,7 @@ function generate(id,wd,active,tty) {
   // generate a table for choosing/changing slots for a test
   var uid = database.userinfo.id || 0;
   var timetab = timetables.teach[uid];
-  var slots = ['','','','','','','','','',''];
+  var slots = ['===','===','===','===','===','===','===','===','===','==='];
   for (var i = 0; i<timetab.length; i++) {
       var elm = timetab[i];
       if (+elm[0] == +wd) slots[+elm[1]+1] = elm[2];
@@ -408,10 +408,12 @@ function visEnValgtPlan(plandata,egne,start,stop) {
                           if (timmy[j][+slo-1] && students[elev]) {
                               // this stud is absent during course slot
                               //abslist.push( dager[j]+ 'dag&nbsp;' + students[elev].firstname + '&nbsp;' + students[elev].lastname + '&nbsp;'+ ab[elev].name);
-                              abslist.push( students[elev].firstname + '&nbsp;' + students[elev].lastname );
-                              days[ dager[j] ] = 1;
-                              cause[ ab[elev].name ] = 1;
-                              break;
+                              if (students[elev]) {
+                                abslist.push( students[elev].firstname + '&nbsp;' + students[elev].lastname );
+                                days[ dager[j] ] = 1;
+                                cause[ ab[elev].name ] = 1;
+                                break;
+                              }
                           }
                       }
                   }
