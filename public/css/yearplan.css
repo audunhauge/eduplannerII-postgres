@@ -21,6 +21,29 @@ html {
         -webkit-box-shadow: 5px 5px 9px #000;      
 }
 
+ul.hdliste {
+   list-style: none;
+   margin-left: 0;
+   padding-left: 1em;
+   text-indent: -1em;
+}
+
+
+.catt0, .catt1, .catt2, .catt3, .catt4, .catt10, .catt11, .catt12 {
+  font-size:0.9em;
+}
+
+
+
+
+
+.catt1  { color:#22f; }
+.catt2  { color:#55f; }
+.catt3  { color:#88f; }
+.catt4  { color:#aaf; }
+.catt10 { color:#cc0; }
+.catt11 { color:#c0c; }
+.catt12 { color:#0cc; }
 
 
 #nxt,#prv {

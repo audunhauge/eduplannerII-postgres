@@ -93,7 +93,7 @@ function vis_fagplaner(uid,thisjd) {
     // viser fagplaner for valgt bruker
     var minefag = getfagliste(uid);
     var s = '<table class="fagplaner">';
-    s += '<caption>Fagplaner</caption>';
+    s += '<caption>Arbeidsplaner</caption>';
     s += '<tr><th>Fag</th><th>Tema</th><th>Vurdering</th><th>Mål</th><th>Oppgaver</th><th>Log/Merk</th></tr>';
     var harplan = '';
     for (var id in minefag) {

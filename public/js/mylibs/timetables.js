@@ -30,22 +30,7 @@ function show_thisweek(delta) {
     var e;
     var thisweek = database.startjd + delta*7;
     var dato = show_date(thisweek);
-    s = '<table id="mytime" class="timeplan" >';
-    var header = [];
-    e = database.yearplan[Math.floor(thisweek/7)] || { days:[]} ;
-    for (var j=0;j<6;j++) {
-        header[j] = e.days[j] || '';
-    }
-    s += "<tr>";
-    for (i=0;i<5;i++) {
-        s += "<th>" + dager[i] + "</th>";
-    }
-    s += "</tr>";
-    s += "<tr>";
-    for (i=0;i<5;i++) {
-        s += "<th class=\"dayinfo\">" + header[i] + "</th>";
-    }
-    s += "</tr></table>";
+    s = getYearPlanThisWeek(thisweek);
     $j("#weekly").html(s);
     var planliste = '';
     if (timetables.course) {
@@ -64,6 +49,37 @@ function show_thisweek(delta) {
             updateFagplanMenu();
         });
     }
+}
+
+
+function getYearPlanThisWeek(thisweek) {
+  // fetch weekly summary from yearplan
+    var s = '<table id="mytime" class="timeplan" >';
+    var header = [];
+    e = database.yearplan[Math.floor(thisweek/7)] || { days:[]} ;
+    for (var j=0;j<6;j++) {
+        header[j] = e.days[j] || '';
+        var hd = database.heldag[thisweek+j];
+        if (hd) {
+          header[j] += '<ul class="hdliste">';
+          for (var f in hd) {
+            var cat = +database.category[f] || 0
+            header[j] += '<li class="catt'+cat+'">'+f+'&nbsp;'+hd[f]+'</li>';
+          }
+          header[j] += '</ul>';
+        }
+    }
+    s += "<tr>";
+    for (i=0;i<6;i++) {
+        s += "<th>" + dager[i] + "</th>";
+    }
+    s += "</tr>";
+    s += "<tr>";
+    for (i=0;i<6;i++) {
+        s += "<th class=\"dayinfo\">" + header[i] + "</th>";
+    }
+    s += "</tr></table>";
+    return s;
 }
 
 function addonTimePlan(delta,mos) {
