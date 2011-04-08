@@ -207,7 +207,7 @@ function setup_teach() {
             });
             $j("#edaarsplan").click(function(event) {
                 event.preventDefault();
-                edit_aarsplan();
+                edit_aarsplan(database.firstweek,database.lastweek);
             });
             $j("#edexcurs").click(function(event) {
                 event.preventDefault();

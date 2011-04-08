@@ -553,7 +553,7 @@ app.get('/timetables', function(req, res) {
 app.get('/freedays', function(req, res) {
     // called when freedays have been changed
     database.getfreedays(); 
-    res.send("ok");
+    res.send(db.freedays);
 });
 
 app.get('/yearplan', function(req, res) {

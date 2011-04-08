@@ -875,6 +875,7 @@ var getfreedays = function() {
               var free = results[i];
               db.freedays[free.julday] = free.value;
           }
+          console.log("fetched freedays");
       });
 }
 

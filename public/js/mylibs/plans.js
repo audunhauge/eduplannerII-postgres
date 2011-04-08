@@ -312,7 +312,7 @@ function show_all(thisweek) {
     }
     s += "</table>";
     $j("#main").html(s);
-    $j(".totip").tooltip();
+    $j(".totip").tooltip({position:"bottom center" });
 }
 
 function getfagliste(uid) {
@@ -392,7 +392,6 @@ function vis_andreplaner() {
 // da den lar deg redigere dersom du er eier av planene
 
 
-
 function show_next4() {
     // vis neste fire uker
     var uid = database.userinfo.id || 0;
@@ -423,6 +422,15 @@ function show_next4() {
               txt = "";
             }
             txt += e.days[j] || "";
+            var hd = database.heldag[thisweek+j];
+            if (hd) {
+                  txt += '<ul class="hdliste">';
+                  for (var f in hd) {
+                    var cat = +database.category[f] || 0
+                    txt += '<li class="catt'+cat+'">'+f+'&nbsp;'+hd[f]+'</li>';
+                  }
+                  txt += '</ul>';
+            }
           }
           s += '<td'+tdclass+'>' + txt + "</td>";
       }
