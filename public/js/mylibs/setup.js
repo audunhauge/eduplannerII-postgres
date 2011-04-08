@@ -199,7 +199,7 @@ function setup_teach() {
             }
             $j("#edfridager").click(function(event) {
                 event.preventDefault();
-                edit_fridager();
+                edit_fridager(database.firstweek,database.lastweek);
             });
             $j("#edcourse").click(function(event) {
                 event.preventDefault();

@@ -500,19 +500,20 @@ function edit_aarsplan() {
     enable_editing("aarsplan");
 }
 
-function edit_fridager() {
+function edit_fridager(start,stop) {
     var s="<h1>Rediger Fridager</h1>";
     s += '<p  id="editmsg"> Klikk på rutene for å redigere, klikk utenfor for å avbryte.</p>';
-    var theader ="<table class=\"year\" >"
+    var theader ='<table class="year" >'
      + "<tr><th>Uke</th><th>Man</th><th>Tir</th><th>Ons</th>"
      + "<th>Tor</th><th>Fre</th></tr>";
     var tfooter ="</table>";
     s += theader;
-    s += "<caption>Første halvår</caption>";
+    var caption = '<div class="button blue" id="prv">&lt;</div>Fridager<div class="button blue "id="nxt">&gt;</div>';
+    s += '<caption><div style="position:relative;" >'+caption+'<div></caption>';
     var jd,j;
     var text;
     var tdclass;
-    for (jd = database.firstweek; jd < database.lastweek; jd += 7 ) {
+    for (jd = start; jd < stop; jd += 7 ) {
       s += "<tr>";
       s += '<th><div class="weeknum">'+julian.week(jd)+'</div><br class="clear" /><div class="date">' + formatweekdate(jd) + "</div></th>";
       for (j=0;j<5;j++) {
@@ -529,6 +530,15 @@ function edit_fridager() {
     s += "</table>";
     $j("#main").html(s);
     enable_editing("fridager");
+    $j("#nxt").click(function() {
+          start = database.nextyear.firstweek; stop =database.nextyear.lastweek;
+          edit_fridager(start,stop);
+        });
+    $j("#prv").click(function() {
+          start = database.firstweek; stop =database.lastweek;
+          edit_fridager(start,stop);
+        });
+
 }
 
 

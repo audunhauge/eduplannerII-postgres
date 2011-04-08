@@ -18,6 +18,7 @@ var db = {
   ,prover      : {}    // hash of { 2345556:[ {shortname:"3inf5_3304",value::"3,4,5",username:"haau6257" } ... ], ... }
   ,yearplan    : {}    // hash of { 2345556:["info om valg", 2345557:"Exam", ...], ...  }
   ,groups      : []    // array of groups
+  ,nextyear    : {}    // info about next year
   ,memlist     : {}    // hash of { "3304":[234,45,454],"2303":[23, ...], ... }  -- group -> studs
   ,courseteach : {}    // hash of { "3inf5_3304":{teach:[654],id:6347},"2inf5":{teach:[654,1363],id:6348}," ... }  -- course -> {teach,id}
   ,grcourses   : {}    // hash of { "3304":[ "3inf5" ] , ... }  -- courses connected to a group
@@ -37,6 +38,8 @@ var today = new Date();
 var month = today.getMonth()+1; var day = today.getDate(); var year = today.getFullYear();
 db.firstweek = (month >8) ? julian.w2j(year,33) : julian.w2j(year-1,33)
 db.lastweek  = (month >8) ? julian.w2j(year+1,26) : julian.w2j(year,26)
+db.nextyear.firstweek = (month >8) ? julian.w2j(year+1,33) : julian.w2j(year,33)
+db.nextyear.lastweek  = (month >8) ? julian.w2j(year+2,26) : julian.w2j(year+1,26)
 // info about this week
 db.startjd = 7 * Math.floor(julian.greg2jul(month,day,year ) / 7);
 db.startdate = julian.jdtogregorian(db.startjd);
