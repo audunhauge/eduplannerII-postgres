@@ -8,6 +8,12 @@ var undoid;    // store the id of changed value (so we can update html)
 
 function edit_proveplan(fagnavn,plandata,start,stop) {
     // rediger prøveplanen for et fag
+    if (!plandata) {
+      plandata = {};
+      for (var i=1; i < 48; i++) {
+        plandata[i] = '';
+      }
+    }
     start = typeof(start) != 'undefined' ?  start : database.week;
     minfagplan = fagnavn;
     var thisblock = fagnavn.split('_')[1].substring(0,2);
@@ -223,6 +229,12 @@ var mycopy;                //  {}  a copy of a plan
 var activeplan;            //  plandata for chosen plan
 
 function visEnPlan(fagnavn,plandata,egne) {
+    if (!plandata) {
+      plandata = {};
+      for (var i=1; i < 48; i++) {
+        plandata[i] = '';
+      }
+    }
     activeplan = plandata;
     egne = typeof(egne) != 'undefined' ? true : false;
     minfagplan = fagnavn;
@@ -393,7 +405,7 @@ function visEnValgtPlan(plandata,egne,start,stop) {
                       var slots = ab[elev].value;
                       for (var sl in slots) {
                           var slo = slots[sl];
-                          if (timmy[j][+slo-1]) {
+                          if (timmy[j][+slo-1] && students[elev]) {
                               // this stud is absent during course slot
                               //abslist.push( dager[j]+ 'dag&nbsp;' + students[elev].firstname + '&nbsp;' + students[elev].lastname + '&nbsp;'+ ab[elev].name);
                               abslist.push( students[elev].firstname + '&nbsp;' + students[elev].lastname );
