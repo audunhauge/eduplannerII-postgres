@@ -63,6 +63,7 @@ function getYearPlanThisWeek(thisweek) {
         if (hd) {
           header[j] += '<ul class="hdliste">';
           for (var f in hd) {
+            f = f.toUpperCase();
             var cat = +database.category[f] || 0
             header[j] += '<li class="catt'+cat+'">'+f+'&nbsp;'+hd[f]+'</li>';
           }

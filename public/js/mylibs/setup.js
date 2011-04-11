@@ -2,6 +2,10 @@
 // and connect event-handlers
 // all functions must be defined before we load this file
 
+window.onpopstate = function(event) {
+      alert("location: " + document.location + ", state: " + JSON.stringify(event.state));
+};
+
 
 var $j = jQuery.noConflict();
 var database;           // jSON data
@@ -9,6 +13,7 @@ var brukerliste = {};   // brukerliste[elev,teach,klasse]
 var valg;               // siste valg (teach,elev,klasse,sammensatt)
 var user = Url.decode(gup("navn"));
 var action = gup("action") || 'default';   // brukes i switch til å velge alternative visninger
+var page = gup("page") || '';              // brukes som adresse for valgt side, history
 var showplan  = gup("plan") || '';         // dersom ?plan=3it5_3402 da vises denne planen
    // egen var for denne slik at linken blir så kort som mulig
    // brukes til å legge inn link fra itslearning
@@ -63,6 +68,48 @@ var fagautocomp;        // liste over alle gyldige fagnavn - brukes til autocomp
 var linktilrom = [];    // liste over alle rom
 
 var promises = {};      // hash of promises that functions may fulfill when they have recieved data
+
+
+function gotoPage() {
+  // all menue-choices have their own address (so that history and bookmarks can work)
+  // we also push all pages into history so that history rewind works
+  // A page has address like this:  page=mainmenu/submenu/subsub
+  // page=aarsplan/denneuka
+  // page=fagplaner/minefag/3inf5
+  // page=timeplaner/teach/teachid
+  // page=timeplaner/elev/eid
+  // page=timeplaner/grupperinger/klasser/3sta
+  // page=rediger/aarsplan
+  // page=rediger/fridager
+  if (page) {
+    var element = page.split('/');
+    var main = element.shift();
+    var secundus,tertius;
+    switch (main) {
+      case 'fagplaner':
+        secundus = element.shift();
+        switch (secundus) {
+          case 'minefag':
+            tertius = element.shift();
+            switch (tertius) {
+              case 'planer':
+                var fagnavn = element.shift();
+                if (fagnavn) {
+                  fagnavn = fagnavn.toUpperCase();
+                  var plandata = courseplans[fagnavn];
+                  if (!plandata) return;
+                  action = 'showpage';
+                  visEnPlan(fagnavn,plandata,true);
+                }
+                break;
+            }
+            break;
+        }
+        break;
+    }
+
+  }
+}
   
 
 function take_action() {
@@ -125,7 +172,6 @@ function take_action() {
             if (isteach) {
                 setup_teach();
             }
-
             break;
     }
 }
@@ -228,7 +274,7 @@ function get_login() {
     // editing menues to presumed teachers.
     // The real check is performed on the node server on all
     // requests that perform changes. We just don't show menues that
-    // users arn't allowed to use.
+    // users ar'nt allowed to use.
     var s = '<form name="loginform"><table id="loginform" class="gradback rcorner centered" >';
     s += '<tr><th><label for="username" >Brukernavn</label></th><td><input id="uname" type="text" name="username" value="'+userinfo.username+'"></td></tr>';
     s += '<tr><th><label for="password" >Passord</label></th><td><input id="pwd" type="password" name="password"></td></tr>';

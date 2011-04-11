@@ -913,7 +913,7 @@ var getexams = function() {
               if (!db.heldag[free.julday]) {
                 db.heldag[free.julday] = {};
               }
-              db.heldag[free.julday][free.name] = free.value;
+              db.heldag[free.julday][free.name.toUpperCase()] = free.value;
           }
           //console.log(db.heldag);
       });

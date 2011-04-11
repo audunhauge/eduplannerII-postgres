@@ -371,11 +371,13 @@ function updateFagplanMenu() {
         $j("#prove_"+fag).click(function() {
             var fagnavn = $j(this).html();
             var plandata = courseplans[fagnavn];
+            history.pushState(plandata,"","yearplan?navn="+user+"&page=fagplaner/minefag/planer/"+fagnavn);
             edit_proveplan(fagnavn,plandata);
         } );
         $j("#"+fag).click(function() {
             var fagnavn = $j(this).html();
             var plandata = courseplans[fagnavn];
+            history.pushState(plandata,"","yearplan?navn="+user+"&page=fagplaner/minefag/planer/"+fagnavn);
             visEnPlan(fagnavn,plandata,true);
         } );
     }
