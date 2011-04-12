@@ -229,6 +229,8 @@ var mycopy;                //  {}  a copy of a plan
 var activeplan;            //  plandata for chosen plan
 
 function visEnPlan(fagnavn,plandata,egne) {
+    $j.bbq.pushState("#plans/"+fagnavn);
+    if (!plandata ) plandata = courseplans[fagnavn];
     if (!plandata) {
       plandata = {};
       for (var i=1; i < 48; i++) {
@@ -242,7 +244,7 @@ function visEnPlan(fagnavn,plandata,egne) {
            return (teachers[e].firstname + " " + teachers[e].lastname);
         }).join(', ');
     var s='<div id="fagplan">';
-    s += '<h1><a class="copylink" href="yearplan?plan='+fagnavn+'">'+ fagnavn  +'</a></h1>';
+    s += '<h1><a class="copylink" href="yearplan#plans/'+fagnavn+'">'+ fagnavn  +'</a></h1>';
     s += '<h3 class="textcenter" >'+ myteachers  +'</h3>';
     if (isteach && egne) {
         s += '<div id="saveme" class="button fixx">Lagre</div>'

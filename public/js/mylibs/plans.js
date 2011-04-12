@@ -12,15 +12,17 @@ function synopsis(coursename,plandata,tests) {
   var elever = memberlist[gru];
   var andre = getOtherCG(elever);
   //var events = database.aarsplan;
-  var myttimer = timetables.course[coursename];
+  var myttimer = (timetables.course) ? timetables.course[coursename] : [];
   var jd = database.firstweek;
   var mytt = {};
-  for (var i=0; i< myttimer.length;i++) {
-     var pt = myttimer[i];
-     if (!mytt[pt[1]]) {    // ingen rad definert ennå
-         mytt[pt[1]] = {};  // ny rad
-     }
-     mytt[pt[1]][pt[0]] = 1;
+  if (myttimer) {
+    for (var i=0; i< myttimer.length;i++) {
+       var pt = myttimer[i];
+       if (!mytt[pt[1]]) {    // ingen rad definert ennå
+           mytt[pt[1]] = {};  // ny rad
+       }
+       mytt[pt[1]][pt[0]] = 1;
+    }
   }
   var synop = {};
   var s = '';
@@ -148,7 +150,7 @@ function show_alleprover(filter,faggrupper) {
           var hd =  (!filter || filter.indexOf("heldag") >= 0 ) ? database.heldag[jd+j] || {} : {};
           for (fag in hd) {
               if (!faggrupper || faggrupper[fag]) {
-                var cat = category[fag] || 0;
+                var cat = (category) ? category[fag] || 0 : 0;
                 proveliste += '<span class="heldag klasse' + fag.substr(0,1) + ' cat' + cat  + '">' + fag + ' ' + hd[fag] + '</span>';
               }
           } 
@@ -180,6 +182,7 @@ function show_alleprover(filter,faggrupper) {
 }    
 
 function show_heldag() {
+  $j.bbq.pushState("#hdtest");
   show_alleprover("heldag");
 }
 
@@ -368,16 +371,18 @@ function updateFagplanMenu() {
     //$j("#mineplaner").after('<li><a href="">Prøveplaner</a></li>');
     for (var i in minefag) {
         var fag = minefag[i];
-        $j("#prove_"+fag).click(function() {
+        $j("#prove_"+fag).click(function(event) {
+            event.preventDefault();
             var fagnavn = $j(this).html();
             var plandata = courseplans[fagnavn];
-            history.pushState(plandata,"","yearplan?navn="+user+"&page=fagplaner/minefag/planer/"+fagnavn);
+            $j.bbq.pushState("#mytests/"+fagnavn);
             edit_proveplan(fagnavn,plandata);
         } );
-        $j("#"+fag).click(function() {
+        $j("#"+fag).click(function(event) {
+            event.preventDefault();
             var fagnavn = $j(this).html();
             var plandata = courseplans[fagnavn];
-            history.pushState(plandata,"","yearplan?navn="+user+"&page=fagplaner/minefag/planer/"+fagnavn);
+            $j.bbq.pushState("#plans/"+fagnavn);
             visEnPlan(fagnavn,plandata,true);
         } );
     }

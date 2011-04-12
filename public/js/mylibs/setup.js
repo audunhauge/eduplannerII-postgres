@@ -2,18 +2,17 @@
 // and connect event-handlers
 // all functions must be defined before we load this file
 
-window.onpopstate = function(event) {
-      alert("location: " + document.location + ", state: " + JSON.stringify(event.state));
-};
-
-
 var $j = jQuery.noConflict();
 var database;           // jSON data
 var brukerliste = {};   // brukerliste[elev,teach,klasse]
 var valg;               // siste valg (teach,elev,klasse,sammensatt)
 var user = Url.decode(gup("navn"));
+var currentloc = "yearplan?navn="+user;    // current location - used by popstate and others
 var action = gup("action") || 'default';   // brukes i switch til å velge alternative visninger
-var page = gup("page") || '';              // brukes som adresse for valgt side, history
+var page;                                  // brukes som adresse for valgt side, history
+for (page in $j.deparam.fragment()) {
+  break;  // the page is the key in the returned object
+}
 var showplan  = gup("plan") || '';         // dersom ?plan=3it5_3402 da vises denne planen
    // egen var for denne slik at linken blir så kort som mulig
    // brukes til å legge inn link fra itslearning
@@ -70,41 +69,76 @@ var linktilrom = [];    // liste over alle rom
 var promises = {};      // hash of promises that functions may fulfill when they have recieved data
 
 
+
+$j(window).bind('hashchange', function(event) {
+         var state = $j.bbq.getState();
+         var s;
+         for (var k in state) {
+           s = k;
+           break;
+         }
+         page = s;
+         gotoPage();
+
+    });
+
 function gotoPage() {
   // all menue-choices have their own address (so that history and bookmarks can work)
   // we also push all pages into history so that history rewind works
   // A page has address like this:  page=mainmenu/submenu/subsub
   // page=aarsplan/denneuka
-  // page=fagplaner/minefag/3inf5
-  // page=timeplaner/teach/teachid
-  // page=timeplaner/elev/eid
-  // page=timeplaner/grupperinger/klasser/3sta
-  // page=rediger/aarsplan
-  // page=rediger/fridager
+  // page=plans/3inf5
+  // page=tests/3inf5
+  // page=timeplan/elev/eid
+  // page=timeplan/teach/eid
+  // page=timeplan/gruppe/gr
+  // page=timeplan/klasse/gr
+  // page=timeplan/room/gr
+  // page=edit/aarsplan
+  // page=edit/fridager
   if (page) {
     var element = page.split('/');
     var main = element.shift();
-    var secundus,tertius;
     switch (main) {
-      case 'fagplaner':
-        secundus = element.shift();
-        switch (secundus) {
-          case 'minefag':
-            tertius = element.shift();
-            switch (tertius) {
-              case 'planer':
-                var fagnavn = element.shift();
-                if (fagnavn) {
-                  fagnavn = fagnavn.toUpperCase();
-                  var plandata = courseplans[fagnavn];
-                  if (!plandata) return;
-                  action = 'showpage';
-                  visEnPlan(fagnavn,plandata,true);
-                }
-                break;
-            }
-            break;
+      case 'plans':
+        var fagnavn = element.shift();
+        if (fagnavn) {
+          fagnavn = fagnavn.toUpperCase();
+          var plandata = courseplans[fagnavn];
+          if (plandata) {
+            action = 'showpage';
+            visEnPlan(fagnavn,plandata,true);
+          } else {
+            if (!promises.allplans) promises.allplans = [];
+            promises["allplans"].push(function() { action = 'showpage'; visEnPlan(fagnavn,plandata,true); });
+          }
         }
+        break;
+      case 'tests':
+        var fagnavn = element.shift();
+        if (fagnavn) {
+          fagnavn = fagnavn.toUpperCase();
+          var plandata = courseplans[fagnavn];
+          if (plandata) {
+            action = 'showpage';
+            edit_proveplan(fagnavn,plandata);
+          } else {
+            if (!promises.allplans) promises.allplans = [];
+            promises["allplans"].push(function() { action = 'showpage'; edit_proveplan(fagnavn,courseplans[fagnavn]); });
+          }
+        }
+        break;
+      case "thisweek":
+        show_thisweek();
+        break;
+      case "hdtest":
+        show_heldag();
+        break;
+      case "timeplan":
+        var group = element.shift();
+        var target = element.shift();
+        break;
+      default:
         break;
     }
 
@@ -172,6 +206,7 @@ function take_action() {
             if (isteach) {
                 setup_teach();
             }
+            gotoPage();
             break;
     }
 }
@@ -428,14 +463,15 @@ function getcourseplans() {
       $j("#andreplaner").after(s);
       for (var i=0; i < linktilfag.length; i++) {
           var fag = linktilfag[i];
-          $j("#"+fag).click(function() {
+          $j("#"+fag).click(function(event) {
+              event.preventDefault();
               var idd = $j(this).attr("id");
               var elms = idd.split('z');
               var fagnavn = elms[0];
               var teach = elms[1];
               var avdeling = elms[2];
-              var plandata = allefagplaner.courseplans[avdeling][teach][fagnavn];
               //var datoliste = allefagplaner.wdates;
+              var plandata = allefagplaner.courseplans[avdeling][teach][fagnavn];
               visEnPlan(fagnavn,plandata);
           } );
       }
@@ -487,6 +523,9 @@ $j(document).ready(function() {
                  }).join('</tr><tr>') + '</tr></table></div>';
                action = 'velg';
                $j("#main").html(s);
+           }
+           if (!database.userinfo) {
+             database.userinfo = { uid:0 };
            }
            // sjekk først om bruker allerede er logga inn
            $j.get( '/login', function(uinfo) {

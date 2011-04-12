@@ -16,6 +16,7 @@ function show_date(jd) {
 function show_thisweek(delta) {
     // viser denne uka, årsplanen + timeplan
     //var uid = userinfo.id;
+    $j.bbq.pushState("#thisweek");
     delta = typeof(delta) != 'undefined' ?  +delta : 0;  // vis timeplan for en anne uke
     var uid = database.userinfo.id || 0;
     var s='<div id="timeviser"><h1 id="oskrift">'+user+'</h1>';
