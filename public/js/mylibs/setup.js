@@ -2,6 +2,7 @@
 // and connect event-handlers
 // all functions must be defined before we load this file
 
+
 var $j = jQuery.noConflict();
 var database;           // jSON data
 var brukerliste = {};   // brukerliste[elev,teach,klasse]
@@ -54,7 +55,7 @@ var memothisweek = '';  // remember timetable for this week (this user)
 
 var fagplaner;          // mine fagplaner
 var allefagplaner;      // alle fagplaner courseplans[avdeling][teach][fag] (pr lærer)
-var courseplans = {};   // courseplans[course]
+var courseplans = null; // courseplans[course]
 
 var siste10 = {}        // husk 10 siste timeplaner
 
@@ -136,14 +137,28 @@ function gotoPage() {
       case "timeplan":
         var target = element.shift();
         var usr = element.shift();
+        if (+usr == 0) {
+          usr = userinfo.id || 0;
+        }
+        action = 'showpage';
+        var s="<div id=\"timeviser\"><h1>Gruppe-timeplaner</h1>";
+        // usr will be idnumber for teach/stud
+        //     else name of group/klass/room
         switch(target) {
             case 'teach':
-                var userplan = getuserplan(usr);
-                s = vistimeplan(userplan,usr,'teach','isuser');
-                break;
             case 'stud':
-                var userplan = getuserplan(usr);
-                s = vistimeplan(userplan,usr,'non','isuser');
+                if (timetables && timetables.teach) {
+                  var userplan = getuserplan(+usr);
+                  vis_timeplan_helper(userplan,+usr,target,'isuser',true,0);
+                } else {
+                  $j.getJSON( "/timetables", 
+                    function(data) {
+                        timetables = data;
+                        updateFagplanMenu();
+                        var userplan = getuserplan(+usr);
+                        vis_timeplan_helper(userplan,+usr,target,'isuser',true,0);
+                    });
+                }
                 break;
             case 'group':
                 break;
@@ -455,6 +470,7 @@ function getcourseplans() {
   $j.getJSON( url, 
   function(allplans) {
       allefagplaner = allplans;
+      courseplans = {};
       var s = '<ul>';
       var linktilfag = [];
       for (var avdeling in allefagplaner.courseplans) {

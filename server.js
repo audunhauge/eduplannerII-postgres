@@ -562,6 +562,13 @@ app.get('/yearplan', function(req, res) {
 	res.render('yearplan/index', locals);
 });
 
+app.get('/plain', function(req, res) {
+	var locals = { 'key': 'value' };
+	locals = dummyHelper.add_overlay(app, req, locals);
+	//res.render('yearplan/plain', locals);
+	res.render('yearplan/plain', locals);
+});
+
 app.get('/', function(req, res) {
   res.redirect('/yearplan');
 });

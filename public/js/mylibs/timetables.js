@@ -21,7 +21,7 @@ function show_thisweek(delta) {
     // viser denne uka, årsplanen + timeplan
     //var uid = userinfo.id;
     delta = typeof(delta) != 'undefined' ?  +delta : 0;  // vis timeplan for en anne uke
-    $j.bbq.pushState('#thisweek');
+    $j.bbq.pushState("#thisweek");
     var uid = database.userinfo.id || 0;
     var s='<div id="timeviser"><h1 id="oskrift">'+user+'</h1>';
     s+= '<div id="sectionimg"></div>';
@@ -401,6 +401,7 @@ function vistimeplan(data,uid,filter,isuser,delta) {
   delta = typeof(delta) != 'undefined' ?  +delta : 0;  // vis timeplan for en anne uke
   // viser timeplan med gitt datasett
   var plan = data.plan;
+  if (!plan) return 'Ingen timeplan';
   var jd = database.startjd + 7*delta;
   plan.prover = add_tests(uid,jd);
   if (isuser != 'isuser' && memberlist[uid]) {
@@ -464,45 +465,56 @@ function intersect(a,b) {
 }
 
 
+function vis_timeplan_helper(userplan,uid,filter,isuser,visfagplan,delta) {
+  // timeplanen er henta - skal bare vises
+  visfagplan = typeof(visfagplan) != 'undefined' ? true : false;
+  delta = typeof(delta) != 'undefined' ?  +delta : 0;  // vis timeplan for en anne uke
+  var current = database.startjd + 7*delta;
+  s = vistimeplan(userplan,uid,filter,isuser,delta);
+  if (visfagplan) {
+    if (courseplans) {
+      s += vis_fagplaner(uid,current);
+    } else {
+      if (!promises.allplans) promises.allplans = [];
+      promises["allplans"].push(function() { var courseplan = vis_fagplaner(uid,current); $j("#timeplan").append(courseplan); });
+    }
+  }
+  $j("#timeplan").html(s);
+  //console.log(tpath+uid);
+  $j(".totip").tooltip({position:"bottom right" } );
+  $j(".goto").click(function() {
+            var fagnavn = $j(this).attr("tag");
+            var plandata = courseplans[fagnavn];
+            visEnPlan(fagnavn,plandata);
+        } );
+
+  $j("#oskrift").html('Uke '+julian.week(current)+' <span title="'+current+'" class="dato">'+show_date(current)+'</span>');
+  $j('.edit').editable(save_timetable, {
+       indicator : 'Saving...',
+       tooltip   : 'Click to edit...',
+       doformat  : translatebreaks,
+       submit    : 'OK'
+   });
+  $j("#nxt").click(function() {
+        if (database.startjd+7*delta < database.lastweek+7)
+           vis_timeplan_helper(userplan,uid,filter,isuser,visfagplan,delta+1);
+      });
+  $j("#prv").click(function() {
+        if (database.startjd+7*delta > database.firstweek+7)
+           vis_timeplan_helper(userplan,uid,filter,isuser,visfagplan,delta-1);
+      });
+}
+
 
 
 function vis_valgt_timeplan(user,filter,visfagplan,isuser,delta) {
     // gitt en userid vil denne hente og vise en timeplan
-    delta = typeof(delta) != 'undefined' ?  +delta : 0;  // vis timeplan for en anne uke
-    var current = database.startjd + 7*delta;
     eier = user;
-    visfagplan = typeof(visfagplan) != 'undefined' ? true : false;
     // if user is name of klass or group then getcourseplan
     var userplan = (user.id) ? getuserplan(user.id) : getcourseplan(user) ;
     var uid = user.id || user;
-    //tpath += uid;
-    s = vistimeplan(userplan,uid,filter,isuser,delta);
-    if (visfagplan) s += vis_fagplaner(user.id,current);
-    $j("#timeplan").html(s);
-    console.log(tpath+uid);
     $j.bbq.pushState(tpath+uid);
-    $j(".totip").tooltip({position:"bottom right" } );
-    $j(".goto").click(function() {
-              var fagnavn = $j(this).attr("tag");
-              var plandata = courseplans[fagnavn];
-              visEnPlan(fagnavn,plandata);
-          } );
-
-    $j("#oskrift").html('Uke '+julian.week(current)+' <span title="'+current+'" class="dato">'+show_date(current)+'</span>');
-    $j('.edit').editable(save_timetable, {
-         indicator : 'Saving...',
-         tooltip   : 'Click to edit...',
-         doformat  : translatebreaks,
-         submit    : 'OK'
-     });
-    $j("#nxt").click(function() {
-          if (database.startjd+7*delta < database.lastweek+7)
-             vis_valgt_timeplan(user,filter,visfagplan,isuser,delta+1);
-        });
-    $j("#prv").click(function() {
-          if (database.startjd+7*delta > database.firstweek+7)
-             vis_valgt_timeplan(user,filter,visfagplan,isuser,delta-1);
-        });
+    vis_timeplan_helper(userplan,uid,filter,isuser,visfagplan,delta);
 }
 
 
@@ -528,8 +540,6 @@ function vis_timeplan(s,bru,filter,isuser) {
     s += setup_timeregister();
     s+= '<div id="timeplan"></div>';
     s+= "</div>";    // this div is set up in the calling function
-    var i;
-    var e;
     $j("#main").html(s);
     updateMemory();
     // legg denne planen i minne dersom bruker klikker på husk

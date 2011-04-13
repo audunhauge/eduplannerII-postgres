@@ -375,14 +375,14 @@ function updateFagplanMenu() {
             event.preventDefault();
             var fagnavn = $j(this).html();
             var plandata = courseplans[fagnavn];
-            $j.bbq.pushState("#mytests/"+fagnavn);
+            //$j.bbq.pushState("#mytests/"+fagnavn);
             edit_proveplan(fagnavn,plandata);
         } );
         $j("#"+fag).click(function(event) {
             event.preventDefault();
             var fagnavn = $j(this).html();
             var plandata = courseplans[fagnavn];
-            $j.bbq.pushState("#plans/"+fagnavn);
+            //$j.bbq.pushState("#plans/"+fagnavn);
             visEnPlan(fagnavn,plandata,true);
         } );
     }
