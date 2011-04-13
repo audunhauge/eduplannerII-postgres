@@ -79,7 +79,6 @@ $j(window).bind('hashchange', function(event) {
          }
          page = s;
          gotoPage();
-
     });
 
 function gotoPage() {
@@ -135,8 +134,26 @@ function gotoPage() {
         show_heldag();
         break;
       case "timeplan":
-        var group = element.shift();
         var target = element.shift();
+        var usr = element.shift();
+        switch(target) {
+            case 'teach':
+                var userplan = getuserplan(usr);
+                s = vistimeplan(userplan,usr,'teach','isuser');
+                break;
+            case 'stud':
+                var userplan = getuserplan(usr);
+                s = vistimeplan(userplan,usr,'non','isuser');
+                break;
+            case 'group':
+                break;
+            case 'klass':
+                break;
+            case 'room':
+                break;
+            default:
+                break;
+        }
         break;
       default:
         break;

@@ -1,4 +1,8 @@
 //show timetables
+
+var tpath = '';  // path taken for this timeplan
+
+
 function show_date(jd) {
   var startjd = 7 * Math.floor(jd  / 7);
   var startdate = julian.jdtogregorian(startjd);
@@ -16,8 +20,8 @@ function show_date(jd) {
 function show_thisweek(delta) {
     // viser denne uka, årsplanen + timeplan
     //var uid = userinfo.id;
-    $j.bbq.pushState("#thisweek");
     delta = typeof(delta) != 'undefined' ?  +delta : 0;  // vis timeplan for en anne uke
+    $j.bbq.pushState('#thisweek');
     var uid = database.userinfo.id || 0;
     var s='<div id="timeviser"><h1 id="oskrift">'+user+'</h1>';
     s+= '<div id="sectionimg"></div>';
@@ -468,12 +472,15 @@ function vis_valgt_timeplan(user,filter,visfagplan,isuser,delta) {
     var current = database.startjd + 7*delta;
     eier = user;
     visfagplan = typeof(visfagplan) != 'undefined' ? true : false;
+    // if user is name of klass or group then getcourseplan
     var userplan = (user.id) ? getuserplan(user.id) : getcourseplan(user) ;
     var uid = user.id || user;
-    // if user is name of klass or group then getcourseplan
+    //tpath += uid;
     s = vistimeplan(userplan,uid,filter,isuser,delta);
     if (visfagplan) s += vis_fagplaner(user.id,current);
     $j("#timeplan").html(s);
+    console.log(tpath+uid);
+    $j.bbq.pushState(tpath+uid);
     $j(".totip").tooltip({position:"bottom right" } );
     $j(".goto").click(function() {
               var fagnavn = $j(this).attr("tag");
@@ -564,6 +571,7 @@ function vis_gruppetimeplan() {
       s+= '<option value="'+elm.idx+'">' + elm.text  +  "</option>";
     }
     s+= "</select></div>";
+    tpath = '#timeplan/group/';
     vis_timeplan(s,bru,'gr','' );
 }
 
@@ -578,6 +586,7 @@ function vis_klassetimeplan() {
        s+= '<option value="'+i+'">' + e  +  "</option>";
     }
     s+= "</select></div>";
+    tpath = '#timeplan/klass/';
     vis_timeplan(s,bru,'kl','' );
 }
 
@@ -592,6 +601,7 @@ function vis_elevtimeplan() {
        s+= '<option value="'+idx+'">' + e.department + " " + " " + e.institution+ " " + e.lastname + " " + e.firstname  +  "</option>";
     }
     s+= "</select></div>";
+    tpath = '#timeplan/stud/';
     vis_timeplan(s,students,'non','isuser' );
 }
 
@@ -613,6 +623,7 @@ function vis_teachtimeplan() {
       s+= '<option value="'+elm.idx+'">' + elm.text  +  "</option>";
     }
     s+= "</select></div>";
+    tpath = '#timeplan/teach/';
     vis_timeplan(s,teachers,'teach','isuser' );
 }
 
