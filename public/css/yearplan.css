@@ -260,6 +260,7 @@ div.absent, a.absentee, a.absent, div.absentia {
   margin-top:2px;
   margin-left:auto;
   margin-right:auto;
+  border-radius: 2em;
   -webkit-border-radius: 2em;
   -moz-border-radius: 2em;
   -webkit-box-shadow: 3px 3px 2px rgba(0, 0, 0, .4);
@@ -325,6 +326,7 @@ span.cancel, span.ok{
   padding:2px;
   margin:0px;
   border:solid green 1px;
+  border-radius: 2px;
   -webkit-border-radius: 2px;
   -moz-border-radius: 2px;
   background: -moz-linear-gradient(left,#58A60A,#224A20);
@@ -462,6 +464,7 @@ div.tinyohd {
 
 
 .rcorner {
+  border-radius: 2em;
   -webkit-border-radius: 2em;
   -moz-border-radius: 2em;
 }
@@ -590,6 +593,7 @@ a.button, div.button {
   margin:3px;
   border:solid green 2px;
   font-size:0.9em;
+  border-radius: 2em;
   -webkit-border-radius: 2em;
   -moz-border-radius: 2em;
   -webkit-box-shadow: 3px 3px 2px rgba(0, 0, 0, .4);
@@ -659,6 +663,7 @@ a.addnew {
   padding:3px;
   font-size:1.1em;
   border:solid #040 1px;
+  border-radius: 2em;
   -webkit-border-radius: 2em;
   -moz-border-radius: 2em;
   -webkit-box-shadow: 3px 3px 2px rgba(0, 0, 0, .4);
@@ -679,6 +684,7 @@ span.pro {
   margin:3px;
   font-size:0.7em;
   border:solid #c00 2px;
+  border-radius: 2em;
   -webkit-border-radius: 2em;
   -moz-border-radius: 2em;
   -webkit-box-shadow: 3px 3px 2px rgba(0, 0, 0, .4);
@@ -695,6 +701,7 @@ span.pro {
   margin:2px;
   font-size:0.8em;
   border:solid #c00 1px !important;
+  border-radius: 2em;
   -webkit-border-radius: 2em;
   -moz-border-radius: 2em;
   -webkit-box-shadow: 3px 3px 2px rgba(0, 0, 0, .4);
@@ -766,10 +773,12 @@ div.memory:hover {
   margin:3px;
   border:solid green 2px;
   font-size:0.9em;
+  border-radius: 0 0 1em 1em ;
   -webkit-border-radius: 0 0 1em 1em ;
   -moz-border-radius: 0 0 1em 1em;
   -webkit-box-shadow: 3px 3px 2px rgba(0, 0, 0, .4);
   -moz-box-shadow: 3px 3px 2px rgba(0, 0, 0, .4);
+  background: -o-linear-gradient(top,#aaaacA,#778866);
   background: -moz-linear-gradient(top,#aaaacA,#778866);
   background: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#aaaacA), to(#778866));
   height:auto;
@@ -916,7 +925,7 @@ td.block {
    background:#3030cc; 
    background: -moz-linear-gradient(top,#cc9090,#d0d0ff 100%);
    background-image: -o-linear-gradient(top,#cc9090,#d0d0ff 100%);
-   background: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#cc9090), to(#d0d0ff))
+   background: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#cc9090), to(#d0d0ff));
 }
 
 td {  border: 1px solid black; }
@@ -934,6 +943,7 @@ span.rombytte {
   padding:3px;
   margin:3px;
   font-size:0.7em;
+  border-radius: 2em;
   -webkit-border-radius: 2em;
   -moz-border-radius: 2em;
   -webkit-box-shadow: 3px 3px 2px rgba(0, 0, 0, .4);
@@ -950,6 +960,7 @@ span.enheldag {
   padding:2px;
   margin:2px;
   font-size:0.7em;
+  border-radius: 2em;
   -webkit-border-radius: 2em;
   -moz-border-radius: 2em;
   -webkit-box-shadow: 3px 3px 2px rgba(0, 0, 0, .4);
@@ -966,6 +977,7 @@ span.enprove {
   padding:2px;
   margin:2px;
   font-size:0.7em;
+  border-radius: 2em;
   -webkit-border-radius: 2em;
   -moz-border-radius: 2em;
   -webkit-box-shadow: 3px 3px 2px rgba(0, 0, 0, .4);
@@ -981,6 +993,7 @@ span.heldag {
   margin:3px;
   font-size:0.7em;
   border:solid #d55 4px;
+  border-radius: 2em;
   -webkit-border-radius: 2em;
   -moz-border-radius: 2em;
   -webkit-box-shadow: 3px 3px 2px rgba(0, 0, 0, .4);
@@ -999,6 +1012,7 @@ a.prove, span.prove {
   margin:3px;
   font-size:0.7em;
   border:solid #c00 2px;
+  border-radius: 2em;
   -webkit-border-radius: 2em;
   -moz-border-radius: 2em;
   -webkit-box-shadow: 3px 3px 2px rgba(0, 0, 0, .4);
