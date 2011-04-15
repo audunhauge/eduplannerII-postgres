@@ -406,8 +406,20 @@ app.post('/save_timetable', function(req, res) {
 app.post('/save_simple', function(req, res) {
     // save a julday for yearplan or freedays
     if (req.session.user && req.session.user.department == 'Undervisning') {
-      console.log("User saved some data");
+      console.log("User saved some data",req.body);
       database.savesimple(req.body,function(msg) {
+         res.send(msg);
+      });
+    } else {
+      res.send({ok:false, msg:"bad user"});
+    }
+});
+
+app.post('/savehd', function(req, res) {
+    // save a full day test
+    if (req.session.user && req.session.user.department == 'Undervisning') {
+      console.log("User saving full day test",req.body);
+      database.savehd(req.session.user,req.body,function(msg) {
          res.send(msg);
       });
     } else {
@@ -458,7 +470,9 @@ app.post('/buytickets', function(req, res) {
 
 app.post('/save_fagplan', function(req, res) {
     // user has new data to push into a plan
-    if (req.session.user && req.session.user.department == 'Undervisning') {
+    //console.log(req);
+    if (req.session.user && req.session.user.department == 'Undervisning' 
+         && req.body.uid == req.session.user.id) {
       //console.log("User saved som data");
       database.updateCoursePlan(req.body,function(msg) {
          res.send(msg);

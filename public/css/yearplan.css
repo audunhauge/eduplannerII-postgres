@@ -22,6 +22,15 @@ html {
         -webkit-box-shadow: 5px 5px 9px #000;      
 }
 
+#editmsg {
+  /* messages while editing yearplan */
+  float:left;
+}
+#options {
+  /* editor options for yearplan */
+  float:right;
+}
+
 ul.hdliste {
    list-style: none;
    margin-left: 0;
@@ -34,6 +43,21 @@ ul.hdliste {
   font-size:0.9em;
 }
 
+
+
+li.addhd {
+  display:block;
+  width:12px;
+  height:12px;
+  background:green;
+  margin-left:auto;
+  margin-right:auto;
+  border-radius: 5px;
+  -webkit-border-radius: 5px;
+  -moz-border-radius: 5px;
+  -webkit-box-shadow: 3px 3px 2px rgba(0, 0, 0, .4);
+  -moz-box-shadow: 3px 3px 2px rgba(0, 0, 0, .4);
+}
 
 
 
@@ -828,7 +852,7 @@ table.fagplan td {
     width:20%;
 }
 
-#weekly, #timeplan {
+#weekly, #timeplan, #workplan {
   margin-right:auto;
   margin-left:auto;
   width:55em;

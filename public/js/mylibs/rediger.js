@@ -471,10 +471,18 @@ function short_sweet_name(stuid) {
          + students[stuid].lastname.substring(0,15)+ '&nbsp;' + students[stuid].department;
 }
 
-function edit_aarsplan(start,stop) {
+
+function edit_aarsplan(start,stop,edchoice) {
+  // edit heldag has been melded in here
+    var iddx = 0;
+    edchoice   = typeof(edchoice) != 'undefined' ? edchoice : 0;
     var events = database.yearplan;
     var s="<h1>Rediger Årsplanen</h1>";
-    s += '<p  id="editmsg"> Klikk på rutene for å redigere, klikk utenfor for å avbryte.</p>';
+    var hdchecked = (edchoice == 1) ? 'checked="true"' : '';
+    var tpchecked = (edchoice == 2) ? 'checked="true"' : '';
+    s += '<div class="centered sized1"><div id="editmsg"> Klikk på rutene for å redigere, klikk utenfor for å avbryte.</div>'
+         + '<div id="options">Heldag <input id="usehd"'+hdchecked+' type="checkbox">'
+         + 'Timeprøver <input id="usetp" '+tpchecked+' type="checkbox"></div></div>';
     var theader ="<table class=\"year\" >"
      + "<tr><th>Uke</th><th>Man</th><th>Tir</th><th>Ons</th>"
      + "<th>Tor</th><th>Fre</th><th>Merknad</th></tr>";
@@ -487,21 +495,42 @@ function edit_aarsplan(start,stop) {
       s += '<th><div class="weeknum">'+julian.week(jd)+'</div><br class="clear" /><div class="date">' + formatweekdate(jd) + "</div></th>";
       e = events[Math.floor(jd/7)] || { pr:[],days:[]};
       for (var j=0;j<6;j++) {
-        tdclass = 'edit_area';
+        var hd = database.heldag[jd+j];
         var text = '';
+        var xtra = '';
+        tdclass = '';
         if (database.freedays[jd+j]) {
           text = database.freedays[jd+j];
           tdclass += ' fridag';
         } else {
           text = e.days[j] || '';
+          if (j<5 && edchoice == 1) {
+            xtra += '<ul id="hd'+(jd+j)+'" class="hdliste">';
+            if (hd) {
+              for (var f in hd) {
+                f = f.toUpperCase();
+                var cat = +database.category[f] || 0
+                var idd = jd + j;
+                xtra += '<li id="hd'+idd+'_'+f+'" class="hdedit catt'+cat+'">'+f+'&nbsp;'+hd[f]+'</li>';
+              }
+            }
+            xtra += '<li class="addhd"></li>';
+            xtra += '</ul>';
+          }
         }
-        s += '<td id="year'+(jd+j)+'" class="'+tdclass+'">' + text + "</td>";
+        s += '<td class="'+tdclass+'"><div id="year'+(jd+j)+'" class="edit_area">' + text + '</div>'+xtra+"</td>";
       }
       s += "</tr>";
     }
     s += "</table>";
     $j("#main").html(s);
     enable_editing("aarsplan");
+    heldag_enable_editing();
+    $j("li.addhd").click(function() {
+        $j(this).before('<li id="new'+iddx+'" class="catt0 hdedit">changeme</span>');
+        heldag_enable_editing();
+        iddx++;
+    });
     $j("#nxt").click(function() {
           start = database.nextyear.firstweek; stop =database.nextyear.lastweek;
           edit_aarsplan(start,stop);
@@ -510,6 +539,58 @@ function edit_aarsplan(start,stop) {
           start = database.firstweek; stop =database.lastweek;
           edit_aarsplan(start,stop);
         });
+    $j("#usetp").click(function() {
+          edchoice = (edchoice == 2) ? 0 : 2;
+          edit_aarsplan(start,stop,edchoice);
+        });
+    $j("#usehd").click(function() {
+          edchoice = (edchoice == 1) ? 0 : 1;
+          edit_aarsplan(start,stop,edchoice);
+        });
+}
+
+
+function check_heldag(value,settings) {
+    // checks that we have a correct structure on edited text
+    // we want FAGNAVN some text
+    var elm = value.split(' ')
+    var fagnavn = elm[0].toUpperCase();
+    elm.shift();
+    var beskrivelse = elm.join(' ');
+    var correct = fagnavn + " " + beskrivelse;
+    if (category[fagnavn]) {
+        // a legal name - set id of element to 'hd'+julday+'_'+fagnavn
+        // so that it can be removed for mysql later
+        var jd = $j("#"+this.id).parent().attr("id").substr(2);
+        $j("#"+this.id).attr("id","hd" + jd + "_" + fagnavn).removeClass("catt0").addClass("catt"+category[fagnavn]);
+        //$j.post( "/save_heldag", { "julday":jd, "fag":fagnavn, "value":beskrivelse });
+        // this is the code that actually sends the new info to the server and inserts into mysql
+        $j.post( "/savehd", { "fag":fagnavn, "myid":jd, "value":value },
+            function(data) {
+                if (data.ok) {
+                    $j("#editmsg").html('Du kan redigere planen ved å klikke på en rute');
+                } else {    
+                    $j("#editmsg").html('<span class="error">'+data.msg+'</span>');
+                }
+            });
+        return(correct);
+    } else {
+        if (fagnavn == '') {
+          var pid = $j("#"+this.id).attr("id");
+          $j.post( "/savehd", { "pid":pid, "kill":true, "fag":"", "myid":jd, "value":value },
+              function(data) {
+                  if (data.ok) {
+                      $j("#editmsg").html('Du kan redigere planen ved å klikke på en rute');
+                  } else {    
+                      $j("#editmsg").html('<span class="error">'+data.msg+'</span>');
+                  }
+              });
+            // try to delete this entry from the database
+            $j("#"+this.id).remove();
+            return false;
+        }
+        return("Ugyldig fagnavn :"+value);
+    }
 }
 
 function edit_fridager(start,stop) {
@@ -558,76 +639,7 @@ function edit_fridager(start,stop) {
 }
 
 
-var iddx;   // used to give unique ids to new heldag elements
 
-function edit_heldag() {
-    iddx = 0;
-    var s="<h1>Rediger Heldager</h1>";
-    s+=  '<p>Klikk på pluss knappen for å legge til en prøve. Klikk på teksten for å redigere (og slette)<br />';
-    s+=  'Klikk utenfor (på hvit bakgrunn) for å avbryte.</p>';
-    var events = database.aarsplan;
-    var thisweek = database.startjd;
-    s += "<table class=\"heldag\">";
-    s += "<tr><th>Uke</th><th>Man</th><th>Tir</th><th>Ons</th>";
-    s += "<th>Tor</th><th>Fre</th></tr>";
-    var i,j;
-    var e;
-    var txt;
-    var thclass;
-    var cc;
-    for (i= 0; i < database.antall; i++) {
-      e = events[i];
-      if (e.julday < thisweek) continue;
-      s += "<tr>";
-      s += "<th>"+e.week+"</th>";
-      for (j=0;j<5;j++) {
-        var idd = e.julday + j;
-        txt = e.hd[j];
-        s += '<td id="jd'+idd+'" >' + txt + '<span class="addnew">+</span></td>';
-      }
-      s += "</tr>";
-    }
-    s += "</table>";
-    $j("#main").html(s);
-    $j("span.heldag").addClass("edit");
-    $j("span.addnew").click(function() {
-        $j(this).before('<span id="new'+iddx+'" class="heldag edit"></span>');
-        heldag_enable_editing();
-        iddx++;
-    });
-    heldag_enable_editing();
-}
-
-
-
-
-function check_heldag(value,settings) {
-    // checks that we have a correct structure on edited text
-    // we want FAGNAVN some text
-    var elm = value.split(' ')
-    var fagnavn = elm[0].toUpperCase();
-    elm.shift();
-    var beskrivelse = elm.join(' ');
-    var correct = fagnavn + " " + beskrivelse;
-    if (category[fagnavn]) {
-        // a legal name - set id of element to 'hd'+julday+'_'+fagnavn
-        // so that it can be removed for mysql later
-        var jd = $j("#"+this.id).parent().attr("id").substr(2);
-        $j("#"+this.id).attr("id","hd" + jd + "_" + fagnavn);
-        $j.post( "/save_heldag", { "julday":jd, "fag":fagnavn, "value":beskrivelse });
-        // this is the code that actually sends the new info to the server and inserts into mysql
-        return(correct);
-    } else {
-        if (value == '') {
-            var pid = $j("#"+this.id).attr("id");
-            $j.post( "/delete_heldag", { "pid":pid });
-            // try to delete this entry from the database
-            $j("#"+this.id).remove();
-            return false;
-        }
-        return("FEIL FAG fagnavn :"+value);
-    }
-}
 
 function save_fagplan(value,settings) {
     // save the changed element into compound week data a|b|c|d|e
@@ -654,7 +666,8 @@ function save_fagplan(value,settings) {
       // saved with new content)
     update_fagplaner(minfagplan,section,summary);
     var courseid = database.courseteach[minfagplan].id;
-    $j.post( "/save_fagplan", { "section":section,"value":value, "idx":idx, "week":week, "courseid":courseid, "summary":summary },
+    $j.post( "/save_fagplan", { "section":section,"value":value, "idx":idx, 
+             "uid":userinfo.id, "week":week, "courseid":courseid, "summary":summary },
     function(data) {
         if (data.ok) {
             $j("#editmsg").html('Du kan redigere planen ved å klikke på en rute');
@@ -737,7 +750,7 @@ function save_simple(value,settings) {
 }
 
 function heldag_enable_editing() {
-     $j('.edit').editable( check_heldag , {
+     $j('.hdedit').editable( check_heldag , {
          indicator      : 'Saving...',
          tooltip        : 'Click to edit...',
          submit         : 'OK',

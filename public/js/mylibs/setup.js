@@ -23,7 +23,7 @@ var eier;               // eier av siste timeplan (navn osv)
 
 var show = {};   // list over all shows indexed by userid
 
-var timetables = {};
+var timetables = null;
 var timeregister = {};
 // timeregister lagrer timeplaner slik at de kan vises
 // samlet. Alle timeplanvisere kan push/pop på denne
@@ -104,13 +104,13 @@ function gotoPage() {
         var fagnavn = element.shift();
         if (fagnavn) {
           fagnavn = fagnavn.toUpperCase();
-          var plandata = courseplans[fagnavn];
-          if (plandata) {
+          if (courseplans) {
+            var plandata = courseplans[fagnavn];
             action = 'showpage';
             visEnPlan(fagnavn,plandata,true);
           } else {
             if (!promises.allplans) promises.allplans = [];
-            promises["allplans"].push(function() { action = 'showpage'; visEnPlan(fagnavn,plandata,true); });
+            promises.allplans.plans = function() { action = 'showpage'; visEnPlan(fagnavn,plandata,true); };
           }
         }
         break;
@@ -124,7 +124,7 @@ function gotoPage() {
             edit_proveplan(fagnavn,plandata);
           } else {
             if (!promises.allplans) promises.allplans = [];
-            promises["allplans"].push(function() { action = 'showpage'; edit_proveplan(fagnavn,courseplans[fagnavn]); });
+            promises.allplans.tests = function() { action = 'showpage'; edit_proveplan(fagnavn,courseplans[fagnavn]); };
           }
         }
         break;
@@ -378,7 +378,7 @@ function get_login() {
 
 function belongsToCategory(uid,cat) {
   // return true if user has a course in this category
-  if (timetables.teach && timetables.teach[uid]) {
+  if (timetables && timetables.teach && timetables.teach[uid]) {
     // we have a teach 
     var minefag = database.teachcourse[uid];
     for (var j in minefag) {
@@ -466,6 +466,19 @@ function getusers() {
 }
 
 function getcourseplans() {
+  // fetch timetables and courseplans
+  $j.getJSON( "/timetables", 
+        function(data) {
+            timetables = data;
+            if (promises.timetables) {
+              // some functions have some actions pending on my data
+              for (var p in promises.timetables) {
+                promises.timetables[p]();
+              }
+              delete promises.timetables;
+            }
+            updateFagplanMenu();
+     });
   var url = 'allplans';
   $j.getJSON( url, 
   function(allplans) {

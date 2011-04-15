@@ -26,6 +26,7 @@ function show_thisweek(delta) {
     var s='<div id="timeviser"><h1 id="oskrift">'+user+'</h1>';
     s+= '<div id="sectionimg"></div>';
     s+= '<div id="timeplan"></div>';
+    s+= '<div id="workplan"></div>';
     s+= '<div id="weekly"></div>';
     s+= "</div>";
     $j("#main").html(s);
@@ -38,21 +39,25 @@ function show_thisweek(delta) {
     s = getYearPlanThisWeek(thisweek);
     $j("#weekly").html(s);
     var planliste = '';
-    if (timetables.course) {
+    var mos = 0;
+    if (courseplans) {
+      // courseplan.mos is the category that this user mos-tly belongs to
+      // courseplan.plan is the workplan for this user
       var courseplan = addonCoursePlans(delta);
-      addonTimePlan(delta,courseplan.mos);
-      $j("#timeplan").append(courseplan.plan);
+      mos = courseplan.mos;
+      $j("#workplan").html(courseplan.plan);
     } else {
-      if (!promises.allplans) promises.allplans = [];
-      promises["allplans"].push(function() { var courseplan = addonCoursePlans(delta); $j("#timeplan").append(courseplan.plan); });
-      $j.getJSON( "/timetables", 
-        function(data) {
-            timetables = data;
-            var courseplan = addonCoursePlans(delta);
-            addonTimePlan(delta,courseplan.mos);
-            // $j("#timeplan").append(courseplan.plan);
-            updateFagplanMenu();
-        });
+      if (!promises.allplans) promises.allplans = {};
+      promises.allplans.thisweek = function() { var courseplan = addonCoursePlans(delta); $j("#workplan").html(courseplan.plan); };
+        // promise to draw up workplan when we get it
+    }
+    if (timetables) {
+      addonTimePlan(delta,mos);
+      // addonTimePlan will update html for #timeplan (with bgimg given by mos)
+    } else {
+      if (!promises.timetables) promises.timetables = {};
+      promises.timetables.thisweek = function() { addonTimePlan(delta,0); };
+        // promise to draw up timetable when we get it
     }
 }
 
@@ -476,7 +481,7 @@ function vis_timeplan_helper(userplan,uid,filter,isuser,visfagplan,delta) {
       s += vis_fagplaner(uid,current);
     } else {
       if (!promises.allplans) promises.allplans = [];
-      promises["allplans"].push(function() { var courseplan = vis_fagplaner(uid,current); $j("#timeplan").append(courseplan); });
+      promises.allplans.timetable = function() { var courseplan = vis_fagplaner(uid,current); $j("#timeplan").append(courseplan); };
     }
   }
   $j("#timeplan").html(s);
@@ -792,7 +797,8 @@ function add_tests(uid,jd) {
               if (!prover[dd]) {    // ingen rad definert ennå
                   prover[dd] = {};  // ny rad
               }
-              prover[dd][day] = fag + ' ' + hd[fag];
+              var hdf = hd[fag].replace('heldag','hd').replace('hovedmål','hm').replace('sidemål','sm');
+              prover[dd][day] = fag + ' ' + hdf;
             }
           }
       } 

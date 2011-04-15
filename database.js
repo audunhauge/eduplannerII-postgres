@@ -125,7 +125,7 @@ var getCoursePlans = function(callback) {
           }
           var allplans = { courseplans:fliste, compliance:compliance, startdate:startdate, numsections:numsections };
           callback(allplans);
-          //console.log(reservations);
+          console.log("got allplans");
       });
 }
 
@@ -448,6 +448,48 @@ var saveTest = function(user,query,callback) {
                 });
           }
       });
+}
+
+
+var savehd = function(user,query,callback) {
+    console.log(query,user.id);
+    /*
+    $sql = "delete from mdl_bookings_calendar where julday=$jd and eventtype='heldag' and name = '$fag'";
+    $rs = execute_sql($sql,false);
+    $sql = "insert into mdl_bookings_calendar (julday,name,value,courseid,userid,eventtype) "
+            . "values ($jd,'$fag','$value',3745,654,'heldag')";
+    */
+    var jd = query.myid;
+    var val = query.value;
+    var fag = query.fag;
+    var kill = query.kill;
+    var pid = query.pid;
+    if (kill) {
+      var elm = pid.split('_');
+      fag = elm[1];
+    }
+    client.query( 'delete from mdl_bookings_calendar'
+      + ' where eventtype="heldag" and name=? and julday= ? ' , [ fag , jd ],
+          function (err, results, fields) {
+              if (err) {
+                  callback( { ok:false, msg:err.message } );
+                  return;
+              }
+          });
+    if (kill)  {
+       callback( {ok:true, msg:"deleted"} );
+       return;
+    }
+    client.query(
+        'insert into mdl_bookings_calendar (julday,name,value,courseid,userid,eventtype)'
+        + ' values (?,?,?,3745,2,"heldag")' , [jd,fag,val],
+        function (err, results, fields) {
+            if (err) {
+                callback( { ok:false, msg:err.message } );
+                return;
+            }
+            callback( {ok:true, msg:"inserted"} );
+        });
 }
 
 var selltickets = function(user,query,callback) {
@@ -949,6 +991,7 @@ module.exports.updateTotCoursePlan = updateTotCoursePlan ;
 module.exports.saveTest = saveTest;
 module.exports.getBlocks = getBlocks;
 module.exports.savesimple = savesimple;
+module.exports.savehd = savehd;
 module.exports.saveabsent = saveabsent;
 module.exports.getabsent = getabsent;
 module.exports.getshow = getshow;
