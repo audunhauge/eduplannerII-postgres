@@ -53,6 +53,7 @@ client.connect(function(err, results) {
         throw err;
     }
     console.log("connected.");
+    // client.query('USE skeisvangmoodle3', function(err, results) {
     client.query('USE skeisvangmoodle3', function(err, results) {
                 if (err) {
                         console.log("ERROR: " + err.message);
@@ -467,16 +468,22 @@ var savehd = function(user,query,callback) {
     if (kill) {
       var elm = pid.split('_');
       fag = elm[1];
+      jd = elm[0].substr(2);
+      console.log(fag,jd);
+      console.log('delete from mdl_bookings_calendar where eventtype="heldag" and name="'+fag+'" and julday='+jd);
     }
     client.query( 'delete from mdl_bookings_calendar'
       + ' where eventtype="heldag" and name=? and julday= ? ' , [ fag , jd ],
           function (err, results, fields) {
               if (err) {
+                  console.log(err.message);
                   callback( { ok:false, msg:err.message } );
                   return;
               }
           });
     if (kill)  {
+       console.log("deleted an entry");
+       delete db.heldag[jd][fag];
        callback( {ok:true, msg:"deleted"} );
        return;
     }
@@ -488,6 +495,10 @@ var savehd = function(user,query,callback) {
                 callback( { ok:false, msg:err.message } );
                 return;
             }
+            if (!db.heldag[jd]) {
+              db.heldag[jd] = {};
+            }
+            db.heldag[jd][fag] = val;
             callback( {ok:true, msg:"inserted"} );
         });
 }
@@ -941,7 +952,7 @@ var getyearplan = function() {
       });
 }
 
-var getexams = function() {
+var getexams = function(callback) {
   client.query(
       // fetch big tests (exams and other big tests - they block a whold day )
       'select id,julday,name,value from mdl_bookings_calendar where eventtype="heldag"',
@@ -957,6 +968,7 @@ var getexams = function() {
               }
               db.heldag[free.julday][free.name.toUpperCase()] = free.value;
           }
+          if (callback) callback(db.heldag);
           //console.log(db.heldag);
       });
 }

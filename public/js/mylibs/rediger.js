@@ -480,7 +480,13 @@ function edit_aarsplan(start,stop,edchoice) {
     var s="<h1>Rediger Årsplanen</h1>";
     var hdchecked = (edchoice == 1) ? 'checked="true"' : '';
     var tpchecked = (edchoice == 2) ? 'checked="true"' : '';
-    s += '<div class="centered sized1"><div id="editmsg"> Klikk på rutene for å redigere, klikk utenfor for å avbryte.</div>'
+    s += '<div class="centered sized1"><div id="editmsg"> Klikk på rutene for å redigere, klikk utenfor for å avbryte.'
+         + ((edchoice ==1) ? '<p>Klikk på grønn sirkel for å legge til ny heldag. Klikk deretter på changeme og velg fag og legg til tekst.'
+                + 'Fagene hentes med autocomplete - skriv første 1-3 bokstaver og velg fra lista.'
+                + 'Du kan bare registrer prøver på fag med navn som finnes i SATS.'
+                + 'Klikk på eksisterende heldagsprøve for å redigere/slette.'
+                + 'Sletting:Klikk på prøven, fjern all tekst og klikk ok.' : '')
+         + '</div>'
          + '<div id="options">Heldag <input id="usehd"'+hdchecked+' type="checkbox">'
          + 'Timeprøver <input id="usetp" '+tpchecked+' type="checkbox"></div></div>';
     var theader ="<table class=\"year\" >"
@@ -504,18 +510,20 @@ function edit_aarsplan(start,stop,edchoice) {
           tdclass += ' fridag';
         } else {
           text = e.days[j] || '';
-          if (j<5 && edchoice == 1) {
-            xtra += '<ul id="hd'+(jd+j)+'" class="hdliste">';
-            if (hd) {
-              for (var f in hd) {
-                f = f.toUpperCase();
-                var cat = +database.category[f] || 0
-                var idd = jd + j;
-                xtra += '<li id="hd'+idd+'_'+f+'" class="hdedit catt'+cat+'">'+f+'&nbsp;'+hd[f]+'</li>';
+          if (j<5) {
+            if (hd || edchoice == 1) {
+              xtra += '<ul id="hd'+(jd+j)+'" class="hdliste">';
+                for (var f in hd) {
+                  f = f.toUpperCase();
+                  var cat = +database.category[f] || 0
+                  var idd = jd + j;
+                  xtra += '<li id="hd'+idd+'_'+f+'" class="hdedit catt'+cat+'">'+f+'&nbsp;'+hd[f]+'</li>';
+                }
+              if (edchoice == 1) {
+                xtra += '<li class="addhd"></li>';
               }
+              xtra += '</ul>';
             }
-            xtra += '<li class="addhd"></li>';
-            xtra += '</ul>';
           }
         }
         s += '<td class="'+tdclass+'"><div id="year'+(jd+j)+'" class="edit_area">' + text + '</div>'+xtra+"</td>";
@@ -565,7 +573,14 @@ function check_heldag(value,settings) {
         $j("#"+this.id).attr("id","hd" + jd + "_" + fagnavn).removeClass("catt0").addClass("catt"+category[fagnavn]);
         //$j.post( "/save_heldag", { "julday":jd, "fag":fagnavn, "value":beskrivelse });
         // this is the code that actually sends the new info to the server and inserts into mysql
-        $j.post( "/savehd", { "fag":fagnavn, "myid":jd, "value":value },
+        if (!database.heldag[jd]) {
+          database.heldag[jd] = {};
+        }
+        database.heldag[jd][fagnavn] = beskrivelse;
+        console.log("added "+jd+" "+fagnavn);
+        console.log(database.heldag);
+        console.log(database.heldag[jd]);
+        $j.post( "/savehd", { "fag":fagnavn, "myid":jd, "value":beskrivelse },
             function(data) {
                 if (data.ok) {
                     $j("#editmsg").html('Du kan redigere planen ved å klikke på en rute');
@@ -575,8 +590,15 @@ function check_heldag(value,settings) {
             });
         return(correct);
     } else {
-        if (fagnavn == '') {
+        if (value == '') {
           var pid = $j("#"+this.id).attr("id");
+          var jd  = pid.split('_')[0].substr(2);
+          var fag = pid.split('_')[1];
+          console.log(database.heldag);
+          console.log(database.heldag[jd]);
+          delete database.heldag[jd][fag];
+          console.log(database.heldag[jd]);
+          console.log(database.heldag);
           $j.post( "/savehd", { "pid":pid, "kill":true, "fag":"", "myid":jd, "value":value },
               function(data) {
                   if (data.ok) {
@@ -753,6 +775,7 @@ function heldag_enable_editing() {
      $j('.hdedit').editable( check_heldag , {
          indicator      : 'Saving...',
          tooltip        : 'Click to edit...',
+         doformat       : translatebreaks,
          submit         : 'OK',
          autocomplete   : fagautocomp
      });

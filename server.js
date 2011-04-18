@@ -421,6 +421,7 @@ app.post('/savehd', function(req, res) {
       console.log("User saving full day test",req.body);
       database.savehd(req.session.user,req.body,function(msg) {
          res.send(msg);
+         delete addons.exams;
       });
     } else {
       res.send({ok:false, msg:"bad user"});
@@ -496,6 +497,26 @@ app.get('/show', function(req, res) {
     database.getshow(function(show) {
             res.send(show);
           });
+});
+
+app.get('/getexams', function(req, res) {
+    // get all whole day tests (end of term tests) and exams
+    /*
+    var justnow = new Date();
+    if (addons.exams && ((justnow.getTime() - addons.update.exams.getTime())/60000 < 600  )  ) {
+      res.send(addons.exams);
+      var diff = (justnow.getTime() - addons.update.exams.getTime())/60000;
+      console.log("resending exams - diff = " + diff);
+    } else {
+    */
+      console.log("query for exams ");
+        database.getexams(function(exams) {
+            console.log("done query for exams ");
+            addons.exams = exams;
+            addons.update.exams = new Date();
+            res.send(exams);
+          });
+    //}
 });
 
 app.get('/alltests', function(req, res) {

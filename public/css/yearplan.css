@@ -25,6 +25,7 @@ html {
 #editmsg {
   /* messages while editing yearplan */
   float:left;
+  width:600px;
 }
 #options {
   /* editor options for yearplan */
@@ -36,6 +37,15 @@ ul.hdliste {
    margin-left: 0;
    padding-left: 1em;
    text-indent: -1em;
+}
+
+ul.prliste {
+   list-style: none;
+   margin-left: 0;
+   padding-left: 1em;
+   text-indent: -1em;
+   font-size:0.9em;
+   background:#eec;
 }
 
 
@@ -907,6 +917,10 @@ table.fagplan, table.year, table.prover, table.heldag, table.uke,table.info {
   background-image: -o-linear-gradient(top,#AFC4E3,#E0E9FC 50%,white 100%);
   background: -webkit-gradient(linear, 0% 0%, 0% 100%, from(#AFC4E3), to(#FFFFFF), color-stop(.4,#E0E9FC));
   width:65em;
+}
+
+table.year {
+    background:#e0f8e3;
 }
  
 table.uke caption {

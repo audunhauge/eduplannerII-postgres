@@ -272,7 +272,7 @@ function setup_teach() {
     if (isadmin) {
         s +=  '<li><a id="rediger" href="#">Rediger</a><ul>'
             +    '<li><a id="edfridager"     href="#">Fridager</a></li>'
-            +    '<li><a id="edheldag"       href="#">Heldag</a></li>'
+            // +    '<li><a id="edheldag"       href="#">Heldag</a></li>'
             +    '<li><a id="edaarsplan"     href="#">Årsplan</a></li>'
             +    '<li><a id="edblokk"        href="#">Blokkskjema</a></li>'
             +    '<li><a id="edexcurs"       href="#">Ekskursjoner</a></li>'
@@ -326,10 +326,12 @@ function setup_teach() {
                 event.preventDefault();
                 edit_excursion(userinfo.id);
             });
+            /*
             $j("#edheldag").click(function(event) {
                 event.preventDefault();
                 edit_heldag();
             });
+            */
          });
 }
 

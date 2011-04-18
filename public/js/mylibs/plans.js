@@ -225,15 +225,25 @@ function getUserSubj(uid) {
   return minefaggrupper;
 }
 
-function show_all(thisweek) {
+function show_all(thisweek,options) {
     // viser hele årsplanen (ikke prøver og heldag)
+    options   = typeof(options) != 'undefined' ? options : 0;
+    var hdchecked = (options & 1) ? 'checked="true"' : '';
+    var tpchecked = (options & 2) ? 'checked="true"' : '';
     var events = database.aarsplan;
     var prover = alleprover;
+    s = '<div class="centered sized1"><div id="editmsg">Kryss av for å vise hd og prøver.'
+         + ((options > 0 ) ? 'Viser ' : '')
+         + ((options & 1) ? ' heldagsprøver' : '')
+         + ((options & 2) ? ' timeprøver' : '')
+         + '</div>'
+         + '<div id="options">Heldag <input id="usehd"'+hdchecked+' type="checkbox">'
+         + 'Timeprøver <input id="usetp" '+tpchecked+' type="checkbox"></div></div>';
     var theader ="<table class=\"year\" >"
      + "<tr><th>Uke</th><th>Man</th><th>Tir</th><th>Ons</th>"
      + "<th>Tor</th><th>Fre</th><th>Merknad</th></tr>";
     var tfooter ="</table>";
-    var s = theader;
+    s += theader;
     var week = julian.week(thisweek);
     if (week > 30 && week < 45) {
       s += "<caption>Første halvår</caption>";
@@ -278,24 +288,36 @@ function show_all(thisweek) {
         var xtra = '';
         var tlist = [];
         var totip = '';  // no tooltip so far
+        var hd =  database.heldag[i+j];
         if (database.freedays[i+j]) {
           txt = database.freedays[i+j];
           tdclass = 'fridag';
         } else {
           tdclass = '';
-          if (database.heldag[i+j]) {
-            tlist.push('Heldag/Eksamen');
-            var hd =  database.heldag[i+j];
-            for (fag in hd) {
-                tlist.push(fag + ' ' + hd[fag]);
-            } 
-            tdclass += 'hd';
-            totip = " totip";
-            xtra += 'heldag';
+          if (j<5) {
+            if (hd) tdclass += 'hd';
+            if (hd && options & 1) {
+              xtra += '<ul class="hdliste">';
+                for (var f in hd) {
+                  f = f.toUpperCase();
+                  var cat = +database.category[f] || 0
+                  xtra += '<li class="hdedit catt'+cat+'">'+f+'&nbsp;'+hd[f]+'</li>';
+                }
+              xtra += '</ul>';
+            }
           }
-          if (prover[i+j] ) {
-              tdclass += 'pr';
-              totip = " totip";
+          if (prover[i+j]) tdclass += 'pr';
+          if (options & 2 && prover[i+j] ) {
+              xtra += '<ul class="prliste">';
+                for (var f in prover[i+j]) {
+                  var pro = prover[i+j][f];
+                  var fag = pro.shortname.toUpperCase();
+                  var info = pro.value;
+                  var cat = +database.category[fag.split('_')[0]] || 0
+                  xtra += '<li class="hdedit catt'+cat+'">'+fag+'&nbsp;'+info+'</li>';
+                }
+              xtra += '</ul>';
+              /*
               //tlist.push(countme(prover[i+j]) + ' prøver');
               tlist.push( 'Prøver<br>'+$j.map(prover[i+j],function(e,i) {
                       var val = e.value.replace(/1.+9/,"heldag");
@@ -303,9 +325,10 @@ function show_all(thisweek) {
                     }).join('<br>'));
               //xtra += '<span title="prøve" class="enprove">x</span>'; 
               xtra += ' prøve';
+              */
           }
-          xtra = (xtra) ? '<div class="gui textcenter hinted">'+xtra+'</div>' : '';
-          txt = e.days[j] || xtra;
+          //xtra = (xtra) ? '<div class="gui textcenter hinted">'+xtra+'</div>' : '';
+          txt = (e.days[j] || '') + xtra;
         }
         var title = tlist.join('<br>'); 
         title = (title) ? 'title="'+title+'"' : '';
@@ -316,6 +339,14 @@ function show_all(thisweek) {
     s += "</table>";
     $j("#main").html(s);
     $j(".totip").tooltip({position:"bottom center" });
+    $j("#usetp").click(function() {
+          options ^= 2;
+          show_all(thisweek,options);
+        });
+    $j("#usehd").click(function() {
+          options ^= 1;
+          show_all(thisweek,options);
+        });
 }
 
 function getfagliste(uid) {

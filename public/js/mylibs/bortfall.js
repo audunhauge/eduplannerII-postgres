@@ -22,7 +22,8 @@ function edit_bortfall(uid) {
     }
     var s = '<div id="absent">';
     s += '<h1>Fraværsplan</h1>';
-    s += '<p  id="editmsg"> Legg til med grønn knapper, klikk på eksisterende for å endre.</p>';
+    s += '<div class="centered sized1"><div id="editmsg">  Legg til med grønn knapper, klikk på eksisterende for å endre.</div></div>'
+    //s += '<p  id="editmsg"> Legg til med grønn knapper, klikk på eksisterende for å endre.</p>';
     s += '<table id="testeditor" class="gradback centered sized1 border1">';
     if (teachers[uid]) s += '<caption>' + teachers[uid].firstname + teachers[uid].lastname + '</caption>';
     if (students[uid]) s += '<caption>' + students[uid].firstname + students[uid].lastname + '</caption>';
@@ -173,7 +174,8 @@ function edit_excursion(uid) {
     var thisweek = database.startjd;
     var s = '<div id="absent">';
     s += '<h1>Ekskursjoner</h1>';
-    s += '<p  id="editmsg"> Legg til med grønn knapper, klikk på eksisterende for å endre.</p>';
+    //s += '<p  id="editmsg"> Legg til med grønn knapper, klikk på eksisterende for å endre.</p>';
+    s += '<div class="centered sized1"><div id="editmsg">  Legg til med grønn knapper, klikk på eksisterende for å endre.</div></div>'
     s += '<table id="testeditor" class="gradback centered sized1 border1">';
     s += '<caption>Ekskursjoner for Skeisvang</caption>';
     s += '<tr><th class="time">Uke</th><th>Man</th><th>Tir</th><th>Ons</th>';
