@@ -344,7 +344,7 @@ function visEnValgtPlan(plandata,egne,start,stop) {
     var timmy = {};
     var tidy = {};
     // build timetable data for quick reference
-    if (timetables.course) {
+    if (timetables && timetables.course) {
       for (var tt in timetables.course[minfagplan] ) {
         var tty = timetables.course[minfagplan][tt];
         if (!timmy[tty[0]]) {
@@ -577,9 +577,9 @@ function check_heldag(value,settings) {
           database.heldag[jd] = {};
         }
         database.heldag[jd][fagnavn] = beskrivelse;
-        console.log("added "+jd+" "+fagnavn);
-        console.log(database.heldag);
-        console.log(database.heldag[jd]);
+        //console.log("added "+jd+" "+fagnavn);
+        //console.log(database.heldag);
+        //console.log(database.heldag[jd]);
         $j.post( "/savehd", { "fag":fagnavn, "myid":jd, "value":beskrivelse },
             function(data) {
                 if (data.ok) {
@@ -594,11 +594,11 @@ function check_heldag(value,settings) {
           var pid = $j("#"+this.id).attr("id");
           var jd  = pid.split('_')[0].substr(2);
           var fag = pid.split('_')[1];
-          console.log(database.heldag);
-          console.log(database.heldag[jd]);
+          //console.log(database.heldag);
+          //console.log(database.heldag[jd]);
           delete database.heldag[jd][fag];
-          console.log(database.heldag[jd]);
-          console.log(database.heldag);
+          //console.log(database.heldag[jd]);
+          //console.log(database.heldag);
           $j.post( "/savehd", { "pid":pid, "kill":true, "fag":"", "myid":jd, "value":value },
               function(data) {
                   if (data.ok) {

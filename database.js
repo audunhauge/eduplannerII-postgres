@@ -743,7 +743,7 @@ var getTimetables = function(callback) {
   // assumes you give it a callback that assigns the hash
   client.query(
       'select userid,cal.day,cal.slot,r.name as room,cal.name from mdl_bookings_calendar cal inner join mdl_bookings_item r '
-       +     ' on cal.itemid = r. id where eventtype = "timetable" order by cal.name,day,slot',
+       +     ' on cal.itemid = r. id where eventtype = "timetable" and julday = ? order by cal.name,day,slot', [ db.firstweek ],
       function (err, results, fields) {
           if (err) {
               console.log("ERROR: " + err.message);

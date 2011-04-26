@@ -12,7 +12,7 @@ function synopsis(coursename,plandata,tests) {
   var elever = memberlist[gru];
   var andre = getOtherCG(elever);
   //var events = database.aarsplan;
-  var myttimer = (timetables.course) ? timetables.course[coursename] : [];
+  var myttimer = (timetables && timetables.course) ? timetables.course[coursename] : [];
   var jd = database.firstweek;
   var mytt = {};
   if (myttimer) {
@@ -196,7 +196,7 @@ function show_prover() {
 function getUserSubj(uid) {
   // finner alle prøver for en bruker
   var minefaggrupper = {};
-  if (timetables.teach[uid]) {
+  if (timetables && timetables.teach[uid]) {
     // we have a teach 
     // a teach dosn't have all the tests for a given group
     // a group may be connected to different subjects.
@@ -351,7 +351,7 @@ function show_all(thisweek,options) {
 
 function getfagliste(uid) {
     var minefag = [];
-    if (timetables.teach[uid]) {
+    if (timetables && timetables.teach[uid]) {
       // we have a teach 
       isteach = true;
       minefag = database.teachcourse[uid];

@@ -327,6 +327,9 @@ function build_plantable(jd,uid,username,timeplan,xtraplan,filter) {
                 xcell = '<ul class="nav'+bad+'"><li><a href="#">'+header+'</a><ul>' 
                        + xcell
                        + '</ul></li></ul>';
+             } else {
+               xcell = xp;
+               cell = '';
              }
           }
           if (absentDueTest[j] && absentDueTest[j][subject] && absentDueTest[j][subject].length > 0) {
@@ -406,6 +409,10 @@ function vistimeplan(data,uid,filter,isuser,delta) {
   delta = typeof(delta) != 'undefined' ?  +delta : 0;  // vis timeplan for en anne uke
   // viser timeplan med gitt datasett
   var plan = data.plan;
+  var timeplan = {};
+  var xtraplan = {};
+  var i,j;
+  var cell,userlist,gruppe,popup,user,username;
   if (!plan) return 'Ingen timeplan';
   var jd = database.startjd + 7*delta;
   plan.prover = add_tests(uid,jd);
@@ -415,12 +422,11 @@ function vistimeplan(data,uid,filter,isuser,delta) {
     var andre = getOtherCG(elever); 
     plan.prover = grouptest(plan.prover, andre.gru, jd);
   }
-  // TODO change from startjd to parameter set by user
+  if (isuser != 'isuser' && timetables.room[uid]) {
+    // this is a room
+    xtraplan = getReservations(uid,delta);
+  }
   valgtPlan = plan;        // husk denne slik at vi kan lagre i timeregister
-  var timeplan = {};
-  var xtraplan = {};
-  var i,j;
-  var cell,userlist,gruppe,popup,user,username;
   if (filter == 'gr' || filter == 'fg') { 
     user = {firstname:uid,lastname:''};
   } else {
@@ -472,7 +478,7 @@ function intersect(a,b) {
 
 function vis_timeplan_helper(userplan,uid,filter,isuser,visfagplan,delta) {
   // timeplanen er henta - skal bare vises
-  visfagplan = typeof(visfagplan) != 'undefined' ? true : false;
+  visfagplan = typeof(visfagplan) != 'undefined' ? visfagplan : false;
   delta = typeof(delta) != 'undefined' ?  +delta : 0;  // vis timeplan for en anne uke
   var current = database.startjd + 7*delta;
   s = vistimeplan(userplan,uid,filter,isuser,delta);
@@ -516,7 +522,8 @@ function vis_valgt_timeplan(user,filter,visfagplan,isuser,delta) {
     // gitt en userid vil denne hente og vise en timeplan
     eier = user;
     // if user is name of klass or group then getcourseplan
-    var userplan = (user.id) ? getuserplan(user.id) : getcourseplan(user) ;
+    var userplan = (user.id) ? getuserplan(user.id) : getcourseplan(user,delta) ;
+    // rooms need delta cause they need to show reservations
     var uid = user.id || user;
     $j.bbq.pushState(tpath+uid);
     vis_timeplan_helper(userplan,uid,filter,isuser,visfagplan,delta);
@@ -556,11 +563,11 @@ function vis_timeplan(s,bru,filter,isuser) {
     });
     $j("#velgbruker").keyup(function() {
        var idx = $j("#velgbruker option:selected").val();
-       vis_valgt_timeplan(bru[idx],filter,true,isuser);
+       vis_valgt_timeplan(bru[idx],filter,isuser,isuser);
     });
     $j("#velgbruker").change(function() {
        var idx = $j("#velgbruker option:selected").val();
-       vis_valgt_timeplan(bru[idx],filter,true,isuser);
+       vis_valgt_timeplan(bru[idx],filter,isuser,isuser);
     });
 }
 
@@ -587,7 +594,7 @@ function vis_gruppetimeplan() {
     }
     s+= "</select></div>";
     tpath = '#timeplan/group/';
-    vis_timeplan(s,bru,'gr','' );
+    vis_timeplan(s,bru,'gr',false );
 }
 
 function vis_klassetimeplan() {
@@ -602,9 +609,23 @@ function vis_klassetimeplan() {
     }
     s+= "</select></div>";
     tpath = '#timeplan/klass/';
-    vis_timeplan(s,bru,'kl','' );
+    vis_timeplan(s,bru,'kl',false );
 }
 
+function vis_romtimeplan() {
+    var bru = allrooms;
+    var ant = bru.length;
+    var s='<div id="timeviser"><h1 id="oskrift">Rom-timeplaner</h1>';
+    s+= '<div class="gui" id=\"velg\">Velg rommet du vil se timeplanen for <select id="velgbruker">';
+    s+= '<option value="0"> --velg-- </option>';
+    for (var i in bru) {
+       var e = bru[i]; 
+       s+= '<option value="'+i+'">' + e  +  "</option>";
+    }
+    s+= "</select></div>";
+    tpath = '#timeplan/room/';
+    vis_timeplan(s,bru,'ro',false );
+}
 
 function vis_elevtimeplan() {
     var s='<div id="timeviser"><h1 id="oskrift">Elev-timeplaner</h1>';
@@ -642,10 +663,11 @@ function vis_teachtimeplan() {
     vis_timeplan(s,teachers,'teach','isuser' );
 }
 
-function getcourseplan(cgr) {
+function getcourseplan(cgr,delta) {
+  delta = typeof(delta) != 'undefined' ?  +delta : 0;  // vis timeplan for en anne uke
   // We want a timetable for a course/group/room
   // just try each in turn and return first found
-  if (timetables.course[cgr]) {
+  if (timetables && timetables.course[cgr]) {
     var elever = memberlist[cgr];
     var andre = getOtherCG(elever); 
     var xplan = [];
@@ -655,7 +677,7 @@ function getcourseplan(cgr) {
     }
     return {plan:timetables.course[cgr]};
   }
-  if (timetables.group[cgr]) {
+  if (timetables && timetables.group[cgr]) {
     var elever = memberlist[cgr];
     var andre = getOtherCG(elever); 
     var xplan = [];
@@ -667,8 +689,37 @@ function getcourseplan(cgr) {
     }
     return {xplan:xplan, plan:timetables.group[cgr]};
   }
-  if (timetables.room[cgr]) return {plan:timetables.room[cgr]};
+  if (timetables.room[cgr]) {
+    return {plan:timetables.room[cgr]};
+  }
   return {plan:[]};
+}
+
+function getReservations(room,delta) {
+    var reserved = [];
+    if (reservations) {
+        for (var jd = database.startjd+delta*7; jd < database.startjd+(1+delta)*7; jd++) {
+            if (reservations[jd]) {
+                var reslist = reservations[jd];
+                for (var r in reslist) {
+                    var res = reslist[r];
+                    if (res.name == room) {
+                        var teach = teachers[res.userid];
+                        if (teach && teach.username == res.value) {
+                            res.value = teach.firstname + " " + teach.lastname;
+                        }
+                        if (!reserved[res.slot]) reserved[res.slot] = [];
+                        if (database.userinfo.isadmin || res.userid == database.userinfo.id) {
+                          reserved[res.slot][res.day] = '<div class="rcorner gradbackgreen textcenter">' + res.value + '</div>';
+                        } else {
+                          reserved[res.slot][res.day] = '<div class="rcorner gradbackgray textcenter">' + res.value + '</div>';
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return reserved;
 }
 
 
@@ -705,7 +756,7 @@ function getuserplan(uid) {
   // assume timetables is valid
   // use memgr to pick out all groups
   // build up a timetable from timetables for each group
-  if (timetables.teach[uid]) {
+  if (timetables && timetables.teach[uid]) {
     // we have a teach - just pick out timetable.
     return {plan:timetables.teach[uid]};
   } else {

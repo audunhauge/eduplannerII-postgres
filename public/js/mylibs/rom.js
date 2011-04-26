@@ -1,16 +1,17 @@
 // funksjoner for å vise romreservering
 
 
-function rom_reservering(room,delta) {
+function rom_reservering(room,delta,makeres) {
     // vis timeplan for room med reserveringer
     // delta is offset from current day
     delta = typeof(delta) != 'undefined' ?  +delta : 0;
+    makeres = typeof(makeres) != 'undefined' ?  makeres : true;
     var current = database.startjd+delta*7;
     var data = getRoomPlan(room);
     var plan = data.plan;
     var timetable = [ [],[],[],[],[],[],[] ];
     if (reservations) {
-        for (var jd = database.startjd+delta*7; jd < database.startjd+(1+delta)*7; jd++) {
+        for (var jd = current; jd < database.startjd+(1+delta)*7; jd++) {
             if (reservations[jd]) {
                 var reslist = reservations[jd];
                 for (var r in reslist) {
@@ -34,6 +35,7 @@ function rom_reservering(room,delta) {
       var timeslot = plan[i];
       var day = timeslot[0];
       var slot = timeslot[1];
+      if (day == undefined) continue;
       var course = timeslot[2];
       var teach = teachers[timeslot[5]] || {username:"NN",firstname:"N",lastname:"N"};
       var teachname = teach.firstname + " " + teach.lastname;
@@ -41,10 +43,12 @@ function rom_reservering(room,delta) {
     }
     var s = '<div class="sized1 centered gradback">'
             + '<h1 id="oskrift"></h1>'
-            + '<div id="makeres" class="sized25 textcenter centered" >'
+            + ((makeres) ?
+             ( '<div id="makeres" class="sized25 textcenter centered" >'
             +   '<label>Melding :<input id="restext" type="text" /></label>'
             +   '<div id="saveres" class="button float gui" >Reserver</div>'
-            + '</div><br>'
+            + '</div><br>' )
+            : '' )
             + '<table class="sized2 centered border1">'
             + '<caption class="retainer" ><div class="button blue" id="prv">&lt;</div>'
             + room 
@@ -53,9 +57,12 @@ function rom_reservering(room,delta) {
             + '<th>Tor</th><th>Fre</th></tr>';
     for (i= 0; i < 15; i++) {
       s += "<tr>";
-      s += "<th>"+i+"</th>";
+      s += "<th>"+(i+1)+"</th>";
       for (j=0;j<5;j++) {
         var txt = timetable[j][i] || '<label> <input type="checkbox" />free</label>';
+        if (database.freedays[current+j]) {
+          txt = '<div class="timeplanfree">'+database.freedays[current+j]+'</div>';
+        }
         s += '<td class="romres">' + txt + "</td>";
       }
       s += "</tr>";
@@ -156,7 +163,7 @@ function findfree() {
 }
 
 function crosscheck(possible,reserv,day,slot) {
-  // remove rooms from possible that arn't possible
+  // remove rooms from _possible_ that are not possible
   var reduced = [];
   outerloop:
   for (var i in possible) {
