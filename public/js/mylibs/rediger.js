@@ -442,7 +442,6 @@ function visEnValgtPlan(plandata,egne,start,stop) {
         if (testweek) {
           test = $j.map(testweek,function(e,i) {
                  return '<span class="prove">prøve ' + dager[+e.day] + "dag " + e.slots + " time</span>";
-              txt = "<span class=\"prove\">" + pro.shortname+ ' ' + pro.value + "</span>";
               }).join('<br>');
         }
         klass = (isteach && egne) ? ' class="edit_area"' : '';

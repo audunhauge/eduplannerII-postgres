@@ -22,7 +22,8 @@ function rom_reservering(room,delta,makeres) {
                             res.value = teach.firstname + " " + teach.lastname;
                         }
                         if (database.userinfo.isadmin || res.userid == database.userinfo.id) {
-                          timetable[res.day][res.slot] = '<div class="rcorner gradbackgreen textcenter">' + res.value + '</div>';
+                          timetable[res.day][res.slot] = '<div id="'+res.id
+                              +'" class="edme rcorner gradbackgreen textcenter">' + res.value + '<div class="killer">x</div></div>';
                         } else {
                           timetable[res.day][res.slot] = '<div class="rcorner gradbackgray textcenter">' + res.value + '</div>';
                         }
@@ -45,7 +46,7 @@ function rom_reservering(room,delta,makeres) {
             + '<h1 id="oskrift"></h1>'
             + ((makeres) ?
              ( '<div id="makeres" class="sized25 textcenter centered" >'
-            +   '<label>Melding :<input id="restext" type="text" /></label>'
+            +   '<label><span id="info">Melding</span> :<input id="restext" type="text" /></label>'
             +   '<div id="saveres" class="button float gui" >Reserver</div>'
             + '</div><br>' )
             : '' )
@@ -55,11 +56,15 @@ function rom_reservering(room,delta,makeres) {
             + '<div class="button blue "id="nxt">&gt;</div></caption>'
             + '<tr><th class="time">Time</th><th>Man</th><th>Tir</th><th>Ons</th>'
             + '<th>Tor</th><th>Fre</th></tr>';
-    for (i= 0; i < 15; i++) {
+    var numslots = 10;
+    if (database.roomdata.roominfo[room]) {
+      numslots = database.roomdata.roominfo[room].slots || 10;
+    }
+    for (i= 0; i < numslots; i++) {
       s += "<tr>";
       s += "<th>"+(i+1)+"</th>";
       for (j=0;j<5;j++) {
-        var txt = timetable[j][i] || '<label> <input type="checkbox" />free</label>';
+        var txt = timetable[j][i] || '<label> <input id="chk'+i+'_'+j+'" type="checkbox" />free</label>';
         if (database.freedays[current+j]) {
           txt = '<div class="timeplanfree">'+database.freedays[current+j]+'</div>';
         }
@@ -72,16 +77,51 @@ function rom_reservering(room,delta,makeres) {
     $j("#oskrift").html('Uke '+julian.week(current)+' <span title="'+current+'" class="dato">'+show_date(current)+'</span>');
     $j("#saveres").click(function(event) {
         event.preventDefault();
-        rom_reservering(room,delta);
+        var mylist = $j("input:checked");
+        var message = $j("#restext").val() || (userinfo.firstname.substr(0,4) + ' ' +userinfo.lastname.substr(0,4));
+        var idlist = $j.map(mylist,function(e,i) { return e.id; }).join(',');
+        $j("#info").html("Lagrer " + mylist.length);
+        $j.post('/makereserv',{ current:current, room:room, myid:0, idlist:idlist, message:message, kill:false },function(resp) {
+            $j.getJSON( "/reserv", 
+                 function(data) {
+                    reservations = data;
+                    rom_reservering(room,delta);
+                    if (resp.ok) {
+                      $j("#info").html("Vellykket");
+                    } else {
+                      $j("#info").html(resp.msg);
+                    }
+            });
+        });
     });
+    $j(".killer").click(function(event) {
+      event.stopPropagation()
+      var myid = $j(this).parent().attr('id');
+        $j.post('/makereserv',{ current:current, room:room, myid:myid, idlist:'0', message:"", kill:true },function(resp) {
+          $j.getJSON( "/reserv", 
+               function(data) {
+                  reservations = data;
+                  rom_reservering(room,delta);
+                  if (resp.ok) {
+                    $j("#info").html("Vellykket");
+                  } else {
+                    $j("#info").html(resp.msg);
+                  }
+          });
+        });
+      });
+
+    $j(".edme").click(function() {
+      $j("#info").html("edit "+this.id);
+      });
     $j("#nxt").click(function() {
-          if (database.startjd+7*delta < database.lastweek+7)
-            rom_reservering(room,delta+1);
-          });
+      if (database.startjd+7*delta < database.lastweek+7)
+         rom_reservering(room,delta+1);
+      });
     $j("#prv").click(function() {
-          if (database.startjd+7*delta > database.firstweek-7)
-            rom_reservering(room,delta-1);
-          });
+      if (database.startjd+7*delta > database.firstweek-7)
+         rom_reservering(room,delta-1);
+      });
 
 }
 

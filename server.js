@@ -2,7 +2,8 @@ var database = require('./database');
 var julian = require('./julian');
 var db = database.db;
 var client = database.client;
-db.starttime = '8.05 - 8.45,8.45 - 9.25,9.35 - 10.15,10.20 - 11.00,11.25 - 12.05,12.10 - 12.50,12.50 - 13.30,13.40 - 14.20,14.25 - 15.05,15.05'.split(',');
+db.roomdata = require('./static').roomdata;
+db.starttime = db.roomdata.slotlabels.split(',');
 
 
 var addons = {}
@@ -456,11 +457,25 @@ app.post('/save_test', function(req, res) {
     }
 
 });
+
 app.post('/buytickets', function(req, res) {
     // user is selling tickets
     if (req.session.user ) {
       //console.log("User selling some tickets");
       database.selltickets(req.session.user,req.body,function(msg) {
+         res.send(msg);
+      });
+    } else {
+      res.send({ok:false, msg:"bad user"});
+    }
+
+});
+
+app.post('/makereserv', function(req, res) {
+    // reserv a room
+    if (req.session.user && req.session.user.department == 'Undervisning') {
+      console.log("teacher reserving a room");
+      database.makereserv(req.session.user,req.body,function(msg) {
          res.send(msg);
       });
     } else {

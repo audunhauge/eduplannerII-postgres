@@ -460,7 +460,7 @@ function show_next4() {
               txt = "";
             }
             txt += e.days[j] || "";
-            var hd = database.heldag[thisweek+j];
+            var hd = database.heldag[i+j];
             if (hd) {
                   txt += '<ul class="hdliste">';
                   for (var f in hd) {

@@ -107,8 +107,8 @@ function gotoPage() {
   // page=timeplan/elev/eid
   // page=timeplan/teach/eid
   // page=timeplan/gruppe/gr
-  // page=timeplan/klasse/gr
-  // page=timeplan/room/gr
+  // page=timeplan/klasse/klassenavn
+  // page=timeplan/room/roomname
   // page=edit/aarsplan
   // page=edit/fridager
   if (page) {
@@ -152,19 +152,35 @@ function gotoPage() {
       case "timeplan":
         var target = element.shift();
         var usr = element.shift();
-        if (+usr == 0) {
-          usr = userinfo.id || 0;
-        }
         action = 'showpage';
-        var s="<div id=\"timeviser\"><h1>Gruppe-timeplaner</h1>";
+        //var s="<div id=\"timeviser\"><h1>Gruppe-timeplaner</h1>";
         // usr will be idnumber for teach/stud
         //     else name of group/klass/room
         switch(target) {
+            case 'group':
+            case 'klass':
+            case 'room':
+                if (timetables && timetables.teach) {
+                  var userplan = getcourseplan(usr,deltamemory);
+                  vis_timeplan_helper(userplan,usr,target,'gr',false,deltamemory);
+                } else {
+                  $j.getJSON( "/timetables", 
+                    function(data) {
+                        timetables = data;
+                        updateFagplanMenu();
+                        var userplan = getcourseplan(usr,deltamemory);
+                        vis_timeplan_helper(userplan,usr,target,'gr',false,deltamemory);
+                    });
+                }
+                break;
             case 'teach':
             case 'stud':
+                if (+usr == 0) {
+                  usr = userinfo.id || 0;
+                }
                 if (timetables && timetables.teach) {
                   var userplan = getuserplan(+usr);
-                  vis_timeplan_helper(userplan,+usr,target,'isuser',true,0);
+                  vis_timeplan_helper(userplan,+usr,target,'isuser',true,deltamemory);
                 } else {
                   $j.getJSON( "/timetables", 
                     function(data) {
@@ -174,12 +190,6 @@ function gotoPage() {
                         vis_timeplan_helper(userplan,+usr,target,'isuser',true,0);
                     });
                 }
-                break;
-            case 'group':
-                break;
-            case 'klass':
-                break;
-            case 'room':
                 break;
             default:
                 break;
@@ -571,7 +581,7 @@ $j(document).ready(function() {
          function(data) {
            database = data;
            userinfo = data.userinfo;
-           if (userinfo.uid == 0 && data.ulist) {
+           if (!page && (userinfo.uid == 0 && data.ulist)) {
                // we have multiple matches for the user
                // present a list of links for user to choose from
                var s = '<h4>Velg fra lista</h4>';

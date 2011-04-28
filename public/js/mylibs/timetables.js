@@ -274,6 +274,10 @@ function build_plantable(jd,uid,username,timeplan,xtraplan,filter) {
         members = makepop(members,userlist,username,'','');
         members = '<ul id="members" class="gui nav">' + members + '</ul>';
     }
+    var numslots = 10;
+    if (database.roomdata.roominfo[uid]) {
+      numslots = database.roomdata.roominfo[uid].slots || 10;
+    }
     var i,j;
     var s = '<table class="timeplan">';
     members = '<div class="button blue" id="prv">&lt;</div>'+members+'<div class="button blue "id="nxt">&gt;</div>';
@@ -284,7 +288,7 @@ function build_plantable(jd,uid,username,timeplan,xtraplan,filter) {
     }
     s += "</tr>";
     var cell,xcell,bad,subject;
-    for (i=0; i<10; i++) {
+    for (i=0; i<numslots; i++) {
        s+= "<tr>";
        s += "<td class=\"time\">"+start[i]+"</td>";
        for (j=0; j<5; j++) {
@@ -475,11 +479,14 @@ function intersect(a,b) {
   return inter;
 }
 
+var deltamemory = 0;   // so that we can leaf thru timeplans for chosen week
+
 
 function vis_timeplan_helper(userplan,uid,filter,isuser,visfagplan,delta) {
   // timeplanen er henta - skal bare vises
   visfagplan = typeof(visfagplan) != 'undefined' ? visfagplan : false;
   delta = typeof(delta) != 'undefined' ?  +delta : 0;  // vis timeplan for en anne uke
+  deltamemory = delta;
   var current = database.startjd + 7*delta;
   s = vistimeplan(userplan,uid,filter,isuser,delta);
   if (visfagplan) {
@@ -518,15 +525,15 @@ function vis_timeplan_helper(userplan,uid,filter,isuser,visfagplan,delta) {
 
 
 
-function vis_valgt_timeplan(user,filter,visfagplan,isuser,delta) {
+function vis_valgt_timeplan(user,filter,visfagplan,isuser) {
     // gitt en userid vil denne hente og vise en timeplan
     eier = user;
     // if user is name of klass or group then getcourseplan
-    var userplan = (user.id) ? getuserplan(user.id) : getcourseplan(user,delta) ;
+    var userplan = (user.id) ? getuserplan(user.id) : getcourseplan(user,deltamemory) ;
     // rooms need delta cause they need to show reservations
     var uid = user.id || user;
     $j.bbq.pushState(tpath+uid);
-    vis_timeplan_helper(userplan,uid,filter,isuser,visfagplan,delta);
+    vis_timeplan_helper(userplan,uid,filter,isuser,visfagplan,deltamemory);
 }
 
 
@@ -549,6 +556,7 @@ function vis_timeplan(s,bru,filter,isuser) {
     // filter is used by vistimeplan to filter members of groups
     // so that when we look at a class - then we only see class members
     // in lists for other groups
+    deltamemory = 0;
     s += setup_timeregister();
     s+= '<div id="timeplan"></div>';
     s+= "</div>";    // this div is set up in the calling function
