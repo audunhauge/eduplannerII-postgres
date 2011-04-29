@@ -148,16 +148,19 @@ function build_timetable(timeplan,plan,filter,planspan) {
      var spanend   = typeof(planspan) != 'undefined' ? '</span>' : '';
      var spa,sto;
      var i,j,pt,room,cell;
-     var clean = {};  // just coursename - no formating
+     var clean = {};      // just coursename - no formating
+     var cleanroom = {};  // just room names
      for (i=0; i< plan.length;i++) {
         spa = spanstart; sto = spanend;
         pt = plan[i];
         if (pt[2]) cell = pt[2].replace(' ','_');
-        if (!timeplan[pt[1]]) {    // ingen rad definert ennå
-            timeplan[pt[1]] = {};  // ny rad
-            clean[pt[1]] = {};  // ny rad
+        if (!timeplan[pt[1]]) {     // ingen rad definert ennå
+            timeplan[pt[1]] = {};   // ny rad
+            clean[pt[1]] = {};      // ny rad
+            cleanroom[pt[1]] = {};  // ny rad
         }
-        clean[pt[1]][pt[0]] = cell;
+        clean[pt[1]][pt[0]]     = cell;
+        cleanroom[pt[1]][pt[0]] = pt[3];
         cell = '<span tag="'+cell+'" class="goto">'+cell+'</span>';
         if (!planspan && timeplan[pt[1]][pt[0]]) continue; // only add multiple if we have planspan
         if (!timeplan[pt[1]][pt[0]]) {    // no data assigned yet
@@ -189,7 +192,7 @@ function build_timetable(timeplan,plan,filter,planspan) {
         // don't add if we already have exact same data
         timeplan[pt[1]][pt[0]] += spa + cell + sto; 
      }
-     return {timeplan:timeplan, clean:clean };
+     return {timeplan:timeplan, clean:clean, cleanroom:cleanroom};
 }
 
 
@@ -267,6 +270,24 @@ function build_plantable(jd,uid,username,timeplan,xtraplan,filter) {
       // absentDueTest[j][course] => absentlist
     var start = database.starttime;
     var members = username;
+
+    var timetable = [ [],[],[],[],[],[],[] ];
+    if (reservations) {
+        for (var jdd = jd; jdd < jd+7; jdd++) {
+            if (reservations[jdd]) {
+                var reslist = reservations[jdd];
+                for (var r in reslist) {
+                    var res = reslist[r];
+                    var teach = teachers[res.userid];
+                    if (!timetable[res.day][res.slot]) {
+                      timetable[res.day][res.slot] = {};
+                    }
+                    timetable[res.day][res.slot][res.name] = res;
+                }
+            }
+        }
+    }
+
     if (memberlist && memberlist[username]) {
         // this is a timetable for a group/class
         // show members as a list in caption (on hover)
@@ -302,8 +323,15 @@ function build_plantable(jd,uid,username,timeplan,xtraplan,filter) {
           var abslist = [];  // studs who are absent for this day-slot
           var header = 'AndreFag';
           var already = {};  // to avoid doubles
+          var room = (timeplan.cleanroom[i]) ? timeplan.cleanroom[i][j] : '';
+          if (timetable[j] && timetable[j][i] && timetable[j][i][room]) {
+            // there is a reservation for this slot
+            cell = '<span class="rombytte">'+timetable[j][i][room].value+'</span>';
+          } 
           if (timeplan.timeplan[i] && timeplan.timeplan[i][j]) {
-             cell = timeplan.timeplan[i][j];
+            cell = (cell == '&nbsp;') ? timeplan.timeplan[i][j] : cell + timeplan.timeplan[i][j] ;
+          }
+          if (timeplan.timeplan[i] && timeplan.timeplan[i][j]) {
              if (isadmin && filter == 'teach') cell = '<div id="'+uid+'_'+j+"_"+i+'" class="edit">' + cell + '</div>';
              if (filter == 'RAD') {
                 if (cell.substr(0,4) != 'RADG') {

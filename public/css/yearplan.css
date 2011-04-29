@@ -69,7 +69,7 @@ li.addhd {
   -moz-box-shadow: 3px 3px 2px rgba(0, 0, 0, .4);
 }
 
-.edme:hover > div.killer {
+.resme:hover > div.killer {
   /* reserved slots in room-reservation 
    * on hover we want to show delete button */
   opacity:1;
@@ -77,12 +77,13 @@ li.addhd {
 }
 
 div.killer {
-  display:inline;
+  display:block;
+  float:right;
   opacity:0;
   color:white;
-  margin-left:8px;
+  margin-right:8px;
   height:12px;
-  padding:0 5px 1px 4px;
+  padding:0 5px 5px 4px;
   border:solid #400 1px;
   background:red;
   border-radius: 10px;
@@ -994,6 +995,7 @@ td {  border: 1px solid black; }
 h1,h4 { text-align:center; color:blue; }
 
 span.rombytte {
+  white-space:nowrap;
   color:white;
   background:#0c0;
   border:solid #040 1px;

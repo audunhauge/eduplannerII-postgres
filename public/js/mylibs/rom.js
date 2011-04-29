@@ -23,7 +23,7 @@ function rom_reservering(room,delta,makeres) {
                         }
                         if (database.userinfo.isadmin || res.userid == database.userinfo.id) {
                           timetable[res.day][res.slot] = '<div id="'+res.id
-                              +'" class="edme rcorner gradbackgreen textcenter">' + res.value + '<div class="killer">x</div></div>';
+                              +'" class="resme rcorner gradbackgreen textcenter"><span class="edme">' + res.value + '</span><div class="killer">x</div></div>';
                         } else {
                           timetable[res.day][res.slot] = '<div class="rcorner gradbackgray textcenter">' + res.value + '</div>';
                         }
@@ -40,7 +40,11 @@ function rom_reservering(room,delta,makeres) {
       var course = timeslot[2];
       var teach = teachers[timeslot[5]] || {username:"NN",firstname:"N",lastname:"N"};
       var teachname = teach.firstname + " " + teach.lastname;
-      timetable[day][slot] = course + ' <span title="'+teachname+'">' + teach.firstname.substr(0,4) + teach.lastname.substr(0,4) + '</span>';
+      if (!timetable[day][slot]) {
+        // reservations have precedence over timetable data
+        // because a reservation may be set by a full day test/exam
+        timetable[day][slot] = course + ' <span title="'+teachname+'">' + teach.firstname.substr(0,4) + teach.lastname.substr(0,4) + '</span>';
+      }
     }
     var s = '<div class="sized1 centered gradback">'
             + '<h1 id="oskrift"></h1>'
@@ -81,7 +85,7 @@ function rom_reservering(room,delta,makeres) {
         var message = $j("#restext").val() || (userinfo.firstname.substr(0,4) + ' ' +userinfo.lastname.substr(0,4));
         var idlist = $j.map(mylist,function(e,i) { return e.id; }).join(',');
         $j("#info").html("Lagrer " + mylist.length);
-        $j.post('/makereserv',{ current:current, room:room, myid:0, idlist:idlist, message:message, kill:false },function(resp) {
+        $j.post('/makereserv',{ current:current, room:room, myid:0, idlist:idlist, message:message, action:"insert" },function(resp) {
             $j.getJSON( "/reserv", 
                  function(data) {
                     reservations = data;
@@ -97,7 +101,7 @@ function rom_reservering(room,delta,makeres) {
     $j(".killer").click(function(event) {
       event.stopPropagation()
       var myid = $j(this).parent().attr('id');
-        $j.post('/makereserv',{ current:current, room:room, myid:myid, idlist:'0', message:"", kill:true },function(resp) {
+        $j.post('/makereserv',{ current:current, room:room, myid:myid, idlist:'0', message:"", action:"kill" },function(resp) {
           $j.getJSON( "/reserv", 
                function(data) {
                   reservations = data;
@@ -110,10 +114,29 @@ function rom_reservering(room,delta,makeres) {
           });
         });
       });
-
-    $j(".edme").click(function() {
-      $j("#info").html("edit "+this.id);
-      });
+    $j('.edme').editable(
+         function (value,settings) {
+            //var myid = this.id;
+            var myid = $j(this).parent().attr('id');
+            $j.post('/makereserv',{ current:current, room:room, myid:myid, idlist:'0', message:value, action:"update" },function(resp) {
+              $j.getJSON( "/reserv", 
+                   function(data) {
+                      reservations = data;
+                      rom_reservering(room,delta);
+                      if (resp.ok) {
+                        $j("#info").html("Vellykket");
+                      } else {
+                        $j("#info").html(resp.msg);
+                      }
+              });
+            });
+            return value;
+        },
+        {
+      indicator : 'Saving...',
+      tooltip   : 'Click to edit...',
+      submit    : 'OK'
+    });
     $j("#nxt").click(function() {
       if (database.startjd+7*delta < database.lastweek+7)
          rom_reservering(room,delta+1);
@@ -122,7 +145,12 @@ function rom_reservering(room,delta,makeres) {
       if (database.startjd+7*delta > database.firstweek-7)
          rom_reservering(room,delta-1);
       });
+    setTimeout('noMessage()',1500);
 
+}
+
+function noMessage() {
+  $j("#info").html("Melding");
 }
 
 
@@ -137,9 +165,11 @@ function getRoomPlan(room) {
 var possible = [];  // list of all possible rooms given constraints
 var checkdlist = {};  // these are slots that are checked
 
-function findfree() {
+function findfree(delta) {
     // search for a free room
     // user checks of slots and is shown a list of rooms that are free
+    delta = typeof(delta) != 'undefined' ?  +delta : 0;
+    var current = database.startjd+delta*7;
     if (!timetables.room) return;
 
     checkdlist = {};  // these are slots that are checked
@@ -153,7 +183,7 @@ function findfree() {
     var timetable = [ [],[],[],[],[],[],[] ];
     var reservtable = [];
     if (reservations) {
-        for (var jd = database.startjd; jd < database.startjd+7; jd++) {
+        for (var jd = current; jd < current+7; jd++) {
             if (reservations[jd]) {
                 var reslist = reservations[jd];
                 reservtable.push(reslist);
@@ -161,13 +191,16 @@ function findfree() {
         }
     }
     var s = '<div class="sized1 centered gradback">'
+            + '<h1 id="oskrift"></h1>'
             + '<table class="sized2 centered border1">'
-            + '<caption>Ledig rom</caption>'
+            //+ '<caption>Ledig rom</caption>'
+            + '<caption class="retainer" ><div class="button blue" id="prv">&lt;</div>Ledig rom'
+            + '<div class="button blue "id="nxt">&gt;</div></caption>'
             + '<tr><th class="time">Time</th><th>Man</th><th>Tir</th><th>Ons</th>'
             + '<th>Tor</th><th>Fre</th></tr>';
     for (i= 0; i < 15; i++) {
       s += "<tr>";
-      s += "<th>"+i+"</th>";
+      s += "<th>"+(i+1)+"</th>";
       for (j=0;j<5;j++) {
         var idd = "" + j + "-" + i;
         var txt = '<label> <input class="free" id="' + idd + '" type="checkbox" />free</label>';
@@ -178,7 +211,16 @@ function findfree() {
     s += "</table></div>";
     s += '<p /><div id="posslist" class="gradback centered sized2 textcenter"></div>';
     $j("#main").html(s);
+    $j("#oskrift").html('Uke '+julian.week(current)+' <span title="'+current+'" class="dato">'+show_date(current)+'</span>');
     showposs(possible);
+    $j("#nxt").click(function() {
+      if (database.startjd+7*delta < database.lastweek+7)
+         findfree(delta+1);
+      });
+    $j("#prv").click(function() {
+      if (database.startjd+7*delta > database.firstweek-7)
+         findfree(delta-1);
+      });
     $j(".free").click( function() {
           var myid = $j(this).attr("id");
           if ($j(this).attr("checked")) {
@@ -229,9 +271,19 @@ function crosscheck(possible,reserv,day,slot) {
 
 function showposs(possible) {
   var s = '';   
+  for (var i in linktilrom) {
+      var r = linktilrom[i];
+      if ($j.inArray(r,possible) >= 0) {
+           s += '<span class="rlinks" id="' + r + '">' + r + '</span> ';
+      } else {
+           s += '<span class="redfont rlinks" id="' + r + '">' + r + '</span> ';
+      }
+  }
+      /*
   for (var rid in possible) {
     s += '<span class="rlinks" id="' + possible[rid] + '">' + possible[rid] + '</span> ';
   }
+  */
   $j("#posslist").html(s);
   $j(".rlinks").click( function () {
           var myid = $j(this).attr("id");
