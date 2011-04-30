@@ -148,16 +148,19 @@ function build_timetable(timeplan,plan,filter,planspan) {
      var spanend   = typeof(planspan) != 'undefined' ? '</span>' : '';
      var spa,sto;
      var i,j,pt,room,cell;
-     var clean = {};  // just coursename - no formating
+     var clean = {};      // just coursename - no formating
+     var cleanroom = {};  // just room names
      for (i=0; i< plan.length;i++) {
         spa = spanstart; sto = spanend;
         pt = plan[i];
         if (pt[2]) cell = pt[2].replace(' ','_');
-        if (!timeplan[pt[1]]) {    // ingen rad definert ennå
-            timeplan[pt[1]] = {};  // ny rad
-            clean[pt[1]] = {};  // ny rad
+        if (!timeplan[pt[1]]) {     // ingen rad definert ennå
+            timeplan[pt[1]] = {};   // ny rad
+            clean[pt[1]] = {};      // ny rad
+            cleanroom[pt[1]] = {};  // ny rad
         }
-        clean[pt[1]][pt[0]] = cell;
+        clean[pt[1]][pt[0]]     = cell;
+        cleanroom[pt[1]][pt[0]] = pt[3];
         cell = '<span tag="'+cell+'" class="goto">'+cell+'</span>';
         if (!planspan && timeplan[pt[1]][pt[0]]) continue; // only add multiple if we have planspan
         if (!timeplan[pt[1]][pt[0]]) {    // no data assigned yet
@@ -189,7 +192,7 @@ function build_timetable(timeplan,plan,filter,planspan) {
         // don't add if we already have exact same data
         timeplan[pt[1]][pt[0]] += spa + cell + sto; 
      }
-     return {timeplan:timeplan, clean:clean };
+     return {timeplan:timeplan, clean:clean, cleanroom:cleanroom};
 }
 
 
@@ -267,12 +270,34 @@ function build_plantable(jd,uid,username,timeplan,xtraplan,filter) {
       // absentDueTest[j][course] => absentlist
     var start = database.starttime;
     var members = username;
+
+    var timetable = [ [],[],[],[],[],[],[] ];
+    if (reservations) {
+        for (var jdd = jd; jdd < jd+7; jdd++) {
+            if (reservations[jdd]) {
+                var reslist = reservations[jdd];
+                for (var r in reslist) {
+                    var res = reslist[r];
+                    var teach = teachers[res.userid];
+                    if (!timetable[res.day][res.slot]) {
+                      timetable[res.day][res.slot] = {};
+                    }
+                    timetable[res.day][res.slot][res.name] = res;
+                }
+            }
+        }
+    }
+
     if (memberlist && memberlist[username]) {
         // this is a timetable for a group/class
         // show members as a list in caption (on hover)
         var userlist = memberlist[username];
         members = makepop(members,userlist,username,'','');
         members = '<ul id="members" class="gui nav">' + members + '</ul>';
+    }
+    var numslots = 10;
+    if (database.roomdata.roominfo[uid]) {
+      numslots = database.roomdata.roominfo[uid].slots || 10;
     }
     var i,j;
     var s = '<table class="timeplan">';
@@ -284,7 +309,7 @@ function build_plantable(jd,uid,username,timeplan,xtraplan,filter) {
     }
     s += "</tr>";
     var cell,xcell,bad,subject;
-    for (i=0; i<10; i++) {
+    for (i=0; i<numslots; i++) {
        s+= "<tr>";
        s += "<td class=\"time\">"+start[i]+"</td>";
        for (j=0; j<5; j++) {
@@ -298,8 +323,15 @@ function build_plantable(jd,uid,username,timeplan,xtraplan,filter) {
           var abslist = [];  // studs who are absent for this day-slot
           var header = 'AndreFag';
           var already = {};  // to avoid doubles
+          var room = (timeplan.cleanroom[i]) ? timeplan.cleanroom[i][j] : '';
+          if (timetable[j] && timetable[j][i] && timetable[j][i][room]) {
+            // there is a reservation for this slot
+            cell = '<span class="rombytte">'+timetable[j][i][room].value+'</span>';
+          } 
           if (timeplan.timeplan[i] && timeplan.timeplan[i][j]) {
-             cell = timeplan.timeplan[i][j];
+            cell = (cell == '&nbsp;') ? timeplan.timeplan[i][j] : cell + timeplan.timeplan[i][j] ;
+          }
+          if (timeplan.timeplan[i] && timeplan.timeplan[i][j]) {
              if (isadmin && filter == 'teach') cell = '<div id="'+uid+'_'+j+"_"+i+'" class="edit">' + cell + '</div>';
              if (filter == 'RAD') {
                 if (cell.substr(0,4) != 'RADG') {
@@ -327,6 +359,9 @@ function build_plantable(jd,uid,username,timeplan,xtraplan,filter) {
                 xcell = '<ul class="nav'+bad+'"><li><a href="#">'+header+'</a><ul>' 
                        + xcell
                        + '</ul></li></ul>';
+             } else {
+               xcell = xp;
+               cell = '';
              }
           }
           if (absentDueTest[j] && absentDueTest[j][subject] && absentDueTest[j][subject].length > 0) {
@@ -406,6 +441,10 @@ function vistimeplan(data,uid,filter,isuser,delta) {
   delta = typeof(delta) != 'undefined' ?  +delta : 0;  // vis timeplan for en anne uke
   // viser timeplan med gitt datasett
   var plan = data.plan;
+  var timeplan = {};
+  var xtraplan = {};
+  var i,j;
+  var cell,userlist,gruppe,popup,user,username;
   if (!plan) return 'Ingen timeplan';
   var jd = database.startjd + 7*delta;
   plan.prover = add_tests(uid,jd);
@@ -415,12 +454,11 @@ function vistimeplan(data,uid,filter,isuser,delta) {
     var andre = getOtherCG(elever); 
     plan.prover = grouptest(plan.prover, andre.gru, jd);
   }
-  // TODO change from startjd to parameter set by user
+  if (isuser != 'isuser' && timetables.room[uid]) {
+    // this is a room
+    xtraplan = getReservations(uid,delta);
+  }
   valgtPlan = plan;        // husk denne slik at vi kan lagre i timeregister
-  var timeplan = {};
-  var xtraplan = {};
-  var i,j;
-  var cell,userlist,gruppe,popup,user,username;
   if (filter == 'gr' || filter == 'fg') { 
     user = {firstname:uid,lastname:''};
   } else {
@@ -469,11 +507,14 @@ function intersect(a,b) {
   return inter;
 }
 
+var deltamemory = 0;   // so that we can leaf thru timeplans for chosen week
+
 
 function vis_timeplan_helper(userplan,uid,filter,isuser,visfagplan,delta) {
   // timeplanen er henta - skal bare vises
-  visfagplan = typeof(visfagplan) != 'undefined' ? true : false;
+  visfagplan = typeof(visfagplan) != 'undefined' ? visfagplan : false;
   delta = typeof(delta) != 'undefined' ?  +delta : 0;  // vis timeplan for en anne uke
+  deltamemory = delta;
   var current = database.startjd + 7*delta;
   s = vistimeplan(userplan,uid,filter,isuser,delta);
   if (visfagplan) {
@@ -512,14 +553,15 @@ function vis_timeplan_helper(userplan,uid,filter,isuser,visfagplan,delta) {
 
 
 
-function vis_valgt_timeplan(user,filter,visfagplan,isuser,delta) {
+function vis_valgt_timeplan(user,filter,visfagplan,isuser) {
     // gitt en userid vil denne hente og vise en timeplan
     eier = user;
     // if user is name of klass or group then getcourseplan
-    var userplan = (user.id) ? getuserplan(user.id) : getcourseplan(user) ;
+    var userplan = (user.id) ? getuserplan(user.id) : getcourseplan(user,deltamemory) ;
+    // rooms need delta cause they need to show reservations
     var uid = user.id || user;
     $j.bbq.pushState(tpath+uid);
-    vis_timeplan_helper(userplan,uid,filter,isuser,visfagplan,delta);
+    vis_timeplan_helper(userplan,uid,filter,isuser,visfagplan,deltamemory);
 }
 
 
@@ -542,6 +584,7 @@ function vis_timeplan(s,bru,filter,isuser) {
     // filter is used by vistimeplan to filter members of groups
     // so that when we look at a class - then we only see class members
     // in lists for other groups
+    deltamemory = 0;
     s += setup_timeregister();
     s+= '<div id="timeplan"></div>';
     s+= "</div>";    // this div is set up in the calling function
@@ -556,11 +599,11 @@ function vis_timeplan(s,bru,filter,isuser) {
     });
     $j("#velgbruker").keyup(function() {
        var idx = $j("#velgbruker option:selected").val();
-       vis_valgt_timeplan(bru[idx],filter,true,isuser);
+       vis_valgt_timeplan(bru[idx],filter,isuser,isuser);
     });
     $j("#velgbruker").change(function() {
        var idx = $j("#velgbruker option:selected").val();
-       vis_valgt_timeplan(bru[idx],filter,true,isuser);
+       vis_valgt_timeplan(bru[idx],filter,isuser,isuser);
     });
 }
 
@@ -587,7 +630,7 @@ function vis_gruppetimeplan() {
     }
     s+= "</select></div>";
     tpath = '#timeplan/group/';
-    vis_timeplan(s,bru,'gr','' );
+    vis_timeplan(s,bru,'gr',false );
 }
 
 function vis_klassetimeplan() {
@@ -602,9 +645,23 @@ function vis_klassetimeplan() {
     }
     s+= "</select></div>";
     tpath = '#timeplan/klass/';
-    vis_timeplan(s,bru,'kl','' );
+    vis_timeplan(s,bru,'kl',false );
 }
 
+function vis_romtimeplan() {
+    var bru = allrooms;
+    var ant = bru.length;
+    var s='<div id="timeviser"><h1 id="oskrift">Rom-timeplaner</h1>';
+    s+= '<div class="gui" id=\"velg\">Velg rommet du vil se timeplanen for <select id="velgbruker">';
+    s+= '<option value="0"> --velg-- </option>';
+    for (var i in bru) {
+       var e = bru[i]; 
+       s+= '<option value="'+i+'">' + e  +  "</option>";
+    }
+    s+= "</select></div>";
+    tpath = '#timeplan/room/';
+    vis_timeplan(s,bru,'ro',false );
+}
 
 function vis_elevtimeplan() {
     var s='<div id="timeviser"><h1 id="oskrift">Elev-timeplaner</h1>';
@@ -642,10 +699,11 @@ function vis_teachtimeplan() {
     vis_timeplan(s,teachers,'teach','isuser' );
 }
 
-function getcourseplan(cgr) {
+function getcourseplan(cgr,delta) {
+  delta = typeof(delta) != 'undefined' ?  +delta : 0;  // vis timeplan for en anne uke
   // We want a timetable for a course/group/room
   // just try each in turn and return first found
-  if (timetables.course[cgr]) {
+  if (timetables && timetables.course[cgr]) {
     var elever = memberlist[cgr];
     var andre = getOtherCG(elever); 
     var xplan = [];
@@ -655,7 +713,7 @@ function getcourseplan(cgr) {
     }
     return {plan:timetables.course[cgr]};
   }
-  if (timetables.group[cgr]) {
+  if (timetables && timetables.group[cgr]) {
     var elever = memberlist[cgr];
     var andre = getOtherCG(elever); 
     var xplan = [];
@@ -667,8 +725,37 @@ function getcourseplan(cgr) {
     }
     return {xplan:xplan, plan:timetables.group[cgr]};
   }
-  if (timetables.room[cgr]) return {plan:timetables.room[cgr]};
+  if (timetables.room[cgr]) {
+    return {plan:timetables.room[cgr]};
+  }
   return {plan:[]};
+}
+
+function getReservations(room,delta) {
+    var reserved = [];
+    if (reservations) {
+        for (var jd = database.startjd+delta*7; jd < database.startjd+(1+delta)*7; jd++) {
+            if (reservations[jd]) {
+                var reslist = reservations[jd];
+                for (var r in reslist) {
+                    var res = reslist[r];
+                    if (res.name == room) {
+                        var teach = teachers[res.userid];
+                        if (teach && teach.username == res.value) {
+                            res.value = teach.firstname + " " + teach.lastname;
+                        }
+                        if (!reserved[res.slot]) reserved[res.slot] = [];
+                        if (database.userinfo.isadmin || res.userid == database.userinfo.id) {
+                          reserved[res.slot][res.day] = '<div class="rcorner gradbackgreen textcenter">' + res.value + '</div>';
+                        } else {
+                          reserved[res.slot][res.day] = '<div class="rcorner gradbackgray textcenter">' + res.value + '</div>';
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return reserved;
 }
 
 
@@ -705,7 +792,7 @@ function getuserplan(uid) {
   // assume timetables is valid
   // use memgr to pick out all groups
   // build up a timetable from timetables for each group
-  if (timetables.teach[uid]) {
+  if (timetables && timetables.teach[uid]) {
     // we have a teach - just pick out timetable.
     return {plan:timetables.teach[uid]};
   } else {

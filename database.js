@@ -46,6 +46,17 @@ db.startdate = julian.jdtogregorian(db.startjd);
 db.enddate = julian.jdtogregorian(db.startjd+6);
 db.week = julian.week(db.startjd);
 
+// utility function (fill inn error and do callback)
+function sqlrunner(sql,params,callback) {
+  client.query( sql, params,
+      function (err, results, fields) {
+          if (err) {
+              callback( { ok:false, msg:err.message } );
+              return;
+          }
+          callback( {ok:true, msg:"inserted"} );
+      });
+}
 
 client.connect(function(err, results) {
     if (err) {
@@ -454,12 +465,6 @@ var saveTest = function(user,query,callback) {
 
 var savehd = function(user,query,callback) {
     console.log(query,user.id);
-    /*
-    $sql = "delete from mdl_bookings_calendar where julday=$jd and eventtype='heldag' and name = '$fag'";
-    $rs = execute_sql($sql,false);
-    $sql = "insert into mdl_bookings_calendar (julday,name,value,courseid,userid,eventtype) "
-            . "values ($jd,'$fag','$value',3745,654,'heldag')";
-    */
     var jd = query.myid;
     var val = query.value;
     var fag = query.fag;
@@ -487,9 +492,22 @@ var savehd = function(user,query,callback) {
        callback( {ok:true, msg:"deleted"} );
        return;
     }
+    var itemid = 0;
+    // see if we have a room name in the text
+    // if there is one, then get the itemid for this room
+    // and set the value for itemid
+    var elm = val.split(/[ ,]/);
+    for (var i in elm) {
+      var ee = elm[i].toUpperCase();
+      if ( db.roomids[ee] ) {
+        // we have found a valid room-name
+        itemid = db.roomids[ee];
+        break;
+      }
+    }
     client.query(
-        'insert into mdl_bookings_calendar (julday,name,value,courseid,userid,eventtype)'
-        + ' values (?,?,?,3745,2,"heldag")' , [jd,fag,val],
+        'insert into mdl_bookings_calendar (julday,name,value,itemid,courseid,userid,eventtype)'
+        + ' values (?,?,?,?,3745,2,"heldag")' , [jd,fag,val,itemid],
         function (err, results, fields) {
             if (err) {
                 callback( { ok:false, msg:err.message } );
@@ -619,11 +637,53 @@ var getBlocks = function(callback) {
       });
 }
 
+var makereserv = function(user,query,callback) {
+    console.log(query);
+    var current = +query.current;
+    var idlist  = query.idlist.split(',');
+    var myid    = +query.myid;
+    var room    = query.room;
+    var message = query.message;
+    var action  = query.action;
+    var values  = [];
+    var itemid = +db.roomids[room];
+    switch(action) {
+      case 'kill':
+        //console.log("delete where id="+myid+" and uid="+user.id);
+        sqlrunner('delete from mdl_bookings_calendar where eventtype="reservation" and id=? and userid=? ',[myid,user.id],callback);
+        break;
+      case 'update':
+        console.log( 'update mdl_bookings_calendar set value = '+message+'where id='+myid+' and ('+user.isadmin+' or userid='+user.id+')' );
+        sqlrunner( 'update mdl_bookings_calendar set value = ? where eventtype="reservation" and id=? and (? or userid=?) ',
+             [message,myid,user.isadmin,user.id],callback);
+        break;
+      case 'insert':
+        for (var i in idlist) {
+            var elm = idlist[i].substr(3).split('_');
+            var day = +elm[1];
+            var slot = +elm[0];
+            values.push('("reservation",3745,'+user.id+','+(current+day)+','+day+','+slot+','+itemid+',"'+room+'","'+message+'")' );
+        }
+        var valuelist = values.join(',');
+        console.log( 'insert into mdl_bookings_calendar (eventtype,courseid,userid,julday,day,slot,itemid,name,value) values ' + values);
+        client.query(
+          'insert into mdl_bookings_calendar (eventtype,courseid,userid,julday,day,slot,itemid,name,value) values ' + values,
+          function (err, results, fields) {
+              if (err) {
+                  callback( { ok:false, msg:err.message } );
+                  return;
+              }
+              callback( {ok:true, msg:"inserted"} );
+          });
+        break;
+    }
+}
+
 var getReservations = function(callback) {
   // returns a hash of all reservations 
   client.query(
-      'select userid,day,slot,itemid,name,value,julday from mdl_bookings_calendar cal '
-       + '      WHERE eventtype = "reservation" and julday >= ' + db.startjd ,
+      'select id,userid,day,slot,itemid,name,value,julday,eventtype from mdl_bookings_calendar cal '
+       + '      WHERE itemid > 0 and eventtype in ("heldag", "reservation") and julday >= ' + db.startjd ,
       function (err, results, fields) {
           if (err) {
               console.log("ERROR: " + err.message);
@@ -637,10 +697,21 @@ var getReservations = function(callback) {
               if (!reservations[julday]) {
                 reservations[julday] = [];
               }
-              reservations[julday].push(res);
+              if (res.eventtype == 'heldag') {
+                res.day = julday % 7;
+                var roomname = db.roomnames[res.itemid];
+                var repl = new RegExp(",? *"+roomname);
+                var vvalue = (res.name+' '+res.value).replace(repl,'');
+                for (var j=0;j<9;j++) {
+                  res.slot = j;
+                  reservations[julday].push({id: res.id, userid: res.userid, day: res.day, 
+                                 slot: j, itemid: res.itemid, name:roomname , value:vvalue, eventtype:'hd' });
+                }
+              } else {
+                reservations[julday].push(res);
+              }
           }
           callback(reservations);
-          //console.log(reservations);
       });
 }
 
@@ -743,7 +814,7 @@ var getTimetables = function(callback) {
   // assumes you give it a callback that assigns the hash
   client.query(
       'select userid,cal.day,cal.slot,r.name as room,cal.name from mdl_bookings_calendar cal inner join mdl_bookings_item r '
-       +     ' on cal.itemid = r. id where eventtype = "timetable" order by cal.name,day,slot',
+       +     ' on cal.itemid = r. id where eventtype = "timetable" and julday = ? order by cal.name,day,slot', [ db.firstweek ],
       function (err, results, fields) {
           if (err) {
               console.log("ERROR: " + err.message);
@@ -973,6 +1044,24 @@ var getexams = function(callback) {
       });
 }
 
+var getroomids = function() {
+  client.query(
+      'select id,name from mdl_bookings_item where type="room"',
+      function (err, results, fields) {
+          if (err) {
+              console.log("ERROR: " + err.message);
+              throw err;
+          }
+          db.roomids   = {};
+          db.roomnames = {};
+          for (var i=0,k= results.length; i < k; i++) {
+              var room = results[i];
+              db.roomids[""+room.name] = ""+room.id;
+              db.roomnames[room.id] = room.name;
+          }
+      });
+}
+
 var getBasicData = function(client) {
   // get some basic data from mysql
   // we want list of all users, list of all courses
@@ -984,6 +1073,7 @@ var getBasicData = function(client) {
   getfreedays();
   getyearplan();
   getexams();
+  getroomids();
 };
 
 
@@ -996,6 +1086,7 @@ module.exports.getfreedays = getfreedays;
 module.exports.getyearplan = getyearplan;
 module.exports.getexams = getexams;
 module.exports.getReservations = getReservations;
+module.exports.makereserv = makereserv;
 module.exports.getTimetables = getTimetables;
 module.exports.getCoursePlans = getCoursePlans;
 module.exports.updateCoursePlan  = updateCoursePlan;

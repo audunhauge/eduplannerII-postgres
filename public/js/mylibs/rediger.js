@@ -442,7 +442,6 @@ function visEnValgtPlan(plandata,egne,start,stop) {
         if (testweek) {
           test = $j.map(testweek,function(e,i) {
                  return '<span class="prove">prøve ' + dager[+e.day] + "dag " + e.slots + " time</span>";
-              txt = "<span class=\"prove\">" + pro.shortname+ ' ' + pro.value + "</span>";
               }).join('<br>');
         }
         klass = (isteach && egne) ? ' class="edit_area"' : '';
@@ -577,9 +576,9 @@ function check_heldag(value,settings) {
           database.heldag[jd] = {};
         }
         database.heldag[jd][fagnavn] = beskrivelse;
-        console.log("added "+jd+" "+fagnavn);
-        console.log(database.heldag);
-        console.log(database.heldag[jd]);
+        //console.log("added "+jd+" "+fagnavn);
+        //console.log(database.heldag);
+        //console.log(database.heldag[jd]);
         $j.post( "/savehd", { "fag":fagnavn, "myid":jd, "value":beskrivelse },
             function(data) {
                 if (data.ok) {
@@ -594,11 +593,11 @@ function check_heldag(value,settings) {
           var pid = $j("#"+this.id).attr("id");
           var jd  = pid.split('_')[0].substr(2);
           var fag = pid.split('_')[1];
-          console.log(database.heldag);
-          console.log(database.heldag[jd]);
+          //console.log(database.heldag);
+          //console.log(database.heldag[jd]);
           delete database.heldag[jd][fag];
-          console.log(database.heldag[jd]);
-          console.log(database.heldag);
+          //console.log(database.heldag[jd]);
+          //console.log(database.heldag);
           $j.post( "/savehd", { "pid":pid, "kill":true, "fag":"", "myid":jd, "value":value },
               function(data) {
                   if (data.ok) {

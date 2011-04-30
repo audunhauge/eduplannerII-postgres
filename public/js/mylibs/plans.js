@@ -196,7 +196,7 @@ function show_prover() {
 function getUserSubj(uid) {
   // finner alle prøver for en bruker
   var minefaggrupper = {};
-  if (timetables.teach[uid]) {
+  if (timetables && timetables.teach[uid]) {
     // we have a teach 
     // a teach dosn't have all the tests for a given group
     // a group may be connected to different subjects.
@@ -351,7 +351,7 @@ function show_all(thisweek,options) {
 
 function getfagliste(uid) {
     var minefag = [];
-    if (timetables.teach[uid]) {
+    if (timetables && timetables.teach[uid]) {
       // we have a teach 
       isteach = true;
       minefag = database.teachcourse[uid];
@@ -460,7 +460,7 @@ function show_next4() {
               txt = "";
             }
             txt += e.days[j] || "";
-            var hd = database.heldag[thisweek+j];
+            var hd = database.heldag[i+j];
             if (hd) {
                   txt += '<ul class="hdliste">';
                   for (var f in hd) {
