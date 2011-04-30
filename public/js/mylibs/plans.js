@@ -12,7 +12,7 @@ function synopsis(coursename,plandata,tests) {
   var elever = memberlist[gru];
   var andre = getOtherCG(elever);
   //var events = database.aarsplan;
-  var myttimer = (timetables.course) ? timetables.course[coursename] : [];
+  var myttimer = (timetables && timetables.course) ? timetables.course[coursename] : [];
   var jd = database.firstweek;
   var mytt = {};
   if (myttimer) {

@@ -344,7 +344,7 @@ function visEnValgtPlan(plandata,egne,start,stop) {
     var timmy = {};
     var tidy = {};
     // build timetable data for quick reference
-    if (timetables.course) {
+    if (timetables && timetables.course) {
       for (var tt in timetables.course[minfagplan] ) {
         var tty = timetables.course[minfagplan][tt];
         if (!timmy[tty[0]]) {
