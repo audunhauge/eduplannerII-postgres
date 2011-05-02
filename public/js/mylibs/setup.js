@@ -345,12 +345,10 @@ function setup_teach() {
                 event.preventDefault();
                 edit_excursion(userinfo.id);
             });
-            /*
-            $j("#edheldag").click(function(event) {
+            $j("#edblokk").click(function(event) {
                 event.preventDefault();
-                edit_heldag();
+                edit_blokk(database.firstweek,database.lastweek);
             });
-            */
          });
 }
 

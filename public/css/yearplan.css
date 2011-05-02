@@ -53,9 +53,18 @@ ul.prliste {
   font-size:0.9em;
 }
 
+.cattblock {
+  font-size:1em;
+  color:white;
+  background:red;
+  padding:3px;
+  width:120px;
+  margin:2px;
+}
 
 
-li.addhd {
+
+.addhd {
   display:block;
   width:12px;
   height:12px;

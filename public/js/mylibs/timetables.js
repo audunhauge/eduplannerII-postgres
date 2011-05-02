@@ -745,7 +745,9 @@ function getReservations(room,delta) {
                             res.value = teach.firstname + " " + teach.lastname;
                         }
                         if (!reserved[res.slot]) reserved[res.slot] = [];
-                        if (database.userinfo.isadmin || res.userid == database.userinfo.id) {
+                        if (res.eventtype == 'hd') {
+                          reserved[res.slot][res.day] = '<div class="rcorner gradbackred textcenter">' + res.value + '</div>';
+                        } else if (database.userinfo.isadmin || res.userid == database.userinfo.id) {
                           reserved[res.slot][res.day] = '<div class="rcorner gradbackgreen textcenter">' + res.value + '</div>';
                         } else {
                           reserved[res.slot][res.day] = '<div class="rcorner gradbackgray textcenter">' + res.value + '</div>';

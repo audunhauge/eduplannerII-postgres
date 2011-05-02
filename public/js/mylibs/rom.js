@@ -19,9 +19,11 @@ function rom_reservering(room,delta,makeres) {
                     if (res.name == room) {
                         var teach = teachers[res.userid];
                         if (teach && teach.username == res.value) {
-                            res.value = teach.firstname + " " + teach.lastname;
+                            res.value = teach.firstname.substr(0,6) + teach.lastname.substr(0,6);
                         }
-                        if (database.userinfo.isadmin || res.userid == database.userinfo.id) {
+                        if (res.eventtype == 'hd') {
+                          timetable[res.day][res.slot] = '<div class="rcorner gradbackred textcenter">' + res.value + '</div>';
+                        } else if (database.userinfo.isadmin || res.userid == database.userinfo.id) {
                           timetable[res.day][res.slot] = '<div id="'+res.id
                               +'" class="resme rcorner gradbackgreen textcenter"><span class="edme">' + res.value + '</span><div class="killer">x</div></div>';
                         } else {

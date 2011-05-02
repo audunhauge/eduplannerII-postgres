@@ -470,6 +470,143 @@ function short_sweet_name(stuid) {
          + students[stuid].lastname.substring(0,15)+ '&nbsp;' + students[stuid].department;
 }
 
+function edit_blokk(start,stop) {
+  // edit blokks for tests
+  // some courses may be attached to a block
+  // these will have names like 3inf5_3201
+  // the prefix 3201 says this belongs to blokk 32
+    var iddx = 0;
+    var events = database.yearplan;
+    var s="<h1>Rediger Blokkskjema</h1>";
+    s += '<div class="centered sized1"><div id="editmsg"> '
+          + 'Klikk på grønn sirkel for å legge til ny blokk. Klikk deretter på changeme og skriv blokk-kode + tekst.'
+                + 'Klikk på eksisterende blokk for å redigere/slette.'
+                + 'Sletting:Klikk på blokk, fjern all tekst og klikk ok.' 
+         + '</div>';
+    var theader ="<table class=\"year\" >"
+     + "<tr><th>Uke</th><th>Man</th><th>Tir</th><th>Ons</th>"
+     + "<th>Tor</th><th>Fre</th><th>Merknad</th></tr>";
+    s += theader;
+    var year = julian.jdtogregorian(start).year + '-' + julian.jdtogregorian(stop).year;
+    var caption = '<div class="button blue" id="prv">&lt;</div>Årsplan '+year+'<div class="button blue "id="nxt">&gt;</div>';
+    s += '<caption><div style="position:relative;" >'+caption+'<div></caption>';
+    for (var jd = start; jd < stop; jd += 7 ) {
+      s += "<tr>";
+      s += '<th><div class="weeknum">'+julian.week(jd)+'</div><br class="clear" /><div class="date">' + formatweekdate(jd) + "</div></th>";
+      e = events[Math.floor(jd/7)] || { pr:[],days:[]};
+      for (var j=0;j<6;j++) {
+        var hd = database.heldag[jd+j];
+        var blo = blocks[jd+j];
+        var text = '';
+        var xtra = '';
+        tdclass = '';
+        if (database.freedays[jd+j]) {
+          text = database.freedays[jd+j];
+          tdclass += ' fridag';
+        } else {
+          text = e.days[j] || '';
+          if (j<5) {
+            //xtra += '<ul id="hd'+(jd+j)+'" class="hdliste">';
+            if (blo ) {
+              for (var b in blo) {
+                xtra += '<div class="cattblock hdedit">'+blo[b].name+" "+blo[b].value+'</div>';
+              }
+            }
+            xtra += '<div class="addhd"></div>';
+            //xtra += '</ul>';
+            if (hd ) {
+              xtra += '<ul class="hdliste">';
+                for (var f in hd) {
+                  f = f.toUpperCase();
+                  var cat = +database.category[f] || 0
+                  var idd = jd + j;
+                  xtra += '<li class="catt'+cat+'">'+f+'&nbsp;'+hd[f]+'</li>';
+                }
+              xtra += '</ul>';
+            }
+          }
+        }
+        s += '<td class="'+tdclass+'"><div id="year'+(jd+j)+'" >' + text + '</div>'+xtra+"</td>";
+      }
+      s += "</tr>";
+    }
+    s += "</table>";
+    $j("#main").html(s);
+    enable_editing("aarsplan");
+    blokk_enable_editing();
+    $j("div.addhd").click(function() {
+        $j(this).before('<div id="new'+iddx+'" class="cattblock hdedit">changeme</span>');
+        blokk_enable_editing();
+        iddx++;
+    });
+    $j("#nxt").click(function() {
+          start = database.nextyear.firstweek; stop =database.nextyear.lastweek;
+          edit_blokk(start,stop);
+        });
+    $j("#prv").click(function() {
+          start = database.firstweek; stop =database.lastweek;
+          edit_blokk(start,stop);
+        });
+}
+
+function check_blokk(value,settings) {
+    // checks that we have a correct structure on edited text
+    // we want BLOKKNUMBER 3+4+5
+    var elm = value.split(' ')
+    var blo = +elm.shift();
+    if (!blo > 0 || blo < 21 || blo > 34) return "Ugyldig blokk "+blo;
+    var timer = elm.shift();
+    return ""+blo + " " + timer;
+    var beskrivelse = elm.join(' ');
+    var correct = fagnavn + " " + beskrivelse;
+    if (category[fagnavn]) {
+        // a legal name - set id of element to 'hd'+julday+'_'+fagnavn
+        // so that it can be removed for mysql later
+        var jd = $j("#"+this.id).parent().attr("id").substr(2);
+        $j("#"+this.id).attr("id","hd" + jd + "_" + fagnavn).removeClass("catt0").addClass("catt"+category[fagnavn]);
+        //$j.post( "/save_heldag", { "julday":jd, "fag":fagnavn, "value":beskrivelse });
+        // this is the code that actually sends the new info to the server and inserts into mysql
+        if (!database.heldag[jd]) {
+          database.heldag[jd] = {};
+        }
+        database.heldag[jd][fagnavn] = beskrivelse;
+        //console.log("added "+jd+" "+fagnavn);
+        //console.log(database.heldag);
+        //console.log(database.heldag[jd]);
+        $j.post( "/savehd", { "fag":fagnavn, "myid":jd, "value":beskrivelse },
+            function(data) {
+                if (data.ok) {
+                    $j("#editmsg").html('Du kan redigere planen ved å klikke på en rute');
+                } else {    
+                    $j("#editmsg").html('<span class="error">'+data.msg+'</span>');
+                }
+            });
+        return(correct);
+    } else {
+        if (value == '') {
+          var pid = $j("#"+this.id).attr("id");
+          var jd  = pid.split('_')[0].substr(2);
+          var fag = pid.split('_')[1];
+          //console.log(database.heldag);
+          //console.log(database.heldag[jd]);
+          delete database.heldag[jd][fag];
+          //console.log(database.heldag[jd]);
+          //console.log(database.heldag);
+          $j.post( "/savehd", { "pid":pid, "kill":true, "fag":"", "myid":jd, "value":value },
+              function(data) {
+                  if (data.ok) {
+                      $j("#editmsg").html('Du kan redigere planen ved å klikke på en rute');
+                  } else {    
+                      $j("#editmsg").html('<span class="error">'+data.msg+'</span>');
+                  }
+              });
+            // try to delete this entry from the database
+            $j("#"+this.id).remove();
+            return false;
+        }
+        return("Ugyldig fagnavn :"+value);
+    }
+}
 
 function edit_aarsplan(start,stop,edchoice) {
   // edit heldag has been melded in here
@@ -619,7 +756,7 @@ function edit_fridager(start,stop) {
        function(data) {
             database.freedays = data;
             var s="<h1>Rediger Fridager</h1>";
-            s += '<p  id="editmsg"> Klikk på rutene for å redigere, klikk utenfor for å avbryte.</p>';
+            s += '<div class="centered sized1" ><div  id="editmsg"> Klikk på rutene for å redigere, klikk utenfor for å avbryte.</div></div>';
             var theader ='<table class="year" >'
              + "<tr><th>Uke</th><th>Man</th><th>Tir</th><th>Ons</th>"
              + "<th>Tor</th><th>Fre</th></tr>";
@@ -768,6 +905,15 @@ function save_simple(value,settings) {
         }
     });
     return value;
+}
+
+function blokk_enable_editing() {
+     $j('.hdedit').editable( check_blokk , {
+         indicator      : 'Saving...',
+         tooltip        : 'Click to edit...',
+         doformat       : translatebreaks,
+         submit         : 'OK'
+     });
 }
 
 function heldag_enable_editing() {
