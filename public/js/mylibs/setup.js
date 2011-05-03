@@ -162,14 +162,14 @@ function gotoPage() {
             case 'room':
                 if (timetables && timetables.teach) {
                   var userplan = getcourseplan(usr,deltamemory);
-                  vis_timeplan_helper(userplan,usr,target,'gr',false,deltamemory);
+                  vis_timeplan_helper(userplan,usr,target,false,false,deltamemory);
                 } else {
                   $j.getJSON( "/timetables", 
                     function(data) {
                         timetables = data;
                         updateFagplanMenu();
                         var userplan = getcourseplan(usr,deltamemory);
-                        vis_timeplan_helper(userplan,usr,target,'gr',false,deltamemory);
+                        vis_timeplan_helper(userplan,usr,target,false,false,deltamemory);
                     });
                 }
                 break;
@@ -286,7 +286,7 @@ function setup_teach() {
         romvalg += '</ul></li>'; 
     }
     romvalg += '</ul>';
-    var s = '<li><a id="romres" href="#">Romreservering</a>'+romvalg+'</li>'
+    var s = '<li><a id="romres" href="#">Reservering</a>'+romvalg+'</li>'
            + ''; // + '<li><a id="starb" href="#">Starb</a></li>';
     if (isadmin) {
         s +=  '<li><a id="rediger" href="#">Rediger</a><ul>'

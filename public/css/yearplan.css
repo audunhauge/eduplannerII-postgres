@@ -1003,7 +1003,7 @@ td {  border: 1px solid black; }
 
 h1,h4 { text-align:center; color:blue; }
 
-span.rombytte {
+span.rombytte, span.hdrom{
   white-space:nowrap;
   color:white;
   background:#0c0;
@@ -1017,6 +1017,10 @@ span.rombytte {
   -moz-border-radius: 2em;
   -webkit-box-shadow: 3px 3px 2px rgba(0, 0, 0, .4);
   -moz-box-shadow: 3px 3px 2px rgba(0, 0, 0, .4);
+}
+
+span.hdrom{
+  background:#c00;
 }
 
 span.enheldag {

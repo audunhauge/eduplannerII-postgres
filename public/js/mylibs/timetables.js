@@ -123,7 +123,7 @@ function addonCoursePlans(delta) {
     var uid = database.userinfo.id || 0;
     var planliste = '';
     var mos = 0;
-    if (timetables.teach) {
+    if (timetables && timetables.teach) {
       planliste = vis_fagplaner(uid,thisweek);
       var minefag = getfagliste(uid);
       var sect = "";
@@ -324,13 +324,19 @@ function build_plantable(jd,uid,username,timeplan,xtraplan,filter) {
           var header = 'AndreFag';
           var already = {};  // to avoid doubles
           var room = (timeplan.cleanroom[i]) ? timeplan.cleanroom[i][j] : '';
-          if (timetable[j] && timetable[j][i] && timetable[j][i][room]) {
-            // there is a reservation for this slot
-            cell = '<span class="rombytte">'+timetable[j][i][room].value+'</span>';
+          if (timetable[j] && timetable[j][i] && timetable[j][i][room] && timetable[j][i][room].eventtype == 'hd') {
+            // there is a reservation for this slot due to full day test
+            cell = '<span class="hdrom">'+timetable[j][i][room].value+'</span>';
           } 
           if (timeplan.timeplan[i] && timeplan.timeplan[i][j]) {
             cell = (cell == '&nbsp;') ? timeplan.timeplan[i][j] : cell + timeplan.timeplan[i][j] ;
           }
+          if (timetable[j] && timetable[j][i] && timetable[j][i][room] && timetable[j][i][room].eventtype == 'reservation') {
+            // there is a reservation for this slot
+            if (timetable[j][i][room].name != room) {  // change of room
+              cell += '<span class="rombytte">'+timetable[j][i][room].name+'</span>';
+            }
+          } 
           if (timeplan.timeplan[i] && timeplan.timeplan[i][j]) {
              if (isadmin && filter == 'teach') cell = '<div id="'+uid+'_'+j+"_"+i+'" class="edit">' + cell + '</div>';
              if (filter == 'RAD') {
@@ -459,7 +465,7 @@ function vistimeplan(data,uid,filter,isuser,delta) {
     xtraplan = getReservations(uid,delta);
   }
   valgtPlan = plan;        // husk denne slik at vi kan lagre i timeregister
-  if (filter == 'gr' || filter == 'fg') { 
+  if (filter == 'group' || filter == 'room' || filter == 'klass' || filter == 'gr' || filter == 'fg') { 
     user = {firstname:uid,lastname:''};
   } else {
     user = (teachers[uid]) ?  teachers[uid] : (students[uid]) ? students[uid] : {firstname:uid,lastname:''};
