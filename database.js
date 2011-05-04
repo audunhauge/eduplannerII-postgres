@@ -986,7 +986,7 @@ var getcourses = function() {
       });
 }
 
-var getfreedays = function() {
+var getfreedays = function(callback) {
   client.query(
       // fetch free-days
       'select * from mdl_bookings_calendar where eventtype="fridager"',
@@ -995,15 +995,17 @@ var getfreedays = function() {
               console.log("ERROR: " + err.message);
               throw err;
           }
+          db.freedays = {};
           for (var i=0,k= results.length; i < k; i++) {
               var free = results[i];
               db.freedays[free.julday] = free.value;
           }
-          console.log("fetched freedays");
+          //console.log("fetched freedays");
+          if (callback) callback(db.freedays);
       });
 }
 
-var getyearplan = function() {
+var getyearplan = function(callback) {
   client.query(
       // fetch yearplan events
       'select id,julday,value from mdl_bookings_calendar where eventtype="aarsplan"',
@@ -1012,6 +1014,7 @@ var getyearplan = function() {
               console.log("ERROR: " + err.message);
               throw err;
           }
+          db.yearplan = {};
           for (var i=0,k= results.length; i < k; i++) {
               var plan = results[i];
               if (!db.yearplan[Math.floor(plan.julday/7)]) {
@@ -1019,6 +1022,7 @@ var getyearplan = function() {
               }
               db.yearplan[Math.floor(plan.julday/7)].days[Math.floor(plan.julday%7)] =  plan.value;
           }
+          if (callback) callback(db.yearplan);
           //console.log(db.yearplan);
       });
 }

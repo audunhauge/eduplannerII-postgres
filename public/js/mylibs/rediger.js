@@ -610,6 +610,9 @@ function check_blokk(value,settings) {
 
 function edit_aarsplan(start,stop,edchoice) {
   // edit heldag has been melded in here
+  $j.getJSON( "/yyear", 
+  function(data) {
+    database.yearplan = data;
     var iddx = 0;
     edchoice   = typeof(edchoice) != 'undefined' ? edchoice : 0;
     var events = database.yearplan;
@@ -691,6 +694,7 @@ function edit_aarsplan(start,stop,edchoice) {
           edchoice = (edchoice == 1) ? 0 : 1;
           edit_aarsplan(start,stop,edchoice);
         });
+  });
 }
 
 

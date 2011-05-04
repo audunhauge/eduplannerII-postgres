@@ -600,10 +600,20 @@ app.get('/timetables', function(req, res) {
           });
 });
 
+app.get('/yyear', function(req, res) {
+    // called when freedays have been changed
+    database.getyearplan(function(data) {
+      db.yearplan = data;
+      res.send(data);
+    });
+});
+
 app.get('/freedays', function(req, res) {
     // called when freedays have been changed
-    database.getfreedays(); 
-    res.send(db.freedays);
+    database.getfreedays(function(data) {
+      db.freedays = data;
+      res.send(data);
+    });
 });
 
 app.get('/yearplan', function(req, res) {
