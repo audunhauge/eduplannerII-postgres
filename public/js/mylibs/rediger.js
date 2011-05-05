@@ -475,6 +475,11 @@ function edit_blokk(start,stop) {
   // some courses may be attached to a block
   // these will have names like 3inf5_3201
   // the prefix 3201 says this belongs to blokk 32
+    var start = (showyear == 0) ? database.firstweek : database.nextyear.firstweek; 
+    var stop =  (showyear == 0) ? database.lastweek  : database.nextyear.lastweek;
+    promises.toggle_year = function() { 
+          edit_blokk(); 
+        };
     var iddx = 0;
     var events = database.yearplan;
     var s="<h1>Rediger Blokkskjema</h1>";
@@ -488,7 +493,7 @@ function edit_blokk(start,stop) {
      + "<th>Tor</th><th>Fre</th><th>Merknad</th></tr>";
     s += theader;
     var year = julian.jdtogregorian(start).year + '-' + julian.jdtogregorian(stop).year;
-    var caption = '<div class="button blue" id="prv">&lt;</div>Årsplan '+year+'<div class="button blue "id="nxt">&gt;</div>';
+    var caption = 'Blokkskjema '+year;
     s += '<caption><div style="position:relative;" >'+caption+'<div></caption>';
     for (var jd = start; jd < stop; jd += 7 ) {
       s += "<tr>";
@@ -608,8 +613,13 @@ function check_blokk(value,settings) {
     }
 }
 
-function edit_aarsplan(start,stop,edchoice) {
+function edit_aarsplan(edchoice) {
   // edit heldag has been melded in here
+  var start = (showyear == 0) ? database.firstweek : database.nextyear.firstweek; 
+  var stop =  (showyear == 0) ? database.lastweek  : database.nextyear.lastweek;
+  promises.toggle_year = function() { 
+          edit_aarsplan(edchoice); 
+        };
   $j.getJSON( "/yyear", 
   function(data) {
     database.yearplan = data;
@@ -633,7 +643,7 @@ function edit_aarsplan(start,stop,edchoice) {
      + "<th>Tor</th><th>Fre</th><th>Merknad</th></tr>";
     s += theader;
     var year = julian.jdtogregorian(start).year + '-' + julian.jdtogregorian(stop).year;
-    var caption = '<div class="button blue" id="prv">&lt;</div>Årsplan '+year+'<div class="button blue "id="nxt">&gt;</div>';
+    var caption = 'Årsplan '+year;
     s += '<caption><div style="position:relative;" >'+caption+'<div></caption>';
     for (var jd = start; jd < stop; jd += 7 ) {
       s += "<tr>";
@@ -678,14 +688,6 @@ function edit_aarsplan(start,stop,edchoice) {
         heldag_enable_editing();
         iddx++;
     });
-    $j("#nxt").click(function() {
-          start = database.nextyear.firstweek; stop =database.nextyear.lastweek;
-          edit_aarsplan(start,stop);
-        });
-    $j("#prv").click(function() {
-          start = database.firstweek; stop =database.lastweek;
-          edit_aarsplan(start,stop);
-        });
     $j("#usetp").click(function() {
           edchoice = (edchoice == 2) ? 0 : 2;
           edit_aarsplan(start,stop,edchoice);
@@ -755,7 +757,12 @@ function check_heldag(value,settings) {
     }
 }
 
-function edit_fridager(start,stop) {
+function edit_fridager() {
+    var start = (showyear == 0) ? database.firstweek : database.nextyear.firstweek; 
+    var stop =  (showyear == 0) ? database.lastweek  : database.nextyear.lastweek;
+    promises.toggle_year = function() { 
+          edit_fridager(); 
+        };
     $j.getJSON( "/freedays", 
        function(data) {
             database.freedays = data;
@@ -766,7 +773,7 @@ function edit_fridager(start,stop) {
              + "<th>Tor</th><th>Fre</th></tr>";
             s += theader;
             var year = julian.jdtogregorian(start).year + '-' + julian.jdtogregorian(stop).year;
-            var caption = '<div class="button blue" id="prv">&lt;</div>Fridager '+year+'<div class="button blue "id="nxt">&gt;</div>';
+            var caption = 'Fridager '+year;
             s += '<caption><div style="position:relative;" >'+caption+'<div></caption>';
             var jd,j;
             var text;
@@ -788,14 +795,6 @@ function edit_fridager(start,stop) {
             s += "</table>";
             $j("#main").html(s);
             enable_editing("fridager");
-            $j("#nxt").click(function() {
-                  start = database.nextyear.firstweek; stop =database.nextyear.lastweek;
-                  edit_fridager(start,stop);
-                });
-            $j("#prv").click(function() {
-                  start = database.firstweek; stop =database.lastweek;
-                  edit_fridager(start,stop);
-                });
      });
 
 }
@@ -904,6 +903,12 @@ function save_simple(value,settings) {
     function(data) {
         if (data.ok) {
             $j("#editmsg").html('Du kan redigere planen ved å klikke på en rute');
+            // refetch the yearplan so that compulsive checkers
+            // can see the change straight away if the navigate to ThisWeek
+            $j.getJSON( "/yyear", 
+            function(data) {
+              database.yearplan = data;
+              });
         } else {    
             $j("#editmsg").html('<span class="error">'+data.msg+'</span>');
         }

@@ -601,7 +601,7 @@ app.get('/timetables', function(req, res) {
 });
 
 app.get('/yyear', function(req, res) {
-    // called when freedays have been changed
+    // called when yearplan has been changed
     database.getyearplan(function(data) {
       db.yearplan = data;
       res.send(data);

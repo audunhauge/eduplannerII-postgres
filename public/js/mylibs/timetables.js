@@ -20,6 +20,9 @@ function show_date(jd) {
 function show_thisweek(delta) {
     // viser denne uka, årsplanen + timeplan
     //var uid = userinfo.id;
+    promises.toggle_year = function() { 
+          show_thisweek(delta); 
+        };
     delta = typeof(delta) != 'undefined' ?  +delta : 0;  // vis timeplan for en anne uke
     $j.bbq.pushState("#thisweek");
     var uid = database.userinfo.id || 0;
@@ -30,6 +33,10 @@ function show_thisweek(delta) {
     s+= '<div id="weekly"></div>';
     s+= "</div>";
     $j("#main").html(s);
+    if (showyear == 1) {
+      $j("#timeplan").html('Do not dwell in the past, do not dream of the future, concentrate the mind on the present moment.');
+      return;
+    }
     // last inn årsplan-data for denne uka
     //var enr = uid
     var userlist = '';
