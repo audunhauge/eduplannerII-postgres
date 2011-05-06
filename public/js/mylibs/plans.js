@@ -128,6 +128,13 @@ function show_alleprover(filter,faggrupper) {
     // filter lar deg velge fra [heldag,prøve]
     // faggrupper  { "3inf5":1,"3304":1,"3nor6":1 }
     //   bare vis prøver/heldag for fag/grupper
+    promises.toggle_year = function() { 
+          show_alleprover(filter,faggrupper);
+        };
+    if (showyear == 1) {
+      $j("#main").html('<div id="timeplan">Though no one can go back and make a brand new start, anyone can start from now and make a brand new ending.</div>');
+      return;
+    }
     filter = typeof(filter) != 'undefined' ? filter : '';
     var thisweek = database.startjd;
     var s = "<table class=\"heldag\">";
@@ -227,6 +234,9 @@ function getUserSubj(uid) {
 
 function show_all(thisweek,options) {
     // viser hele årsplanen (ikke prøver og heldag)
+    promises.toggle_year = function() { 
+          show_all(thisweek,options); 
+        };
     options   = typeof(options) != 'undefined' ? options : 0;
     var hdchecked = (options & 1) ? 'checked="true"' : '';
     var tpchecked = (options & 2) ? 'checked="true"' : '';
@@ -244,7 +254,9 @@ function show_all(thisweek,options) {
      + "<th>Tor</th><th>Fre</th><th>Merknad</th></tr>";
     var tfooter ="</table>";
     s += theader;
-    var week = julian.week(thisweek);
+    start = (showyear == 0) ? thisweek  : database.nextyear.firstweek; 
+    stop =  (showyear == 0) ? database.lastweek  : database.nextyear.lastweek;
+    var week = julian.week(start);
     if (week > 30 && week < 45) {
       s += "<caption>Første halvår</caption>";
     }
@@ -262,7 +274,7 @@ function show_all(thisweek,options) {
     var cc;
 
     var events = database.yearplan;
-    for (i= thisweek; i < database.lastweek; i += 7) {
+    for (i= start; i < stop; i += 7) {
       e = events[Math.floor(i/7)] || { pr:[],days:[]};
       // add a page break if we pass new year
       if (julian.week(i) == "45") {
@@ -432,6 +444,13 @@ function vis_andreplaner() {
 
 function show_next4() {
     // vis neste fire uker
+    promises.toggle_year = function() { 
+          show_next4(); 
+        };
+    if (showyear == 1) {
+      $j("#main").html('<div id="timeplan">Do not dwell in the past, do not dream of the future, concentrate the mind on the present moment.</div>');
+      return;
+    }
     var uid = database.userinfo.id || 0;
     var events = database.yearplan;
     var thisweek = database.startjd;
@@ -477,4 +496,17 @@ function show_next4() {
     s += "</table>";
     $j("#main").html(s);
 }
+
+
+function makeplans() {
+  var info = ''
+    + 'Du kan lage nye planer som du siden kan koble til fag du underviser i. '
+    + 'Planene kan legges uavhengig av årsplanen (slik at de lett kan brukes om igjen). '
+    + 'En plan kan kobles til flere fag (f.eks du har to naturfag-grupper). '
+    + 'Du kan finne og kopiere andre læreres planer (se knappen finn-plan). '
+    + '';
+  var s = '<div id="timeplan"><h1>Lag nye planer</h1>'+info+'</div>';
+  $j("#main").html(s);
+}
+
 

@@ -20,6 +20,9 @@ function show_date(jd) {
 function show_thisweek(delta) {
     // viser denne uka, årsplanen + timeplan
     //var uid = userinfo.id;
+    promises.toggle_year = function() { 
+          show_thisweek(delta); 
+        };
     delta = typeof(delta) != 'undefined' ?  +delta : 0;  // vis timeplan for en anne uke
     $j.bbq.pushState("#thisweek");
     var uid = database.userinfo.id || 0;
@@ -30,6 +33,10 @@ function show_thisweek(delta) {
     s+= '<div id="weekly"></div>';
     s+= "</div>";
     $j("#main").html(s);
+    if (showyear == 1) {
+      $j("#timeplan").html('Do not dwell in the past, do not dream of the future, concentrate the mind on the present moment.');
+      return;
+    }
     // last inn årsplan-data for denne uka
     //var enr = uid
     var userlist = '';
@@ -123,7 +130,7 @@ function addonCoursePlans(delta) {
     var uid = database.userinfo.id || 0;
     var planliste = '';
     var mos = 0;
-    if (timetables.teach) {
+    if (timetables && timetables.teach) {
       planliste = vis_fagplaner(uid,thisweek);
       var minefag = getfagliste(uid);
       var sect = "";
@@ -166,7 +173,8 @@ function build_timetable(timeplan,plan,filter,planspan) {
         if (!timeplan[pt[1]][pt[0]]) {    // no data assigned yet
            timeplan[pt[1]][pt[0]] = '';   // place empty string so we can += later
         }
-        room = (pt[4] && filter != 'RAD' ) ? "&nbsp;<span class=\"rombytte\">=&gt;&nbsp;" + pt[4] + "</span>" : '&nbsp;'+pt[3] ;
+        room = (pt[3] == 'nn') ? '' : pt[3];
+        room = (pt[4] && filter != 'RAD' ) ? "&nbsp;<span class=\"rombytte\">=&gt;&nbsp;" + pt[4] + "</span>" : '&nbsp;'+room ;
         cell += room;
         if (plan.prover[ pt[1] ] && plan.prover[ pt[1] ] [ pt[0] ] ) {
           if (plan.prover[ pt[1] ] [ pt[0] ] != 1 ) {
@@ -324,13 +332,19 @@ function build_plantable(jd,uid,username,timeplan,xtraplan,filter) {
           var header = 'AndreFag';
           var already = {};  // to avoid doubles
           var room = (timeplan.cleanroom[i]) ? timeplan.cleanroom[i][j] : '';
-          if (timetable[j] && timetable[j][i] && timetable[j][i][room]) {
-            // there is a reservation for this slot
-            cell = '<span class="rombytte">'+timetable[j][i][room].value+'</span>';
+          if (timetable[j] && timetable[j][i] && timetable[j][i][room] && timetable[j][i][room].eventtype == 'hd') {
+            // there is a reservation for this slot due to full day test
+            cell = '<span class="hdrom">'+timetable[j][i][room].value+'</span>';
           } 
           if (timeplan.timeplan[i] && timeplan.timeplan[i][j]) {
             cell = (cell == '&nbsp;') ? timeplan.timeplan[i][j] : cell + timeplan.timeplan[i][j] ;
           }
+          if (timetable[j] && timetable[j][i] && timetable[j][i][room] && timetable[j][i][room].eventtype == 'reservation') {
+            // there is a reservation for this slot
+            if (timetable[j][i][room].name != room) {  // change of room
+              cell += '<span class="rombytte">'+timetable[j][i][room].name+'</span>';
+            }
+          } 
           if (timeplan.timeplan[i] && timeplan.timeplan[i][j]) {
              if (isadmin && filter == 'teach') cell = '<div id="'+uid+'_'+j+"_"+i+'" class="edit">' + cell + '</div>';
              if (filter == 'RAD') {
@@ -445,7 +459,7 @@ function vistimeplan(data,uid,filter,isuser,delta) {
   var xtraplan = {};
   var i,j;
   var cell,userlist,gruppe,popup,user,username;
-  if (!plan) return 'Ingen timeplan';
+  if (!plan) plan = {};
   var jd = database.startjd + 7*delta;
   plan.prover = add_tests(uid,jd);
   if (isuser != 'isuser' && memberlist[uid]) {
@@ -459,7 +473,7 @@ function vistimeplan(data,uid,filter,isuser,delta) {
     xtraplan = getReservations(uid,delta);
   }
   valgtPlan = plan;        // husk denne slik at vi kan lagre i timeregister
-  if (filter == 'gr' || filter == 'fg') { 
+  if (filter == 'group' || filter == 'room' || filter == 'klass' || filter == 'gr' || filter == 'fg') { 
     user = {firstname:uid,lastname:''};
   } else {
     user = (teachers[uid]) ?  teachers[uid] : (students[uid]) ? students[uid] : {firstname:uid,lastname:''};
@@ -745,7 +759,9 @@ function getReservations(room,delta) {
                             res.value = teach.firstname + " " + teach.lastname;
                         }
                         if (!reserved[res.slot]) reserved[res.slot] = [];
-                        if (database.userinfo.isadmin || res.userid == database.userinfo.id) {
+                        if (res.eventtype == 'hd') {
+                          reserved[res.slot][res.day] = '<div class="rcorner gradbackred textcenter">' + res.value + '</div>';
+                        } else if (database.userinfo.isadmin || res.userid == database.userinfo.id) {
                           reserved[res.slot][res.day] = '<div class="rcorner gradbackgreen textcenter">' + res.value + '</div>';
                         } else {
                           reserved[res.slot][res.day] = '<div class="rcorner gradbackgray textcenter">' + res.value + '</div>';

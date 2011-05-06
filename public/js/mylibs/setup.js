@@ -7,6 +7,16 @@ var $j = jQuery.noConflict();
 var database;           // jSON data
 var brukerliste = {};   // brukerliste[elev,teach,klasse]
 var valg;               // siste valg (teach,elev,klasse,sammensatt)
+
+var showyear = 0;       // used to choose school year to show
+    // can show this or next school year
+    // changing showyear influences yearplan mostly
+    // timetables and courseplans are not affected as they are not known yet
+    // the system only has yearplans/timetables for current year
+    // older courseplans are stashed in separate table (oldplans)
+    // at startup will always be 0 == thisyear
+    // can be changed to 1 == next year
+
 var user = Url.decode(gup("navn"));
 var currentloc = "yearplan?navn="+user;    // current location - used by popstate and others
 var action = gup("action") || 'default';   // brukes i switch til å velge alternative visninger
@@ -97,6 +107,18 @@ $j(window).bind('hashchange', function(event) {
          gotoPage();
     });
 
+
+function toggle_year() {
+  showyear = (showyear == 0) ? 1 : 0;
+  var jyy = (showyear == 0) ? database.firstweek : database.nextyear.firstweek ;
+  var greg = julian.jdtogregorian(jyy);
+  $j("#yyear").html(""+greg.year+'-'+(+greg.year+1));
+  if (promises.toggle_year) {
+    // redisplay with new year
+    promises.toggle_year();
+  }
+}
+
 function gotoPage() {
   // all menue-choices have their own address (so that history and bookmarks can work)
   // we also push all pages into history so that history rewind works
@@ -162,14 +184,14 @@ function gotoPage() {
             case 'room':
                 if (timetables && timetables.teach) {
                   var userplan = getcourseplan(usr,deltamemory);
-                  vis_timeplan_helper(userplan,usr,target,'gr',false,deltamemory);
+                  vis_timeplan_helper(userplan,usr,target,false,false,deltamemory);
                 } else {
                   $j.getJSON( "/timetables", 
                     function(data) {
                         timetables = data;
                         updateFagplanMenu();
                         var userplan = getcourseplan(usr,deltamemory);
-                        vis_timeplan_helper(userplan,usr,target,'gr',false,deltamemory);
+                        vis_timeplan_helper(userplan,usr,target,false,false,deltamemory);
                     });
                 }
                 break;
@@ -272,7 +294,7 @@ function take_action() {
 
 
 function setup_teach() {
-    $j("#htitle").html("Velkommen "+user);
+    //$j("#htitle").html("Velkommen "+user);
     var romvalg = '<ul>';                     
     romvalg += '<li><a id="ledigrom" href="#">Finn ledig rom</a></li>'; 
     for (var i in romliste) {
@@ -286,7 +308,7 @@ function setup_teach() {
         romvalg += '</ul></li>'; 
     }
     romvalg += '</ul>';
-    var s = '<li><a id="romres" href="#">Romreservering</a>'+romvalg+'</li>'
+    var s = '<li><a id="romres" href="#">Reservering</a>'+romvalg+'</li>'
            + ''; // + '<li><a id="starb" href="#">Starb</a></li>';
     if (isadmin) {
         s +=  '<li><a id="rediger" href="#">Rediger</a><ul>'
@@ -296,10 +318,12 @@ function setup_teach() {
             +    '<li><a id="edblokk"        href="#">Blokkskjema</a></li>'
             +    '<li><a id="edexcurs"       href="#">Ekskursjoner</a></li>'
             +    '<li><a id="edcourse"       href="#">Kurs</a></li>'
+            +    '<li><a id="makeplans"      href="#">Egne planer</a></li>'
             + '</ul></li>';
     } else if (isteach) {
         s +=  '<li><a id="rediger" href="#">Rediger</a><ul>'
             +    '<li><a id="edexcurs"       href="#">Ekskursjoner</a></li>'
+            +    '<li><a id="makeplans"      href="#">Egne planer</a></li>'
             + '</ul></li>';
     }
     $j("#seek").html('<span id="heat"><span class="label">søk:'
@@ -315,6 +339,7 @@ function setup_teach() {
     });
     // legg inn clickhandler for alle rom
     // hent reserveringer for rommene
+
     $j.getJSON( "/reserv", 
          function(data) {
             $j("#nav").append(s);
@@ -331,7 +356,7 @@ function setup_teach() {
             }
             $j("#edfridager").click(function(event) {
                 event.preventDefault();
-                edit_fridager(database.firstweek,database.lastweek);
+                edit_fridager();
             });
             $j("#edcourse").click(function(event) {
                 event.preventDefault();
@@ -339,18 +364,20 @@ function setup_teach() {
             });
             $j("#edaarsplan").click(function(event) {
                 event.preventDefault();
-                edit_aarsplan(database.firstweek,database.lastweek);
+                edit_aarsplan();
             });
             $j("#edexcurs").click(function(event) {
                 event.preventDefault();
                 edit_excursion(userinfo.id);
             });
-            /*
-            $j("#edheldag").click(function(event) {
+            $j("#edblokk").click(function(event) {
                 event.preventDefault();
-                edit_heldag();
+                edit_blokk();
             });
-            */
+            $j("#makeplans").click(function(event) {
+                event.preventDefault();
+                makeplans();
+            });
          });
 }
 
@@ -706,6 +733,10 @@ $j(document).ready(function() {
     $j("#andreplaner").click(function(event) {
         event.preventDefault();
         vis_andreplaner();
+    });
+    //$j("#yyear").html("heisan");
+    $j("#htitle").click(function(event) {
+        toggle_year();
     });
     $j("#login").html('login').click(function(event) {
         event.preventDefault();
