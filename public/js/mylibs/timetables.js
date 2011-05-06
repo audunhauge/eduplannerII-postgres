@@ -173,7 +173,8 @@ function build_timetable(timeplan,plan,filter,planspan) {
         if (!timeplan[pt[1]][pt[0]]) {    // no data assigned yet
            timeplan[pt[1]][pt[0]] = '';   // place empty string so we can += later
         }
-        room = (pt[4] && filter != 'RAD' ) ? "&nbsp;<span class=\"rombytte\">=&gt;&nbsp;" + pt[4] + "</span>" : '&nbsp;'+pt[3] ;
+        room = (pt[3] == 'nn') ? '' : pt[3];
+        room = (pt[4] && filter != 'RAD' ) ? "&nbsp;<span class=\"rombytte\">=&gt;&nbsp;" + pt[4] + "</span>" : '&nbsp;'+room ;
         cell += room;
         if (plan.prover[ pt[1] ] && plan.prover[ pt[1] ] [ pt[0] ] ) {
           if (plan.prover[ pt[1] ] [ pt[0] ] != 1 ) {
@@ -458,7 +459,7 @@ function vistimeplan(data,uid,filter,isuser,delta) {
   var xtraplan = {};
   var i,j;
   var cell,userlist,gruppe,popup,user,username;
-  if (!plan) return 'Ingen timeplan';
+  if (!plan) plan = {};
   var jd = database.startjd + 7*delta;
   plan.prover = add_tests(uid,jd);
   if (isuser != 'isuser' && memberlist[uid]) {

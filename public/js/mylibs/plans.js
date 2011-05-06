@@ -132,7 +132,7 @@ function show_alleprover(filter,faggrupper) {
           show_alleprover(filter,faggrupper);
         };
     if (showyear == 1) {
-      $j("#main").html('<div id="timeplan">Do not dwell in the past, do not dream of the future, concentrate the mind on the present moment.</div>');
+      $j("#main").html('<div id="timeplan">Though no one can go back and make a brand new start, anyone can start from now and make a brand new ending.</div>');
       return;
     }
     filter = typeof(filter) != 'undefined' ? filter : '';
@@ -496,4 +496,17 @@ function show_next4() {
     s += "</table>";
     $j("#main").html(s);
 }
+
+
+function makeplans() {
+  var info = ''
+    + 'Du kan lage nye planer som du siden kan koble til fag du underviser i. '
+    + 'Planene kan legges uavhengig av årsplanen (slik at de lett kan brukes om igjen). '
+    + 'En plan kan kobles til flere fag (f.eks du har to naturfag-grupper). '
+    + 'Du kan finne og kopiere andre læreres planer (se knappen finn-plan). '
+    + '';
+  var s = '<div id="timeplan"><h1>Lag nye planer</h1>'+info+'</div>';
+  $j("#main").html(s);
+}
+
 

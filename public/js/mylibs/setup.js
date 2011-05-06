@@ -318,10 +318,12 @@ function setup_teach() {
             +    '<li><a id="edblokk"        href="#">Blokkskjema</a></li>'
             +    '<li><a id="edexcurs"       href="#">Ekskursjoner</a></li>'
             +    '<li><a id="edcourse"       href="#">Kurs</a></li>'
+            +    '<li><a id="makeplans"      href="#">Egne planer</a></li>'
             + '</ul></li>';
     } else if (isteach) {
         s +=  '<li><a id="rediger" href="#">Rediger</a><ul>'
             +    '<li><a id="edexcurs"       href="#">Ekskursjoner</a></li>'
+            +    '<li><a id="makeplans"      href="#">Egne planer</a></li>'
             + '</ul></li>';
     }
     $j("#seek").html('<span id="heat"><span class="label">søk:'
@@ -337,6 +339,7 @@ function setup_teach() {
     });
     // legg inn clickhandler for alle rom
     // hent reserveringer for rommene
+
     $j.getJSON( "/reserv", 
          function(data) {
             $j("#nav").append(s);
@@ -370,6 +373,10 @@ function setup_teach() {
             $j("#edblokk").click(function(event) {
                 event.preventDefault();
                 edit_blokk();
+            });
+            $j("#makeplans").click(function(event) {
+                event.preventDefault();
+                makeplans();
             });
          });
 }

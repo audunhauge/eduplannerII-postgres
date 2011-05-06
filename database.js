@@ -77,26 +77,32 @@ client.connect(function(err, results) {
 
 var getCoursePlans = function(callback) {
   client.query(
-            'SELECT distinct concat(u.id,c.id,s.section) as idd, u.id as uid, u.username, c.id, u.institution'
-          + ' ,c.startdate,c.shortname,c.numsections,s.section,s.summary,c.cost '
+            'SELECT u.id as uid, u.username, c.id, u.institution'
+          //      'SELECT (u.id,c.id,s.section) as idd, u.id as uid, u.username, c.id, u.institution'
+          //+ ' ,c.startdate,c.shortname,c.numsections,s.section,s.summary,c.cost '
+          + ' ,c.startdate,c.shortname,c.numsections,w.sequence as section,w.plantext as summary,c.cost '
           + '   FROM mdl_role_assignments ra '
           + '        INNER JOIN mdl_user u ON u.id=ra.userid '
           + '        INNER JOIN mdl_context x ON x.id=ra.contextid '
           + '        INNER JOIN mdl_course c ON x.instanceid=c.id '
-          + '        LEFT OUTER JOIN mdl_course_sections s ON s.course=c.id'
+          + '        LEFT OUTER JOIN plan p ON p.id = c.planid '
+          + '        LEFT OUTER JOIN weekplan w ON p.id = w.planid '
+          //+ '        LEFT OUTER JOIN mdl_course_sections s ON s.course=c.id'
           //+ '   WHERE c.category in (2,3,4,6,10) '
           //  cost is the category for each course
           + '   WHERE c.cost in (1,2,3,4,10,11,12) '
           + '        AND ra.roleid = 3 '
-          + '        AND s.section != 0 '
-          + '        AND (isnull(s.summary) OR ( s.section < 50 AND s.section > 0)) '
+          //+ '        AND s.section != 0 '
+          //+ '        AND w.sequence != 0 '
+          //+ '        AND (isnull(w.plantext) OR ( w.sequence < 50 AND w.sequence > 0)) '
           + '        AND u.department="Undervisning" '
-          + '   ORDER BY u.institution,u.username,c.shortname,s.section ' ,
+          + '   ORDER BY u.institution,u.username,c.shortname,w.sequence ' ,
       function (err, results, fields) {
           if (err) {
               console.log("ERROR: " + err.message);
               throw err;
           }
+          console.log("came here allplans");
           var fliste = {}; 
           var compliance = {};  // is this a compliant teacher?
           var startdate   = 0;
