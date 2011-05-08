@@ -78,25 +78,13 @@ client.connect(function(err, results) {
 var getCoursePlans = function(callback) {
   client.query(
             'SELECT u.id as uid, u.username, c.id, u.institution'
-          //      'SELECT (u.id,c.id,s.section) as idd, u.id as uid, u.username, c.id, u.institution'
-          //+ ' ,c.startdate,c.shortname,c.numsections,s.section,s.summary,c.cost '
           + ' ,c.startdate,c.shortname,c.numsections,w.sequence as section,w.plantext as summary,c.cost '
-          + '   FROM mdl_role_assignments ra '
-          + '        INNER JOIN mdl_user u ON u.id=ra.userid '
-          + '        INNER JOIN mdl_context x ON x.id=ra.contextid '
-          + '        INNER JOIN mdl_course c ON x.instanceid=c.id '
-          + '        LEFT OUTER JOIN plan p ON p.id = c.planid '
-          + '        LEFT OUTER JOIN weekplan w ON p.id = w.planid '
-          //+ '        LEFT OUTER JOIN mdl_course_sections s ON s.course=c.id'
-          //+ '   WHERE c.category in (2,3,4,6,10) '
-          //  cost is the category for each course
-          + '   WHERE c.cost in (1,2,3,4,10,11,12) '
-          + '        AND ra.roleid = 3 '
-          //+ '        AND s.section != 0 '
-          //+ '        AND w.sequence != 0 '
-          //+ '        AND (isnull(w.plantext) OR ( w.sequence < 50 AND w.sequence > 0)) '
-          + '        AND u.department="Undervisning" '
-          + '   ORDER BY u.institution,u.username,c.shortname,w.sequence ' ,
+          + '   FROM mdl_user u  '
+          + '        INNER JOIN plan p ON p.userid = u.id '
+          + '        INNER JOIN mdl_course c ON c.planid = p.id '
+          + '        INNER JOIN weekplan w ON p.id = w.planid '
+          + ' WHERE u.department = "undervisning" ',
+          //+ '   ORDER BY u.institution,u.username,c.shortname,w.sequence ' ,
       function (err, results, fields) {
           if (err) {
               console.log("ERROR: " + err.message);
@@ -162,20 +150,24 @@ var updateTotCoursePlan = function(query,callback) {
   var ok = true;
   var msg = '';
   client.query(
-        'select s.* from mdl_course_sections s where s.course = ? ' , [ query.courseid],
+      //  'select s.* from mdl_course_sections s where s.course = ? ' , [ query.courseid],
+        'select s.*,p.id as pid from weekplan s inner join plan p on (p.id = s.planid) where p.courseid = ? ' , [ query.courseid],
       function (err, sections, fields) {
           if (err) {
               callback( { ok:false, msg:err.message } );
               return;
           }
+          var planid = 0;
           for (var sid in sections) {
               var s = sections[sid];
-              if (usects[s.section]) {
-                  if (usects[s.section] != s.summary) {
+              if (planid == 0) planid = s.pid
+              if (usects[s.sequence]) {
+                  if (usects[s.sequence] != s.plantext) {
                       // there is an update for this section and it differs from dbase
                       // we must update this section
                       client.query(
-                          'update mdl_course_sections set summary=? where id=?',[ usects[s.section], s.id ],
+                          //'update mdl_course_sections set summary=? where id=?',[ usects[s.section], s.id ],
+                          'update weekplan set plantext=? where id=?',[ usects[s.sequence], s.id ],
                           function (err, results, fields) {
                               if (err) {
                                   ok = false;
@@ -183,14 +175,15 @@ var updateTotCoursePlan = function(query,callback) {
                               }
                           });
                   }
-                  delete usects[s.section];
+                  delete usects[s.sequence];
                   // unset this section - remaining sections in usects will be INSERTED
               }
           }
           for (sectnum in usects) {
               summary = usects[sectnum];
               client.query(
-                  'insert into mdl_course_sections (course,section,summary) values (?,?,?)', [ query.courseid, sectnum, summary],
+                  //'insert into mdl_course_sections (course,section,summary) values (?,?,?)', [ query.courseid, sectnum, summary],
+                  'insert into weekplan (planid,sequence,plantext) values (?,?,?)', [ planid, sectnum, summary],
                   function (err, results, fields) {
                       if (err) {
                           ok = false;
@@ -560,18 +553,27 @@ var selltickets = function(user,query,callback) {
 var updateCoursePlan = function(query,callback) {
   // update courseplan for given section
   client.query(
-        'select s.* from mdl_course_sections s '
-      + ' where s.course = ? and s.section = ? ' , [ query.courseid,  query.section],
+        //'select s.* from mdl_course_sections s where s.course = ? and s.section = ? ' , [ query.courseid,  query.section],
+        'select w.*,p.id as pid from plan p inner join weekplan w on (p.id = w.planid) where p.courseid = ? ' , [ query.courseid],
       function (err, results, fields) {
           if (err) {
               callback( { ok:false, msg:err.message } );
               return;
           }
-          var sect = results.pop();
-          if (sect) {
-            if (sect.summary != query.summary) {
+          var planid = 0;
+          var wanted = null;
+          for (var si in results) {
+            var sect = results[si];
+            if (planid == 0) planid = sect.pid;
+            if (sect.sequence == query.section) {
+              wanted = sect;
+              break;
+            }
+          }
+          if (wanted) {
+            if (wanted.plantext != query.summary) {
               client.query(
-                  'update mdl_course_sections set summary=? where id=?',[ query.summary, sect.id ],
+                  'update weekplan set plantext=? where id=?',[ query.summary, sect.id ],
                   function (err, results, fields) {
                       if (err) {
                           callback( { ok:false, msg:err.message } );
@@ -584,7 +586,7 @@ var updateCoursePlan = function(query,callback) {
               }
           } else {
             client.query(
-                'insert into mdl_course_sections (course,section,summary) values ('+course.id+','+query.section+',"'+query.summary+'")',
+                'insert into weekplan (planid,sequence,plantext) values ('+planid+','+query.section+',"'+query.summary+'")',
                 function (err, results, fields) {
                     if (err) {
                         callback( { ok:false, msg:err.message } );
@@ -614,6 +616,31 @@ var getSomeData = function(user,sql,param,callback) {
               throw err;
           }
           callback(results);
+      });
+}
+
+var getMyPlans = function(user,callback) {
+  // returns a hash of all plans owned by user
+  client.query(
+      'select p.*, w.id as wid,w.sequence, w.plantext, c.shortname from plan p inner join weekplan w on (p.id = w.planid) '
+      + ' left join mdl_course c on (c.planid = p.id) '
+      + ' where p.userid = ? ' , [user.id ],
+      function (err, results, fields) {
+          if (err) {
+              console.log("ERROR: " + err.message);
+              throw err;
+          }
+          var myplans = {};
+          for (var i=0,k= results.length; i < k; i++) {
+              var res = results[i];
+              if (!myplans[res.name]) {
+                myplans[res.name] = {};
+                myplans[res.name].weeks = {};
+                myplans[res.name].info = res;
+              }
+              myplans[res.name][+res.sequence] = res.plantext;
+          }
+          callback(myplans);
       });
 }
 
@@ -1105,6 +1132,7 @@ module.exports.saveTest = saveTest;
 module.exports.getBlocks = getBlocks;
 module.exports.savesimple = savesimple;
 module.exports.savehd = savehd;
+module.exports.getMyPlans = getMyPlans;
 module.exports.saveabsent = saveabsent;
 module.exports.getabsent = getabsent;
 module.exports.getshow = getshow;

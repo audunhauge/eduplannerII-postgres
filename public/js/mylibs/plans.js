@@ -501,12 +501,28 @@ function show_next4() {
 function makeplans() {
   var info = ''
     + 'Du kan lage nye planer som du siden kan koble til fag du underviser i. '
-    + 'Planene kan legges uavhengig av årsplanen (slik at de lett kan brukes om igjen). '
+    + 'Planene legges basert på ukenummer (slik at de lett kan brukes om igjen). '
+    + 'Typisk vil en bare måtte justere rundt høst,jul,vinter og påskeferie, noe'
+    + ' som kan gjøres enkelt med dra og slipp kopiering.<br>'
     + 'En plan kan kobles til flere fag (f.eks du har to naturfag-grupper). '
     + 'Du kan finne og kopiere andre læreres planer (se knappen finn-plan). '
     + '';
   var s = '<div id="timeplan"><h1>Lag nye planer</h1>'+info+'</div>';
+  s += '<div id="planlist"></div>';
   $j("#main").html(s);
+  $j.getJSON( "/myplans", 
+  function(data) {
+       var ss = 'Dine planer:<ul>';
+       for (var i in data) {
+         var p = data[i];
+         var info = i + ' ' + p.info.subject 
+         if (p.info.shortname) info += ' kobla til kurset ' + p.info.shortname;
+         ss += '<li>'+info+'</li>';
+       }
+       ss += '</ul>';
+       ss += '<div class="button">Ny plan</div>';
+       $j("#planlist").html( ss); 
+    });
 }
 
 

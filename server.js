@@ -507,6 +507,12 @@ app.get('/tickets', function(req, res) {
           });
 });
 
+app.get('/myplans', function(req, res) {
+    database.getMyPlans(req.session.user, function(myplans) {
+        res.send(myplans);
+    });
+});
+
 app.get('/show', function(req, res) {
     // only used by mdd
     database.getshow(function(show) {
@@ -588,6 +594,7 @@ app.get('/blocks', function(req, res) {
             res.send(addons.blocks);
           });
 });
+
 
 
 app.get('/timetables', function(req, res) {
