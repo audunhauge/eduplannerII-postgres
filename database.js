@@ -619,11 +619,66 @@ var getSomeData = function(user,sql,param,callback) {
       });
 }
 
+var modifyPlan = function(user,query,callback) {
+  // create/modify/delete a plan
+  if (!user || user.department != 'Undervisning' ) {
+    callback("not allowed");
+    return;
+  }
+  var operation = query.operation;
+  switch(operation) {
+    case 'newplan':
+      /*
+      console.log( 'insert into plan (name,start,end,subject,courseid,userid,category,state) values (?,?,?,?,?,?,?,?) ');
+      callback("inserted");
+      break;
+      */
+      var pname    = query.pname    || 'newplan';
+      var start    = query.start    || db.firstweek;
+      var end      = query.stop     || db.lastweek;
+      var subject  = query.subject  || pname;
+      var courseid = query.courseid || 0;
+      var category = query.category || 0;
+      var state    = query.state    || 0;
+
+      client.query(
+      'insert into plan (name,start,end,subject,courseid,userid,category,state) values (?,?,?,?,?,?,?,?) '
+      , [pname,start,end,subject,courseid,user.id,category,state ],
+      function (err, info) {
+          if (err) {
+              console.log("ERROR: " + err.message);
+              throw err;
+          }
+          var pid = info.insertId;
+          // now we create empty week slots for this plan
+          var val = [];
+          for (var i=0; i < 48; i++) {
+            val.push('("",'+pid+','+i+')');
+          }
+          client.query( 'insert into weekplan (plantext,planid,sequence) values ' + val.join(','),
+          function (err, info) {
+              if (err) {
+                  console.log("ERROR: " + err.message);
+                  throw err;
+              }
+          });
+          callback("inserted");
+      });
+      break;
+    case 'editplan':
+          callback("edited");
+      break;
+    case 'delete':
+          callback("deleted");
+      break;
+  }
+}
+
 var getMyPlans = function(user,callback) {
   // returns a hash of all plans owned by user
   client.query(
       'select p.*, w.id as wid,w.sequence, w.plantext, c.shortname from plan p inner join weekplan w on (p.id = w.planid) '
-      + ' left join mdl_course c on (c.planid = p.id) '
+      + ' left outer join mdl_course c on (c.planid = p.id) '
       + ' where p.userid = ? ' , [user.id ],
       function (err, results, fields) {
           if (err) {
@@ -1136,6 +1191,7 @@ module.exports.getMyPlans = getMyPlans;
 module.exports.saveabsent = saveabsent;
 module.exports.getabsent = getabsent;
 module.exports.getshow = getshow;
+module.exports.modifyPlan = modifyPlan;
 module.exports.selltickets = selltickets ;
 module.exports.gettickets = gettickets;
 module.exports.saveTimetableSlot =  saveTimetableSlot ;

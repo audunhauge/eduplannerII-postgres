@@ -520,8 +520,15 @@ function makeplans() {
          ss += '<li>'+info+'</li>';
        }
        ss += '</ul>';
-       ss += '<div class="button">Ny plan</div>';
+       ss += '<form>Navn : <input id="pname" type="text"></form><div id="addplan" class="button">Ny plan</div>';
        $j("#planlist").html( ss); 
+       $j("#addplan").click(function() {
+          var pname = $j("#pname").val();
+          $j.post( "/modifyplan", { "operation":'newplan',"pname":pname },
+            function(msg) {
+              makeplans();
+            });
+       });
     });
 }
 
