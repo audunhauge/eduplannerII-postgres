@@ -626,21 +626,16 @@ var modifyPlan = function(user,query,callback) {
     return;
   }
   var operation = query.operation;
+  var pname    = query.pname    || 'newplan';
+  var start    = query.start    || db.firstweek;
+  var end      = query.stop     || db.lastweek;
+  var subject  = query.subject  || pname;
+  var courseid = query.courseid || 0;
+  var category = query.category || 0;
+  var state    = query.state    || 0;
+  var planid   = query.planid   || 0;
   switch(operation) {
     case 'newplan':
-      /*
-      console.log( 'insert into plan (name,start,end,subject,courseid,userid,category,state) values (?,?,?,?,?,?,?,?) ');
-      callback("inserted");
-      break;
-      */
-      var pname    = query.pname    || 'newplan';
-      var start    = query.start    || db.firstweek;
-      var end      = query.stop     || db.lastweek;
-      var subject  = query.subject  || pname;
-      var courseid = query.courseid || 0;
-      var category = query.category || 0;
-      var state    = query.state    || 0;
-
       client.query(
       'insert into plan (name,start,end,subject,courseid,userid,category,state) values (?,?,?,?,?,?,?,?) '
       , [pname,start,end,subject,courseid,user.id,category,state ],
@@ -669,7 +664,24 @@ var modifyPlan = function(user,query,callback) {
           callback("edited");
       break;
     case 'delete':
-          callback("deleted");
+      console.log("deleting ",planid);
+      client.query(
+      'delete from plan where id=? '
+      , [planid ],
+      function (err, info) {
+          if (err) {
+              console.log("ERROR: " + err.message);
+              throw err;
+          }
+          client.query( 'delete from weekplan where planid=?', [ planid ] ,
+          function (err, info) {
+              if (err) {
+                  console.log("ERROR: " + err.message);
+                  throw err;
+              }
+              callback("deleted");
+          });
+      });
       break;
   }
 }
@@ -689,11 +701,11 @@ var getMyPlans = function(user,callback) {
           for (var i=0,k= results.length; i < k; i++) {
               var res = results[i];
               if (!myplans[res.name]) {
-                myplans[res.name] = {};
-                myplans[res.name].weeks = {};
-                myplans[res.name].info = res;
+                myplans[res.id] = {};
+                //myplans[res.id].weeks = {};
+                myplans[res.id].info = res;
               }
-              myplans[res.name][+res.sequence] = res.plantext;
+              myplans[res.id][+res.sequence] = res.plantext;
           }
           callback(myplans);
       });

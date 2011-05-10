@@ -509,22 +509,66 @@ function makeplans() {
     + '';
   var s = '<div id="timeplan"><h1>Lag nye planer</h1>'+info+'</div>';
   s += '<div id="planlist"></div>';
+
+  // popup editor for eksisterende planer
+  // kan bare brukes på ukoblede planer
+  s += '<div class="simple_overlay" id="testdialog">'
+        +  '<h1>Rediger navn på plan</h1>'
+        +  '<div id="edform"></div>'
+        +  '<div class="centered sized3" >'
+        +   '<form><table>'
+        +   '<tr><td>Navn</td><td><input id="efag" type="text" /></td></tr>'
+        +   '<tr><td>Fag</td><td><input id="esubject" type="text" /></td></tr>'
+        +   '</table></form>'
+        +   '<div id="prolagre" class="close button gui float">Lagre</div> '
+        +   '<div id="proavbryt" class="close button red gui float">Avbryt</div>'
+        +  '</div>';
+        + '</div>';
   $j("#main").html(s);
   $j.getJSON( "/myplans", 
   function(data) {
-       var ss = 'Dine planer:<ul>';
+       var ss = 'Dine planer:';
+       var planlist = {};
        for (var i in data) {
          var p = data[i];
-         var info = i + ' ' + p.info.subject 
-         if (p.info.shortname) info += ' kobla til kurset ' + p.info.shortname;
-         ss += '<li>'+info+'</li>';
+         planlist[p.info.id] = p.info;
+         var info = p.info.name + ' ' + p.info.subject 
+         if (p.info.shortname) { 
+           info += ' kobla til kurset ' + p.info.shortname;
+           ss += '<div>'+info+'</div>';
+         } else {
+           info += '<div class="killer">x</div> ';
+           ss += '<div rel="#testdialog" id="ppid'+p.info.id+'" style="width:350px;" class="resme">'+info+'</div>';
+         }
        }
-       ss += '</ul>';
-       ss += '<form>Navn : <input id="pname" type="text"></form><div id="addplan" class="button">Ny plan</div>';
+       ss += '<form>Navn : <input id="pname" type="text"> Fag :<input id="subject" type="text"></form><div id="addplan" class="button">Ny plan</div>';
        $j("#planlist").html( ss); 
+
+       // legg til overlay-editoren
+       var triggers = $j("div.resme").click(function() {
+            var id = $j(this).attr('id').substr(4);
+            var inf = planlist[+id];
+            $j("#efag").val(inf.name);
+            $j("#esubject").val(inf.subject);
+            }).overlay({ 
+                mask: {
+                        color: '#ebecff',
+                        loadSpeed: 200,
+                        opacity: 0.8
+                },
+                closeOnClick: false });
+       $j(".killer").click(function() {
+           event.stopPropagation()
+           var myid = $j(this).parent().attr('id');
+           $j.post( "/modifyplan", { "operation":'delete',"planid":myid.substr(4) },
+            function(msg) {
+              makeplans();
+            });
+           });
        $j("#addplan").click(function() {
-          var pname = $j("#pname").val();
-          $j.post( "/modifyplan", { "operation":'newplan',"pname":pname },
+          var pname   = $j("#pname").val();
+          var subject = $j("#subject").val() || pname.split(/[ _]/)[0];
+          $j.post( "/modifyplan", { "operation":'newplan',"pname":pname, "subject":subject },
             function(msg) {
               makeplans();
             });
