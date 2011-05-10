@@ -634,6 +634,7 @@ var modifyPlan = function(user,query,callback) {
   var category = query.category || 0;
   var state    = query.state    || 0;
   var planid   = query.planid   || 0;
+  var connect  = query.connect  || '';
   switch(operation) {
     case 'newplan':
       client.query(
@@ -660,7 +661,29 @@ var modifyPlan = function(user,query,callback) {
           callback("inserted");
       });
       break;
+    case 'connect':
+          if (connect) {
+            //cidlist = connect.split(',');
+            //console.log('update mdl_course set planid = '+planid+' where id in ('+connect+')');
+            //*
+            client.query(
+            'update mdl_course set planid = ? where id in ('+connect+')' , [planid ],
+            function (err, info) {
+                if (err) {
+                    console.log("ERROR: " + err.message);
+                    throw err;
+                }
+                callback("connected");
+            });
+            // */
+          }
+      break;
+    case 'disconnect':
+          // disconnect a course from this plan
+          callback("disconnected");
+      break;
     case 'editplan':
+          // change name, subject, year
           callback("edited");
       break;
     case 'delete':
@@ -689,7 +712,7 @@ var modifyPlan = function(user,query,callback) {
 var getMyPlans = function(user,callback) {
   // returns a hash of all plans owned by user
   client.query(
-      'select p.*, w.id as wid,w.sequence, w.plantext, c.shortname from plan p inner join weekplan w on (p.id = w.planid) '
+      'select p.*, c.id as cid, c.shortname from plan p  '
       + ' left outer join mdl_course c on (c.planid = p.id) '
       + ' where p.userid = ? ' , [user.id ],
       function (err, results, fields) {
@@ -697,7 +720,9 @@ var getMyPlans = function(user,callback) {
               console.log("ERROR: " + err.message);
               throw err;
           }
-          var myplans = {};
+          callback(results);
+          /*
+          var myplans = [];
           for (var i=0,k= results.length; i < k; i++) {
               var res = results[i];
               if (!myplans[res.name]) {
@@ -708,6 +733,7 @@ var getMyPlans = function(user,callback) {
               myplans[res.id][+res.sequence] = res.plantext;
           }
           callback(myplans);
+          */
       });
 }
 

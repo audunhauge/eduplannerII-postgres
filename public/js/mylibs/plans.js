@@ -510,8 +510,9 @@ function makeplans() {
   var s = '<div id="timeplan"><h1>Lag nye planer</h1>'+info+'</div>';
   s += '<div id="planlist"></div>';
 
-  // popup editor for eksisterende planer
-  // kan bare brukes på ukoblede planer
+  // popup editor for plans
+  // you can connect a course to a plan
+  // you can connect several courses to one plan
   s += '<div class="simple_overlay" id="testdialog">'
         +  '<h1>Rediger navn på plan</h1>'
         +  '<div id="edform"></div>'
@@ -519,6 +520,8 @@ function makeplans() {
         +   '<form><table>'
         +   '<tr><td>Navn</td><td><input id="efag" type="text" /></td></tr>'
         +   '<tr><td>Fag</td><td><input id="esubject" type="text" /></td></tr>'
+        +   '<tr><td>Er koblet til</td><td><div id="clist"></div></td></tr>'
+        +   '<tr><td>Lag kobling til </td><td><div id="cc"></div></td></tr>'
         +   '</table></form>'
         +   '<div id="prolagre" class="close button gui float">Lagre</div> '
         +   '<div id="proavbryt" class="close button red gui float">Avbryt</div>'
@@ -529,28 +532,80 @@ function makeplans() {
   function(data) {
        var ss = 'Dine planer:';
        var planlist = {};
+       var courseids = [];   // all your courses connected to plans
        for (var i in data) {
          var p = data[i];
-         planlist[p.info.id] = p.info;
-         var info = p.info.name + ' ' + p.info.subject 
-         if (p.info.shortname) { 
-           info += ' kobla til kurset ' + p.info.shortname;
-           ss += '<div>'+info+'</div>';
-         } else {
-           info += '<div class="killer">x</div> ';
-           ss += '<div rel="#testdialog" id="ppid'+p.info.id+'" style="width:350px;" class="resme">'+info+'</div>';
+         if (!planlist[p.id]) {
+           planlist[p.id] = p;
+           planlist[p.id].courses = [];
+           planlist[p.id].ccex = {};  // quick check to fing courses not connected
+           planlist[p.id].text = p.name + ' ' + p.subject 
          }
+         if (p.shortname) { 
+           planlist[p.id].courses.push([p.shortname,p.cid]);
+           planlist[p.id].ccex[p.cid] = true;
+           courseids.push([p.shortname,p.cid]);
+         } 
+       }
+       for (var pid in planlist) {
+         var plan = planlist[pid];
+         var info = plan.name + ' ' + plan.subject;
+         if (plan.courses.length == 0) { 
+           info += '<div class="killer">x</div> ';
+         } else {
+           var mycc = ($j.map(plan.courses,function(e,i) {
+                return '<span class="choose" id="cc'+e[1]+'">'+e[0]+'</span>';
+             })).join(', ');
+           info += ' brukt av ' + mycc;
+         }
+         ss += '<div rel="#testdialog" id="ppid'+pid+'" style="width:350px;" class="resme">'+info+'</div>';
        }
        ss += '<form>Navn : <input id="pname" type="text"> Fag :<input id="subject" type="text"></form><div id="addplan" class="button">Ny plan</div>';
        $j("#planlist").html( ss); 
+       var inf;  // info about the plan we are editing
+       var buttons = $j(".close").click(function (event) { 
+         var choo = [];
+         $j(".redfont").each(function(i,e) {
+                choo.push(this.id.substr(2));
+              });
+         // we now have any new courses to connect to this plan
+         $j.post( "/modifyplan", { "operation":'connect',"planid":inf.id, "connect":choo.join(',') },
+            function(msg) {
+              makeplans();
+            });
+       });
+
+       // chooser is used to choose a course to connect to this plan
+       // we assume that the update in node takes care of
+       // removing other connections
+       // update plan set courseid = 0 where courseid = ?
+       // update plan set courseid = ? where id = ?
+       var chooser = ($j.map(courseids,function(e,i) {
+                return '<span class="choose" id="cc'+e[1]+'">'+e[0]+'</span>';
+             })).join(' ');
 
        // legg til overlay-editoren
        var triggers = $j("div.resme").click(function() {
             var id = $j(this).attr('id').substr(4);
-            var inf = planlist[+id];
+            inf = planlist[+id];
+            var chooser = ($j.map(inf.courses,function(e,i) {
+                return '<span>'+e[0]+'</span>';
+             })).join(' ');
+            var candi = ($j.grep(courseids,function(e,i) {
+                return !inf.ccex[e[1]] ;
+             }));
+            var candid = ($j.map(candi,function(e,i) {
+                return '<span class="choose" id="cc'+e[1]+'">'+e[0]+'</span>';
+             })).join(' ');
             $j("#efag").val(inf.name);
             $j("#esubject").val(inf.subject);
-            }).overlay({ 
+            $j("#clist").html(chooser);
+            $j("#cc").html(candid);
+            $j(".choose").click(function() {
+                 $j(this).toggleClass("redfont");
+              });
+
+         }).overlay({ 
                 mask: {
                         color: '#ebecff',
                         loadSpeed: 200,

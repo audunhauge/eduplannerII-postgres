@@ -486,10 +486,11 @@ app.post('/makereserv', function(req, res) {
 
 app.post('/modifyplan', function(req, res) {
     // create/update/delete a plan
-    console.log(req.body);
+    //console.log(req.body);
     if (req.session.user && req.session.user.department == 'Undervisning' ) {
       database.modifyPlan(req.session.user,req.body,function(msg) {
          res.send(msg);
+         if (req.body.operation == 'connect') delete addons.plans;
       });
     } else {
       res.send({ok:false, msg:"bad user"});
