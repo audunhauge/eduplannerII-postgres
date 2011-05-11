@@ -556,7 +556,7 @@ function makeplans() {
        }
        for (var pid in planlist) {
          var plan = planlist[pid];
-         var info = plan.name + ' ' + plan.subject;
+         var info = '  fagnavn:' + plan.subject;
          if (plan.courses.length == 0) { 
            info += '<div class="killer">x</div> ';
          } else {
@@ -565,10 +565,16 @@ function makeplans() {
              })).join(', ');
            info += ' brukt av ' + mycc;
          }
-         ss += '<div rel="#testdialog" id="ppid'+pid+'" style="width:350px;" class="resme">'+info+'</div>';
+         ss += '<div class="editlink"><div class="elink" id="ed'+plan.id+'" >'+plan.name
+           + '</div><span rel="#testdialog" id="ppid'+pid+'" class="resme">'+info+'</span></div>';
        }
-       ss += '<form>Navn : <input id="pname" type="text"> Fag :<input id="subject" type="text"></form><div id="addplan" class="button">Ny plan</div>';
+       ss += '<p><form>Navn : <input id="pname" type="text"> Fag :<input id="subject" type="text"></form><div id="addplan" class="button">Ny plan</div>';
        $j("#planlist").html( ss); 
+       $j("div.elink").click(function() {
+           event.stopPropagation()
+           var myid = this.id.substr(2);
+           alert(myid);
+           });
        var inf;  // info about the plan we are editing
        var buttons = $j(".close").click(function (event) { 
          if (buttons.index(this) == 1) return;
@@ -602,7 +608,7 @@ function makeplans() {
              })).join(' ');
 
        // legg til overlay-editoren
-       var triggers = $j("div.resme").click(function() {
+       var triggers = $j("span.resme").click(function() {
             var id = $j(this).attr('id').substr(4);
             inf = planlist[+id];
             var chooser = ($j.map(inf.courses,function(e,i) {

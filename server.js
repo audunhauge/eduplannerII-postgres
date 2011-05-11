@@ -503,7 +503,7 @@ app.post('/save_fagplan', function(req, res) {
     //console.log(req);
     if (req.session.user && req.session.user.department == 'Undervisning' 
          && req.body.uid == req.session.user.id) {
-      //console.log("User saved som data");
+      console.log("User saved som data ",req.body);
       database.updateCoursePlan(req.body,function(msg) {
          res.send(msg);
          delete addons.plans;

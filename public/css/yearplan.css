@@ -62,8 +62,6 @@ ul.prliste {
   margin:2px;
 }
 
-
-
 .addhd {
   display:block;
   width:12px;
@@ -83,6 +81,18 @@ ul.prliste {
    * on hover we want to show delete button */
   opacity:1;
   
+}
+
+div.editlink {
+  width:450px;
+  clear:both;
+}
+
+div.elink {
+  color:green;
+  padding:5px;
+  width:150px;
+  float:left;
 }
 
 div.killer {

@@ -83,7 +83,7 @@ var getCoursePlans = function(callback) {
           + '        INNER JOIN plan p ON p.userid = u.id '
           + '        INNER JOIN mdl_course c ON c.planid = p.id '
           + '        INNER JOIN weekplan w ON p.id = w.planid '
-          + ' WHERE u.department = "undervisning" ',
+          + ' WHERE u.department = "undervisning" order by w.sequence ',
           //+ '   ORDER BY u.institution,u.username,c.shortname,w.sequence ' ,
       function (err, results, fields) {
           if (err) {
@@ -143,15 +143,19 @@ var updateTotCoursePlan = function(query,callback) {
       var u = updated[uid];
       var elm = u.split('x|x');
       var sectnum = elm[0],text=elm[1];
-      text = text.replace('&amp;nbsp;',' ');
-      text = text.replace('&nbsp;',' ');
+      text = text.replace(/&amp;nbsp;/g,' ');
+      text = text.replace(/&nbsp;/g,' ');
+      text = text.replace(/\n/g,'<br>');
       usects[+sectnum] = text;
   }
   var ok = true;
   var msg = '';
   client.query(
       //  'select s.* from mdl_course_sections s where s.course = ? ' , [ query.courseid],
-        'select s.*,p.id as pid from weekplan s inner join plan p on (p.id = s.planid) where p.courseid = ? ' , [ query.courseid],
+        //'select s.*,p.id as pid from weekplan s inner join plan p on (p.id = s.planid) where p.courseid = ? ' , [ query.courseid],
+          'select w.*,p.id as pid from plan p inner join weekplan w on (p.id = w.planid) '
+        + ' inner join mdl_course c on (c.planid = p.id) '
+        + ' where c.id = ? order by w.sequence ' , [ query.courseid],
       function (err, sections, fields) {
           if (err) {
               callback( { ok:false, msg:err.message } );
@@ -554,7 +558,9 @@ var updateCoursePlan = function(query,callback) {
   // update courseplan for given section
   client.query(
         //'select s.* from mdl_course_sections s where s.course = ? and s.section = ? ' , [ query.courseid,  query.section],
-        'select w.*,p.id as pid from plan p inner join weekplan w on (p.id = w.planid) where p.courseid = ? ' , [ query.courseid],
+          'select w.*,p.id as pid from plan p inner join weekplan w on (p.id = w.planid) '
+        + ' inner join mdl_course c on (c.planid = p.id) '
+        + ' where c.id = ? ' , [ query.courseid],
       function (err, results, fields) {
           if (err) {
               callback( { ok:false, msg:err.message } );
@@ -573,7 +579,7 @@ var updateCoursePlan = function(query,callback) {
           if (wanted) {
             if (wanted.plantext != query.summary) {
               client.query(
-                  'update weekplan set plantext=? where id=?',[ query.summary, sect.id ],
+                  'update weekplan set plantext=? where id=?',[ query.summary, wanted.id ],
                   function (err, results, fields) {
                       if (err) {
                           callback( { ok:false, msg:err.message } );
@@ -721,6 +727,7 @@ var getMyPlans = function(user,callback) {
   // returns a hash of all plans owned by user
   client.query(
       'select p.*, c.id as cid, c.shortname from plan p  '
+      // + ' inner join weekplan w on (w.planid = p.id) '
       + ' left outer join mdl_course c on (c.planid = p.id) '
       + ' where p.userid = ? ' , [user.id ],
       function (err, results, fields) {
