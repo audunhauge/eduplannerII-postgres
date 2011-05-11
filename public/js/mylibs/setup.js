@@ -33,6 +33,7 @@ var eier;               // eier av siste timeplan (navn osv)
 
 var show = {};   // list over all shows indexed by userid
 
+var myplans = null;   // my very own plans (I'm a teacher)
 var timetables = null;
 var timeregister = {};
 // timeregister lagrer timeplaner slik at de kan vises
@@ -339,6 +340,14 @@ function setup_teach() {
     });
     // legg inn clickhandler for alle rom
     // hent reserveringer for rommene
+    $j.getJSON( "/myplans", 
+      function(data) {
+        myplans = {};
+        for (var i in data) {
+           var p = data[i];
+           myplans[p.shortname] = p;
+        }
+      });
 
     $j.getJSON( "/reserv", 
          function(data) {

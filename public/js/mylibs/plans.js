@@ -14,6 +14,12 @@ function synopsis(coursename,plandata,tests) {
   //var events = database.aarsplan;
   var myttimer = (timetables && timetables.course) ? timetables.course[coursename] : [];
   var jd = database.firstweek;
+  if (myplans && myplans[minfagplan]) {
+      var pp = myplans[minfagplan];
+      if (julian.jdtogregorian(jd).year < pp.start) {
+        jd = database.nextyear.firstweek;
+      }
+  }
   var mytt = {};
   if (myttimer) {
     for (var i=0; i< myttimer.length;i++) {
@@ -520,6 +526,7 @@ function makeplans() {
         +   '<form><table>'
         +   '<tr><td>Navn</td><td><input id="efag" type="text" /></td></tr>'
         +   '<tr><td>Fag</td><td><input id="esubject" type="text" /></td></tr>'
+        +   '<tr><td>Start </td><td><input id="start" value="2011" type="text" /></td></tr>'
         +   '<tr><td>Er koblet til</td><td><div id="clist"></div></td></tr>'
         +   '<tr><td>Lag kobling til </td><td><div id="cc"></div></td></tr>'
         +   '</table></form>'
@@ -564,6 +571,7 @@ function makeplans() {
        $j("#planlist").html( ss); 
        var inf;  // info about the plan we are editing
        var buttons = $j(".close").click(function (event) { 
+         if (buttons.index(this) == 1) return;
          var choo = [];
          $j(".redfont").each(function(i,e) {
                 choo.push(this.id.substr(2));
@@ -573,6 +581,15 @@ function makeplans() {
             function(msg) {
               makeplans();
             });
+         var start   = $j("#start").val();
+         var pname   = $j("#efag").val();
+         var subject = $j("#esubject").val() || pname.split(/[ _]/)[0];
+         if (inf.start != start) {
+             $j.post( "/modifyplan", { "operation":'editplan',"planid":inf.id, "start":start, "pname":pname, "subject":subject },
+                function(msg) {
+                  makeplans();
+                });
+         }
        });
 
        // chooser is used to choose a course to connect to this plan
@@ -598,6 +615,7 @@ function makeplans() {
                 return '<span class="choose" id="cc'+e[1]+'">'+e[0]+'</span>';
              })).join(' ');
             $j("#efag").val(inf.name);
+            $j("#start").val(inf.start);
             $j("#esubject").val(inf.subject);
             $j("#clist").html(chooser);
             $j("#cc").html(candid);

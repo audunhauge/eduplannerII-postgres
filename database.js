@@ -77,7 +77,7 @@ client.connect(function(err, results) {
 
 var getCoursePlans = function(callback) {
   client.query(
-            'SELECT u.id as uid, u.username, c.id, u.institution'
+            'SELECT u.id as uid, u.username, c.id, u.institution, p.start '
           + ' ,c.startdate,c.shortname,c.numsections,w.sequence as section,w.plantext as summary,c.cost '
           + '   FROM mdl_user u  '
           + '        INNER JOIN plan p ON p.userid = u.id '
@@ -684,7 +684,15 @@ var modifyPlan = function(user,query,callback) {
       break;
     case 'editplan':
           // change name, subject, year
-          callback("edited");
+            client.query(
+            'update plan set start = ?,name=?,subject=? where id = ?' , [start,pname,subject,planid ],
+            function (err, info) {
+                if (err) {
+                    console.log("ERROR: " + err.message);
+                    throw err;
+                }
+                callback("edited");
+            });
       break;
     case 'delete':
       console.log("deleting ",planid);

@@ -332,11 +332,19 @@ function pasteIntoThisPlan(fagnavn,egne) {
 
 function visEnValgtPlan(plandata,egne,start,stop) {
     // viser en plan - du kan redigere dersom du er eier
-     var s = '<table class="fagplan" >'
+    var skipp = true;
+    var s = '<table class="fagplan" >'
      + "<tr><th>Uke</th><th>Info</th><th>Absentia</th><th>Tema</th><th>Vurdering</th><th>Mål</th><th>Oppgaver</th><th>Logg/merk</th></tr>";
     var i,j,e,klass,idd;
     //for (i= thisweek; i < database.lastweek; i += 7) {
     var jd = database.firstweek;
+    if (myplans && myplans[minfagplan]) {
+        var pp = myplans[minfagplan];
+        if (julian.jdtogregorian(jd).year < pp.start) {
+          jd = database.nextyear.firstweek;
+          var skipp = false;
+        }
+    }
     var tests = coursetests(minfagplan);
     var felms = minfagplan.split('_');
     var fag = felms[0];
@@ -364,10 +372,12 @@ function visEnValgtPlan(plandata,egne,start,stop) {
         var uke = julian.week(jd);
         tjd = jd;
         jd += 7;
-        if (!(+uke > 0)) continue;
-        if (+uke > 30 && start < 30) continue;
-        if ((+uke < start && start < 30) || (start > 30 && +uke > 30 && +uke < start) ) continue;
-        if ((+uke > stop && +uke < 30) || (stop > 30  && +uke > stop) || (stop > 30 && +uke < 30) ) continue;
+        if (skipp) {
+          if (!(+uke > 0)) continue;
+          if (+uke > 30 && start < 30) continue;
+          if ((+uke < start && start < 30) || (start > 30 && +uke > 30 && +uke < start) ) continue;
+          if ((+uke > stop && +uke < 30) || (stop > 30  && +uke > stop) || (stop > 30 && +uke < 30) ) continue;
+        }
         if (+section < 10) {
             section = '0' + section;
         }
