@@ -150,12 +150,19 @@ var updateTotCoursePlan = function(query,callback) {
   }
   var ok = true;
   var msg = '';
-  client.query(
-      //  'select s.* from mdl_course_sections s where s.course = ? ' , [ query.courseid],
-        //'select s.*,p.id as pid from weekplan s inner join plan p on (p.id = s.planid) where p.courseid = ? ' , [ query.courseid],
-          'select w.*,p.id as pid from plan p inner join weekplan w on (p.id = w.planid) '
+  var param;
+  var sql;
+  if (query.planid) {
+    sql = 'select w.*,p.id as pid from plan p inner join weekplan w on (p.id = w.planid) '
+        + ' where p.id = ? '; 
+    param = query.planid;
+  } else {
+    sql = 'select w.*,p.id as pid from plan p inner join weekplan w on (p.id = w.planid) '
         + ' inner join mdl_course c on (c.planid = p.id) '
-        + ' where c.id = ? order by w.sequence ' , [ query.courseid],
+        + ' where c.id = ? '; 
+    param = query.courseid;
+  }
+  client.query( sql , [ param ] ,
       function (err, sections, fields) {
           if (err) {
               callback( { ok:false, msg:err.message } );
@@ -177,23 +184,10 @@ var updateTotCoursePlan = function(query,callback) {
                                   ok = false;
                                   msg = err.message;
                               }
+                              //console.log('update weekplan set plantext=? where id=?', usects[s.sequence], s.id );
                           });
                   }
-                  delete usects[s.sequence];
-                  // unset this section - remaining sections in usects will be INSERTED
               }
-          }
-          for (sectnum in usects) {
-              summary = usects[sectnum];
-              client.query(
-                  //'insert into mdl_course_sections (course,section,summary) values (?,?,?)', [ query.courseid, sectnum, summary],
-                  'insert into weekplan (planid,sequence,plantext) values (?,?,?)', [ planid, sectnum, summary],
-                  function (err, results, fields) {
-                      if (err) {
-                          ok = false;
-                          msg = err.message;
-                      }
-                  });
           }
           callback( { ok:ok, msg:msg } );
       });
@@ -407,6 +401,22 @@ var saveTimetableSlot = function(user,query,callback) {
       });
 }
 
+var saveVurd = function(query,callback) {
+  var pid = query.planid
+  var value = query.value;
+  console.log( 'update plan set vurdering = ? where id= ? ', value,pid);
+  client.query(
+      'update plan set vurdering = ? where id= ? ', [value,pid],
+      function (err, results, fields) {
+          if (err) {
+              console.log("ERROR: " + err.message);
+              throw err;
+          }
+          callback( {ok:true, msg:"updated"} );
+      });
+
+}
+
 var saveTest = function(user,query,callback) {
   // update/insert test
 
@@ -556,11 +566,20 @@ var selltickets = function(user,query,callback) {
 
 var updateCoursePlan = function(query,callback) {
   // update courseplan for given section
-  client.query(
-        //'select s.* from mdl_course_sections s where s.course = ? and s.section = ? ' , [ query.courseid,  query.section],
-          'select w.*,p.id as pid from plan p inner join weekplan w on (p.id = w.planid) '
+  var param;
+  var sql;
+  if (query.planid) {
+    sql = 'select w.*,p.id as pid from plan p inner join weekplan w on (p.id = w.planid) '
+        + ' where p.id = ? '; 
+    param = query.planid;
+  } else {
+    sql = 'select w.*,p.id as pid from plan p inner join weekplan w on (p.id = w.planid) '
         + ' inner join mdl_course c on (c.planid = p.id) '
-        + ' where c.id = ? ' , [ query.courseid],
+        + ' where c.id = ? '; 
+    param = query.courseid;
+  }
+
+  client.query( sql , [ param ],
       function (err, results, fields) {
           if (err) {
               callback( { ok:false, msg:err.message } );
@@ -723,6 +742,46 @@ var modifyPlan = function(user,query,callback) {
   }
 }
 
+var getAplan = function(planid,callback) {
+  // returns a specific plan
+  client.query(
+      'select p.*,w.id as wid, w.sequence, w.plantext from plan p  '
+      + ' inner join weekplan w on (w.planid = p.id) '
+      + ' where p.id = ? ' , [planid ],
+      function (err, results, fields) {
+          if (err) {
+              console.log("ERROR: " + err.message);
+              throw err;
+          }
+          var plan = {};
+          plan.name = results[0].name;
+          plan.weeks = {};
+          for (var i=0,k= results.length; i < k; i++) {
+            fag = results[i];
+            summary = fag.plantext || '';
+            summary = summary.replace(/\n/g,'<br>');
+            summary = summary.replace(/\r/g,'<br>');
+            section = fag.sequence || '0';
+            shortname = fag.shortname;
+            plan.weeks[section] = summary;
+          }
+          callback(plan);
+      });
+}
+
+var getAllPlans = function(callback) {
+  // returns a hash of all info for all plans
+  client.query(
+      'select p.*,c.shortname from plan p left outer join mdl_course c on (c.planid = p.id) ',
+      function (err, results, fields) {
+          if (err) {
+              console.log("ERROR: " + err.message);
+              throw err;
+          }
+          callback(results);
+      });
+}
+
 var getMyPlans = function(user,callback) {
   // returns a hash of all plans owned by user
   client.query(
@@ -736,19 +795,6 @@ var getMyPlans = function(user,callback) {
               throw err;
           }
           callback(results);
-          /*
-          var myplans = [];
-          for (var i=0,k= results.length; i < k; i++) {
-              var res = results[i];
-              if (!myplans[res.name]) {
-                myplans[res.id] = {};
-                //myplans[res.id].weeks = {};
-                myplans[res.id].info = res;
-              }
-              myplans[res.id][+res.sequence] = res.plantext;
-          }
-          callback(myplans);
-          */
       });
 }
 
@@ -1240,10 +1286,13 @@ module.exports.saveTest = saveTest;
 module.exports.getBlocks = getBlocks;
 module.exports.savesimple = savesimple;
 module.exports.savehd = savehd;
+module.exports.saveVurd = saveVurd;
 module.exports.getMyPlans = getMyPlans;
 module.exports.saveabsent = saveabsent;
 module.exports.getabsent = getabsent;
 module.exports.getshow = getshow;
+module.exports.getAplan = getAplan;
+module.exports.getAllPlans = getAllPlans;
 module.exports.modifyPlan = modifyPlan;
 module.exports.selltickets = selltickets ;
 module.exports.gettickets = gettickets;

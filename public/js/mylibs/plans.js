@@ -573,8 +573,10 @@ function makeplans() {
        $j("div.elink").click(function() {
            event.stopPropagation()
            var myid = this.id.substr(2);
-           alert(myid);
-           });
+           $j.get('/getaplan',{ planid:myid }, function(pplan) {
+                visEnPlan("showplan",pplan,true);
+             });
+         });
        var inf;  // info about the plan we are editing
        var buttons = $j(".close").click(function (event) { 
          if (buttons.index(this) == 1) return;

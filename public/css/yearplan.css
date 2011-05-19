@@ -83,6 +83,18 @@ ul.prliste {
   
 }
 
+#vurd {
+  padding:12px;
+}
+
+#vurd > div {
+}
+
+#vurd > div > p:first-letter {
+  font-size:1.8em;
+  color:green;
+}
+
 div.editlink {
   width:450px;
   clear:both;

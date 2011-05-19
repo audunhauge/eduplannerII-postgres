@@ -4,6 +4,12 @@
 var minVisning = "#rest";  // valgt visning - slik at vi kan tegne på nytt
 var testjd;    // store the current julday for a new test
 var undoid;    // store the id of changed value (so we can update html)
+
+var nocourse = false;  // will be true for an unconnected plan
+var myplanid;            // will be id of plan for unconnected plan
+// unconnected plans do not need to update the list of courseplans
+
+
 //var uke = database.week;
 
 function edit_proveplan(fagnavn,plandata,start,stop) {
@@ -228,21 +234,32 @@ var changedPlans = {};     // hash of changed sections in a fagplan
 var mycopy;                //  {}  a copy of a plan
 var activeplan;            //  plandata for chosen plan
 
-function visEnPlan(fagnavn,plandata,egne) {
-    $j.bbq.pushState("#plans/"+fagnavn);
-    if (!plandata ) plandata = courseplans[fagnavn];
-    if (!plandata) {
-      plandata = {};
-      for (var i=1; i < 48; i++) {
-        plandata[i] = '';
+function visEnPlan(inifagnavn,plandata,egne) {
+    var fagnavn = inifagnavn;
+    if (inifagnavn == "showplan") {
+      // show a plan not connected to a course
+      // we have all info in plandata
+      fagnavn = plandata.name;
+      plandata = plandata.weeks;
+    } else {
+      $j.bbq.pushState("#plans/"+fagnavn);
+      if (!plandata ) plandata = courseplans[fagnavn];
+      if (!plandata) {
+        plandata = {};
+        for (var i=1; i < 48; i++) {
+          plandata[i] = '';
+        }
       }
     }
     activeplan = plandata;
     egne = typeof(egne) != 'undefined' ? true : false;
     minfagplan = fagnavn;
-    var myteachers = $j.map(database.courseteach[fagnavn].teach,function(e,i) {
+    var myteachers = '';
+    if (database.courseteach[fagnavn]) {
+      myteachers = $j.map(database.courseteach[fagnavn].teach,function(e,i) {
            return (teachers[e].firstname + " " + teachers[e].lastname);
         }).join(', ');
+    }
     var s='<div id="fagplan">';
     s += '<h1><a class="copylink" href="yearplan#plans/'+fagnavn+'">'+ fagnavn  +'</a></h1>';
     s += '<h3 class="textcenter" >'+ myteachers  +'</h3>';
@@ -266,19 +283,30 @@ function visEnPlan(fagnavn,plandata,egne) {
         // anta at alle endringer er tilbakeført til fagplanen
         //    fagplaner.fagliste[fagnavn];
         $j(this).removeClass("button").html('<img src="img/indicator.gif">');
+        var ppid,courseid;
+        if (nocourse) { 
+          ppid = myplanid;
+        } else {
+          courseid = database.courseteach[fagnavn].id;
+        }
         var all = [];
         for (var i in changedPlans) {
             var section = +i;
             all.push('' + section + 'x|x' + changedPlans[i]);
         }
         var alltext = all.join('z|z');
-        var courseid = database.courseteach[fagnavn].id;
         if (alltext) {
-          $j.post( "/save_totfagplan", { "alltext":alltext, "courseid":courseid },
+          $j.post( "/save_totfagplan", { "alltext":alltext, "planid":ppid, "courseid":courseid },
                 function(data) {
                     $j("#editmsg").html(data.msg);
                     $j("#saveme").hide().addClass("button").html('Lagre');
-                    $j(minVisning).click();
+                    if (nocourse) {
+                      $j.get('/getaplan',{ planid:myplanid }, function(pplan) {
+                          visEnPlan("showplan",pplan,true);
+                       });
+                    } else {
+                      $j(minVisning).click();
+                    }
                 });
         }
         changedPlans = [];
@@ -315,36 +343,88 @@ function visEnPlan(fagnavn,plandata,egne) {
     $j("#copy").click(function() {
         mycopy = activeplan;
     });
+    $j("#vurd > div").slideUp(3000);
+    $j("#vurd > span").click(function() {
+      $j("#vurd > div").toggle();
+    });
+    if (isteach) $j("#vurd > div").editable(save_vurd, {
+         type      : 'textarea',
+         width     : '500px',
+         height    : '16em',
+         style     : 'display:block',
+         doformat  : translatebreaks,
+         submit    : 'OK',
+         indicator : '<img src="aarsplan/indicator.gif">',
+         tooltip   : 'Click to edit...'
+     });
+}
+
+function save_vurd(value,settings) {
+    // save the changed element into compound week data a|b|c|d|e
+    $j(this).removeClass( "ui-state-highlight" );
+    var ppid;
+    if (nocourse) { 
+      ppid = myplanid;
+    } else {
+      ppid =  cpinfo[minfagplan];
+    }
+    $j.post( "/save_vurd", { "value":value, "planid":ppid, "uid":userinfo.id },
+    function(data) {
+        if (data.ok) {
+            $j("#editmsg").html('Du kan redigere planen ved å klikke på en rute');
+        } else {    
+            $j("#editmsg").html('<span class="error">'+data.msg+'</span>');
+        }
+    });
+    value = value.replace(/\n|\r/g,"<br>");
+    return(value);
 }
 
 function pasteIntoThisPlan(fagnavn,egne) {
-    visEnPlan(fagnavn,mycopy,egne);
+    if (nocourse) { 
+      var pplan = { name:fagnavn, weeks:mycopy };
+      visEnPlan("showplan",pplan,true);
+    } else {
+      visEnPlan(fagnavn,mycopy,egne);
+      //fagplaner.fagliste[fagnavn] = mycopy;
+      // we do this on save (TODO check)
+    }
     changedPlans = {};
     for (var i in mycopy) {
-        var elm = mycopy[i];
-        changedPlans[elm.section] = translatebreaks(elm.summary);
+        var summary = mycopy[i];
+        changedPlans[i] = translatebreaks(summary);
     }
-    fagplaner.fagliste[fagnavn] = mycopy;
     $j("#saveme").show();
-    $j("#editmsg").html('Planen er oppdatetert, men IKKE lagra.');
+    $j("#editmsg").html('Planen er oppdatert, men IKKE lagra.');
 }
 
 
 function visEnValgtPlan(plandata,egne,start,stop) {
     // viser en plan - du kan redigere dersom du er eier
     var skipp = true;
-    var s = '<table class="fagplan" >'
-     + "<tr><th>Uke</th><th>Info</th><th>Absentia</th><th>Tema</th><th>Vurdering</th><th>Mål</th><th>Oppgaver</th><th>Logg/merk</th></tr>";
     var i,j,e,klass,idd;
     //for (i= thisweek; i < database.lastweek; i += 7) {
     var jd = database.firstweek;
+    var vurdering = '';
+    nocourse = false;
     if (myplans && myplans[minfagplan]) {
         var pp = myplans[minfagplan];
+        vurdering = pp.vurdering || '';
         if (julian.jdtogregorian(jd).year < pp.start) {
           jd = database.nextyear.firstweek;
           var skipp = false;
+          nocourse = true;    // do not update courseplans
+          myplanid = pp.id;
         }
+    } else {
+      vurdering = planinfo[cpinfo[minfagplan]] || '';
     }
+    if (vurdering || (egne && isteach ) ) {
+      vurdering = '<div id="vurd"><span>Vurdering</span><div class="gradback" >'+vurdering+'</div></div>';
+    }
+    var s = vurdering;
+    s += '<table class="fagplan" >'
+     + "<tr><th>Uke</th><th>Info</th><th>Absentia</th><th>Tema</th><th>Vurdering</th><th>Mål</th><th>Oppgaver</th><th>Logg/merk</th></tr>";
     var tests = coursetests(minfagplan);
     var felms = minfagplan.split('_');
     var fag = felms[0];
@@ -572,6 +652,10 @@ function check_blokk(value,settings) {
     if (!blo > 0 || blo < 21 || blo > 34) return "Ugyldig blokk "+blo;
     var timer = elm.shift();
     return ""+blo + " " + timer;
+    //TODO  finish up this code
+    //
+    //*****************
+    //  old code below
     var beskrivelse = elm.join(' ');
     var correct = fagnavn + " " + beskrivelse;
     if (category[fagnavn]) {
@@ -836,8 +920,13 @@ function save_fagplan(value,settings) {
       // then we must remove it from list of cells to be updated (as it is now
       // saved with new content)
     update_fagplaner(minfagplan,section,summary);
-    var courseid = database.courseteach[minfagplan].id;
-    $j.post( "/save_fagplan", { "section":section,"value":value, "idx":idx, 
+    var ppid,courseid;
+    if (nocourse) { 
+      ppid = myplanid;
+    } else {
+      courseid = database.courseteach[minfagplan].id;
+    }
+    $j.post( "/save_fagplan", { "section":section,"value":value, "idx":idx, "planid":ppid,
              "uid":userinfo.id, "week":week, "courseid":courseid, "summary":summary },
     function(data) {
         if (data.ok) {
@@ -852,10 +941,12 @@ function save_fagplan(value,settings) {
 
 
 function update_fagplaner(fagnavn,section,summary) {
+    if (nocourse) return;
     courseplans[fagnavn][section] = summary;
 }
 
 function translatebreaks(s) {
+    if (!s) return '';
     return s.replace(/<br>/g,"\n").replace(/\&nbsp;/g,' ');
 }
 

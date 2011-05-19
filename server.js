@@ -442,6 +442,19 @@ app.post('/save_totfagplan', function(req, res) {
     }
 });
 
+app.post('/save_vurd', function(req, res) {
+    // user has changed/created a test
+    if (req.session.user && req.session.user.department == 'Undervisning') {
+      database.saveVurd(req.body,function(msg) {
+         console.log(msg);
+         res.send(msg);
+      });
+    } else {
+      res.send({ok:false, msg:"bad user"});
+    }
+
+});
+
 app.post('/save_test', function(req, res) {
     // user has changed/created a test
     var justnow = new Date();
@@ -496,6 +509,18 @@ app.post('/modifyplan', function(req, res) {
       res.send({ok:false, msg:"bad user"});
     }
 
+});
+
+app.get('/getaplan', function(req, res) {
+    database.getAplan(req.query.planid,function(plandata) {
+            res.send(plandata);
+          });
+});
+
+app.get('/getallplans', function(req,res) {
+    database.getAllPlans(function(plandata) {
+            res.send(plandata);
+          });
 });
 
 app.post('/save_fagplan', function(req, res) {

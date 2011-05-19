@@ -68,6 +68,9 @@ var fagplaner;          // mine fagplaner
 var allefagplaner;      // alle fagplaner courseplans[avdeling][teach][fag] (pr lærer)
 var courseplans = null; // courseplans[course]
 
+var planinfo;           // planid -> info (vurdering)
+var cpinfo;             // courseid -> planid
+
 var siste10 = {}        // husk 10 siste timeplaner
 
 var alleprover;         // lagrer data om alle prøver for alle elever
@@ -345,7 +348,11 @@ function setup_teach() {
         myplans = {};
         for (var i in data) {
            var p = data[i];
-           myplans[p.shortname] = p;
+           if (p.shortname) {
+             myplans[p.shortname] = p;
+           } else {
+             myplans[p.name] = p;
+           }
         }
       });
 
@@ -682,6 +689,16 @@ $j(document).ready(function() {
                 event.preventDefault();
                 show_alleprover();
             }).removeClass("disabled");
+         });
+    $j.getJSON( "/getallplans", 
+         function(data) {
+             planinfo = {};
+             cpinfo = {};
+             for (var i in data) {
+               var pinf = data[i];
+               if (!planinfo[pinf.id]) planinfo[pinf.id] = pinf.vurdering;
+               if (!cpinfo[pinf.shortname]) cpinfo[pinf.shortname] = pinf.id;
+             }
          });
     $j("#prover").click(function(event) {
         event.preventDefault();
