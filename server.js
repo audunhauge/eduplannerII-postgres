@@ -287,7 +287,7 @@ var users = require('./users');
 app.get('/logout', function(req, res) {
   delete req.session.user;
   delete req.userinfo;
-  db_copy.userinfo = { uid:0 };
+  //db_copy.userinfo = { uid:0 };
   res.redirect('/yearplan');
 });
 
