@@ -1,0 +1,24 @@
+!!! 5
+// - var foo = '<link rel="stylesheet" href="/static/css/' + cacheTimeStamps.css + '/style.css?v=2">' 
+// - var bar = '<script src="/static/js/' + cacheTimeStamps.js + '/client.js" type="text/javascript"></script>';
+html.no-js(lang="en")
+  head
+    title Årsplan for Skeisvang
+    meta(charset="utf-8")
+    meta(name="viewport", content="width=device-width initial-scale=1.0")
+    link(rel="stylesheet", href="css/yearplan.css")
+    link(rel="stylesheet", href="css/yearplan-menu.css")
+    link(rel="stylesheet", href="css/ui-lightness/jquery-ui-1.8.6.custom.css")
+    link(rel="shortcut icon", href="/public/favicon.ico")
+    link(rel="apple-touch-icon", href="/public/apple-touch-icon.png")
+  body
+    header
+    #container
+      body!= body
+    footer
+    script(src="js/mylibs/jquery-1.4.2.min.js")
+    script(src="js/mylibs/jquery-ui-1.8.7.custom.min.js")
+    script(src="js/mylibs/jbbq.min.js")
+    script(src="js/tooltip.min.js")
+    script(src="js/mylibs/jedi.js")
+    script(src="js/mylibs/plain.js")

@@ -560,18 +560,7 @@ app.get('/show', function(req, res) {
 });
 
 app.get('/getexams', function(req, res) {
-    // get all whole day tests (end of term tests) and exams
-    /*
-    var justnow = new Date();
-    if (addons.exams && ((justnow.getTime() - addons.update.exams.getTime())/60000 < 600  )  ) {
-      res.send(addons.exams);
-      var diff = (justnow.getTime() - addons.update.exams.getTime())/60000;
-      console.log("resending exams - diff = " + diff);
-    } else {
-    */
-      console.log("query for exams ");
         database.getexams(function(exams) {
-            console.log("done query for exams ");
             addons.exams = exams;
             addons.update.exams = new Date();
             res.send(exams);
@@ -650,6 +639,7 @@ app.get('/yyear', function(req, res) {
     // called when yearplan has been changed
     database.getyearplan(function(data) {
       db.yearplan = data;
+      data.start = db.startjd;
       res.send(data);
     });
 });
@@ -672,7 +662,7 @@ app.get('/plain', function(req, res) {
 	var locals = { 'key': 'value' };
 	locals = dummyHelper.add_overlay(app, req, locals);
 	//res.render('yearplan/plain', locals);
-	res.render('yearplan/plain', locals);
+	res.render('yearplan/plain', { layout:'plain.jade' } );
 });
 
 app.get('/', function(req, res) {

@@ -32,6 +32,12 @@ html {
   float:right;
 }
 
+#plain {
+  /* show plain plan resizable */
+  width:auto;
+  font-size:0.9em;
+}
+
 ul.hdliste {
    list-style: none;
    margin-left: 0;
@@ -87,8 +93,6 @@ ul.prliste {
   padding:12px;
 }
 
-#vurd > div {
-}
 
 #vurd > div > p:first-letter {
   font-size:1.8em;
