@@ -560,7 +560,12 @@ app.get('/show', function(req, res) {
 });
 
 app.get('/getexams', function(req, res) {
-        database.getexams(function(exams) {
+    if (req.query.quick && addons && addons.exams) {
+      res.send(addons.exams)
+      console.log("quick");
+    }
+    else 
+    database.getexams(function(exams) {
             addons.exams = exams;
             addons.update.exams = new Date();
             res.send(exams);
@@ -637,6 +642,12 @@ app.get('/timetables', function(req, res) {
 
 app.get('/yyear', function(req, res) {
     // called when yearplan has been changed
+    if (req.query.quick && db && db.yearplan) {
+      var data = db.yearplan;
+      data.start = db.startjd;
+      res.send(data)
+      console.log("quick");
+    } else 
     database.getyearplan(function(data) {
       db.yearplan = data;
       data.start = db.startjd;
