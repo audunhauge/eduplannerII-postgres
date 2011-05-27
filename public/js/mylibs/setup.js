@@ -7,6 +7,8 @@ var $j = jQuery.noConflict();
 var database;           // jSON data
 var brukerliste = {};   // brukerliste[elev,teach,klasse]
 var valg;               // siste valg (teach,elev,klasse,sammensatt)
+var fagenemine;         // for teach this is a list of courses owned
+var inlogged = false;   // easy test for logged in (not related to security - just to menues shown)
 
 var showyear = 0;       // used to choose school year to show
     // can show this or next school year
@@ -148,7 +150,7 @@ function gotoPage() {
           if (courseplans) {
             var plandata = courseplans[fagnavn];
             action = 'showpage';
-            visEnPlan(fagnavn,plandata,true);
+            visEnPlan(fagnavn,plandata,false);
           } else {
             if (!promises.allplans) promises.allplans = [];
             promises.allplans.plans = function() { action = 'showpage'; visEnPlan(fagnavn,plandata,true); };
@@ -472,6 +474,7 @@ function belongsToCategory(uid,cat) {
 }
 
 function afterloggin(uinfo) {
+    inlogged = true;
     uinfo.mdd = belongsToCategory(uinfo.id,10);
     database.userinfo = userinfo = uinfo;
     // if user.id > 0 then we are logged in
@@ -720,6 +723,7 @@ $j(document).ready(function() {
     $j("#logout").click(function(event) {
         event.preventDefault();
         $j.get( "/logout"); 
+        inlogged = false;
         window.location= "/yearplan";
     });
     $j("#timeplanelev").click(function(event) {

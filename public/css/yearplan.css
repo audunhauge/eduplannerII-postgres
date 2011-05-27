@@ -59,13 +59,18 @@ ul.prliste {
   font-size:0.9em;
 }
 
-.cattblock {
+
+.cattblocknew, .cattblock {
   font-size:1em;
   color:white;
-  background:red;
+  background:green;
   padding:3px;
   width:120px;
   margin:2px;
+}
+
+.cattblocknew {
+  background:red;
 }
 
 .addhd {

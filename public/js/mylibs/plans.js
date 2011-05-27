@@ -373,6 +373,7 @@ function getfagliste(uid) {
       // we have a teach 
       isteach = true;
       minefag = database.teachcourse[uid];
+      fagenemine = minefag;
     } else {
       var usergr = memgr[uid] || null;
       if (usergr) {

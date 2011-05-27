@@ -475,6 +475,40 @@ var saveTest = function(user,query,callback) {
       });
 }
 
+var saveblokk = function(user,query,callback) {
+    console.log(query,user.id);
+    var jd = query.myid;
+    var val = query.value;
+    var blokk = query.blokk;
+    var kill = query.kill;
+    if (kill) {
+      console.log('delete from mdl_bookings_calendar where eventtype="blokk" and name="'+blokk+'" and julday='+jd);
+    }
+    client.query( 'delete from mdl_bookings_calendar'
+      + ' where eventtype="blokk" and name=? and julday= ? ' , [ blokk , jd ],
+          function (err, results, fields) {
+              if (err) {
+                  console.log(err.message);
+                  callback( { ok:false, msg:err.message } );
+                  return;
+              }
+          });
+    if (kill)  {
+       console.log("deleted an entry");
+       callback( {ok:true, msg:"deleted"} );
+       return;
+    }
+    client.query(
+        'insert into mdl_bookings_calendar (julday,name,value,itemid,courseid,userid,eventtype)'
+        + ' values (?,?,?,0,3745,2,"blokk")' , [jd,blokk,val],
+        function (err, results, fields) {
+            if (err) {
+                callback( { ok:false, msg:err.message } );
+                return;
+            }
+            callback( {ok:true, msg:"inserted"} );
+        });
+}
 
 var savehd = function(user,query,callback) {
     console.log(query,user.id);
@@ -1286,6 +1320,7 @@ module.exports.saveTest = saveTest;
 module.exports.getBlocks = getBlocks;
 module.exports.savesimple = savesimple;
 module.exports.savehd = savehd;
+module.exports.saveblokk = saveblokk; 
 module.exports.saveVurd = saveVurd;
 module.exports.getMyPlans = getMyPlans;
 module.exports.saveabsent = saveabsent;

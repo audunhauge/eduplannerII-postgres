@@ -285,7 +285,12 @@ app.get('/500', function (req, res) {
 var users = require('./users');
 
 app.get('/logout', function(req, res) {
-  delete req.session.user;
+  if (req.session) {
+    req.session.auth = null;
+    res.clearCookie('auth');
+    req.session.destroy(function() {});
+  }
+  //req.session.user = null;
   delete req.userinfo;
   //db_copy.userinfo = { uid:0 };
   res.redirect('/yearplan');
@@ -410,6 +415,19 @@ app.post('/save_simple', function(req, res) {
       console.log("User saved some data",req.body);
       database.savesimple(req.body,function(msg) {
          res.send(msg);
+      });
+    } else {
+      res.send({ok:false, msg:"bad user"});
+    }
+});
+
+app.post('/saveblokk', function(req, res) {
+    // save a block (all subjects belonging to a block have specific days set for tests)
+    if (req.session.user && req.session.user.department == 'Undervisning') {
+      console.log("User saving block ",req.body);
+      database.saveblokk(req.session.user,req.body,function(msg) {
+         res.send(msg);
+         delete addons.blocks;
       });
     } else {
       res.send({ok:false, msg:"bad user"});

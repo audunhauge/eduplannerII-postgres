@@ -234,7 +234,7 @@ var changedPlans = {};     // hash of changed sections in a fagplan
 var mycopy;                //  {}  a copy of a plan
 var activeplan;            //  plandata for chosen plan
 
-function visEnPlan(inifagnavn,plandata,egne) {
+function visEnPlan(inifagnavn,plandata) {
     var fagnavn = inifagnavn;
     if (inifagnavn == "showplan") {
       // show a plan not connected to a course
@@ -252,7 +252,7 @@ function visEnPlan(inifagnavn,plandata,egne) {
       }
     }
     activeplan = plandata;
-    egne = typeof(egne) != 'undefined' ? true : false;
+    egne = (inlogged && isteach && ($j.inArray(fagnavn,fagenemine) >= 0));
     minfagplan = fagnavn;
     var myteachers = '';
     if (database.courseteach[fagnavn]) {
@@ -560,11 +560,13 @@ function short_sweet_name(stuid) {
          + students[stuid].lastname.substring(0,15)+ '&nbsp;' + students[stuid].department;
 }
 
-function edit_blokk(start,stop) {
+function edit_blokk() {
   // edit blokks for tests
   // some courses may be attached to a block
   // these will have names like 3inf5_3201
-  // the prefix 3201 says this belongs to blokk 32
+  $j.getJSON( "/blocks", 
+  function(data) {
+    blocks = data;
     var start = (showyear == 0) ? database.firstweek : database.nextyear.firstweek; 
     var stop =  (showyear == 0) ? database.lastweek  : database.nextyear.lastweek;
     promises.toggle_year = function() { 
@@ -601,10 +603,10 @@ function edit_blokk(start,stop) {
         } else {
           text = e.days[j] || '';
           if (j<5) {
-            //xtra += '<ul id="hd'+(jd+j)+'" class="hdliste">';
             if (blo ) {
               for (var b in blo) {
-                xtra += '<div class="cattblock hdedit">'+blo[b].name+" "+blo[b].value+'</div>';
+                var id = "bl" + (+jd + j) + "_" + blo[b].name;
+                xtra += '<div id="'+id+'" class="cattblock hdedit">'+blo[b].name+" "+blo[b].value+'</div>';
               }
             }
             xtra += '<div class="addhd"></div>';
@@ -621,7 +623,7 @@ function edit_blokk(start,stop) {
             }
           }
         }
-        s += '<td class="'+tdclass+'"><div id="year'+(jd+j)+'" >' + text + '</div>'+xtra+"</td>";
+        s += '<td class="'+tdclass+'"><div id="year'+(jd+j)+'" >' + text + xtra+'</div>'+"</td>";
       }
       s += "</tr>";
     }
@@ -630,18 +632,11 @@ function edit_blokk(start,stop) {
     enable_editing("aarsplan");
     blokk_enable_editing();
     $j("div.addhd").click(function() {
-        $j(this).before('<div id="new'+iddx+'" class="cattblock hdedit">changeme</span>');
+        $j(this).before('<div id="new'+iddx+'" class="cattblocknew hdedit">[Blokknummer]</span>');
         blokk_enable_editing();
         iddx++;
     });
-    $j("#nxt").click(function() {
-          start = database.nextyear.firstweek; stop =database.nextyear.lastweek;
-          edit_blokk(start,stop);
-        });
-    $j("#prv").click(function() {
-          start = database.firstweek; stop =database.lastweek;
-          edit_blokk(start,stop);
-        });
+  });
 }
 
 function check_blokk(value,settings) {
@@ -649,30 +644,18 @@ function check_blokk(value,settings) {
     // we want BLOKKNUMBER 3+4+5
     var elm = value.split(' ')
     var blo = +elm.shift();
-    if (!blo > 0 || blo < 21 || blo > 34) return "Ugyldig blokk "+blo;
-    var timer = elm.shift();
-    return ""+blo + " " + timer;
-    //TODO  finish up this code
-    //
-    //*****************
-    //  old code below
-    var beskrivelse = elm.join(' ');
-    var correct = fagnavn + " " + beskrivelse;
-    if (category[fagnavn]) {
-        // a legal name - set id of element to 'hd'+julday+'_'+fagnavn
-        // so that it can be removed for mysql later
-        var jd = $j("#"+this.id).parent().attr("id").substr(2);
-        $j("#"+this.id).attr("id","hd" + jd + "_" + fagnavn).removeClass("catt0").addClass("catt"+category[fagnavn]);
-        //$j.post( "/save_heldag", { "julday":jd, "fag":fagnavn, "value":beskrivelse });
-        // this is the code that actually sends the new info to the server and inserts into mysql
-        if (!database.heldag[jd]) {
-          database.heldag[jd] = {};
-        }
-        database.heldag[jd][fagnavn] = beskrivelse;
-        //console.log("added "+jd+" "+fagnavn);
-        //console.log(database.heldag);
-        //console.log(database.heldag[jd]);
-        $j.post( "/savehd", { "fag":fagnavn, "myid":jd, "value":beskrivelse },
+    if (value != '' && (!blo > 0 || blo < 21 || blo > 34)) return "Ugyldig blokk "+blo;
+    var timer = elm.shift() || '';
+    timer = timer.replace(/,/g,'+');
+    var jd = $j("#"+this.id).parent().attr("id").substr(4);
+    var oldblo = this.id.split('_')[1];
+    if (value != '') {
+      var timm = timer.split('+');
+      for (var i= 0; i < timm.length; i++) {
+        if (+timm[i] < 1 || timm[i] > 10) return "UGYLDIG:"+timer;
+      }
+      $j("#"+this.id).attr("id","bl" + jd + "_" + blo).removeClass("cattblocknew").addClass("cattblock");
+      $j.post( "/saveblokk", { "blokk":blo, "myid":jd, "value":timer },
             function(data) {
                 if (data.ok) {
                     $j("#editmsg").html('Du kan redigere planen ved å klikke på en rute');
@@ -680,30 +663,17 @@ function check_blokk(value,settings) {
                     $j("#editmsg").html('<span class="error">'+data.msg+'</span>');
                 }
             });
-        return(correct);
+      return ""+blo + " " + timer;
     } else {
-        if (value == '') {
-          var pid = $j("#"+this.id).attr("id");
-          var jd  = pid.split('_')[0].substr(2);
-          var fag = pid.split('_')[1];
-          //console.log(database.heldag);
-          //console.log(database.heldag[jd]);
-          delete database.heldag[jd][fag];
-          //console.log(database.heldag[jd]);
-          //console.log(database.heldag);
-          $j.post( "/savehd", { "pid":pid, "kill":true, "fag":"", "myid":jd, "value":value },
-              function(data) {
+      $j.post( "/saveblokk", { "blokk":oldblo, "kill":true, "myid":jd },
+           function(data) {
                   if (data.ok) {
                       $j("#editmsg").html('Du kan redigere planen ved å klikke på en rute');
                   } else {    
                       $j("#editmsg").html('<span class="error">'+data.msg+'</span>');
                   }
               });
-            // try to delete this entry from the database
-            $j("#"+this.id).remove();
-            return false;
-        }
-        return("Ugyldig fagnavn :"+value);
+      return false;
     }
 }
 
@@ -724,10 +694,16 @@ function edit_aarsplan(edchoice) {
     var hdchecked = (edchoice == 1) ? 'checked="true"' : '';
     var tpchecked = (edchoice == 2) ? 'checked="true"' : '';
     s += '<div class="centered sized1"><div id="editmsg"> Klikk på rutene for å redigere, klikk utenfor for å avbryte.'
-         + ((edchoice ==1) ? '<p>Klikk på grønn sirkel for å legge til ny heldag. Klikk deretter på changeme og velg fag og legg til tekst.'
+         + ((edchoice == 1) ? '<p>Klikk på grønn sirkel for å legge til ny heldag. Klikk deretter på changeme og velg fag og legg til tekst.'
                 + 'Fagene hentes med autocomplete - skriv første 1-3 bokstaver og velg fra lista.'
                 + 'Du kan bare registrer prøver på fag med navn som finnes i SATS.'
                 + 'Klikk på eksisterende heldagsprøve for å redigere/slette.'
+                + 'Sletting:Klikk på prøven, fjern all tekst og klikk ok.' : '')
+         + ((edchoice == 2) ? '<p>Klikk på grønn sirkel for å legge til ny fagprøve. Klikk deretter på changeme og velg fag og legg til tekst. '
+                + 'Fagene hentes med autocomplete - skriv første 1-3 bokstaver og velg fra lista. '
+                + 'Du kan bare registrer prøver på fag med navn som finnes i SATS. '
+                + 'Klikk på eksisterende fagprøve for å redigere/slette. '
+                + 'Du må angi hvilke timer fagprøven holdes i.<br>'
                 + 'Sletting:Klikk på prøven, fjern all tekst og klikk ok.' : '')
          + '</div>'
          + '<div id="options">Heldag <input id="usehd"'+hdchecked+' type="checkbox">'
@@ -745,6 +721,11 @@ function edit_aarsplan(edchoice) {
       e = events[Math.floor(jd/7)] || { pr:[],days:[]};
       for (var j=0;j<6;j++) {
         var hd = database.heldag[jd+j];
+        var ttpp = null;   // fetch out mdd tests
+        // these tests are like hd (whole day) tests - but are limited to 
+        // given timeslots - not the whole day. Studs are freed from
+        // normal lessons and take test instead 
+        // All studs taking SUBJECT are affected (not group) ????
         var text = '';
         var xtra = '';
         tdclass = '';
@@ -767,6 +748,19 @@ function edit_aarsplan(edchoice) {
               }
               xtra += '</ul>';
             }
+            if (ttpp || edchoice == 2) {
+              xtra += '<ul id="hd'+(jd+j)+'" class="hdliste">';
+                for (var f in hd) {
+                  f = f.toUpperCase();
+                  var cat = +database.category[f] || 0
+                  var idd = jd + j;
+                  xtra += '<li id="hd'+idd+'_'+f+'" class="hdedit catt'+cat+'">'+f+'&nbsp;'+hd[f]+'</li>';
+                }
+              if (edchoice == 2) {
+                xtra += '<li class="addhd"></li>';
+              }
+              xtra += '</ul>';
+            }
           }
         }
         s += '<td class="'+tdclass+'"><div id="year'+(jd+j)+'" class="edit_area">' + text + '</div>'+xtra+"</td>";
@@ -784,11 +778,11 @@ function edit_aarsplan(edchoice) {
     });
     $j("#usetp").click(function() {
           edchoice = (edchoice == 2) ? 0 : 2;
-          edit_aarsplan(start,stop,edchoice);
+          edit_aarsplan(edchoice);
         });
     $j("#usehd").click(function() {
           edchoice = (edchoice == 1) ? 0 : 1;
-          edit_aarsplan(start,stop,edchoice);
+          edit_aarsplan(edchoice);
         });
   });
 }
@@ -947,6 +941,9 @@ function update_fagplaner(fagnavn,section,summary) {
 
 function translatebreaks(s) {
     if (!s) return '';
+    s = s.replace('changeme','');
+    s = s.replace('[Blokknummer]','');
+    s = s.replace('Ugyldig blokk ','');
     return s.replace(/<br>/g,"\n").replace(/\&nbsp;/g,' ');
 }
 
