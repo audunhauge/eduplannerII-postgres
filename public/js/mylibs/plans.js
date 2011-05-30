@@ -56,14 +56,14 @@ function synopsis(coursename,plandata,tests) {
         var hd = database.heldag[jd+j];
         for (fag in hd) {
           if (coursename.indexOf(fag) >= 0) {
-            title.push(fag+' '+hd[fag]);
+            title.push(fag+' '+hd[fag].value);
             s += '<div title="'+title.join('<br>')+'" class="totip tinyhd" style="left:'+(j*6)+'px;"></div>';
             if (!heldag[j]) heldag[j] = [];
-            heldag[j].push(fag+' '+hd[fag]);
+            heldag[j].push(fag+' '+hd[fag].value);
           } else if ($j.inArray(fag.toUpperCase(),andre.fag) != -1) {
-            title.push(fag+' '+hd[fag]);
+            title.push(fag+' '+hd[fag].value);
             if (!heldag[j]) heldag[j] = [];
-            heldag[j].push(fag+' '+hd[fag]);
+            heldag[j].push(fag+' '+hd[fag].value);
             s += '<div title="'+title.join('<br>')+'" class="totip tinyohd" style="left:'+(j*6)+'px;"></div>';
           }
         } 
@@ -164,7 +164,7 @@ function show_alleprover(filter,faggrupper) {
           for (fag in hd) {
               if (!faggrupper || faggrupper[fag]) {
                 var cat = (category) ? category[fag] || 0 : 0;
-                proveliste += '<span class="heldag klasse' + fag.substr(0,1) + ' cat' + cat  + '">' + fag + ' ' + hd[fag] + '</span>';
+                proveliste += '<span class="heldag klasse' + fag.substr(0,1) + ' cat' + cat  + '">' + fag + ' ' + hd[fag].value + '</span>';
               }
           } 
           for (var k=0; k< pr.length; k++) {
@@ -319,7 +319,7 @@ function show_all(thisweek,options) {
                 for (var f in hd) {
                   f = f.toUpperCase();
                   var cat = +database.category[f] || 0
-                  xtra += '<li class="hdedit catt'+cat+'">'+f+'&nbsp;'+hd[f]+'</li>';
+                  xtra += '<li class="hdedit catt'+cat+'">'+f+'&nbsp;'+hd[f].value+'</li>';
                 }
               xtra += '</ul>';
             }
@@ -491,7 +491,7 @@ function show_next4() {
                   txt += '<ul class="hdliste">';
                   for (var f in hd) {
                     var cat = +database.category[f] || 0
-                    txt += '<li class="catt'+cat+'">'+f+'&nbsp;'+hd[f]+'</li>';
+                    txt += '<li class="catt'+cat+'">'+f+'&nbsp;'+hd[f].value+'</li>';
                   }
                   txt += '</ul>';
             }

@@ -617,7 +617,7 @@ function edit_blokk() {
                   f = f.toUpperCase();
                   var cat = +database.category[f] || 0
                   var idd = jd + j;
-                  xtra += '<li class="catt'+cat+'">'+f+'&nbsp;'+hd[f]+'</li>';
+                  xtra += '<li class="catt'+cat+'">'+f+'&nbsp;'+hd[f].value+'</li>';
                 }
               xtra += '</ul>';
             }
@@ -684,106 +684,119 @@ function edit_aarsplan(edchoice) {
   promises.toggle_year = function() { 
           edit_aarsplan(edchoice); 
         };
-  $j.getJSON( "/yyear", 
+  $j.getJSON( "/getexams", 
   function(data) {
-    database.yearplan = data;
-    var iddx = 0;
-    edchoice   = typeof(edchoice) != 'undefined' ? edchoice : 0;
-    var events = database.yearplan;
-    var s="<h1>Rediger Årsplanen</h1>";
-    var hdchecked = (edchoice == 1) ? 'checked="true"' : '';
-    var tpchecked = (edchoice == 2) ? 'checked="true"' : '';
-    s += '<div class="centered sized1"><div id="editmsg"> Klikk på rutene for å redigere, klikk utenfor for å avbryte.'
-         + ((edchoice == 1) ? '<p>Klikk på grønn sirkel for å legge til ny heldag. Klikk deretter på changeme og velg fag og legg til tekst.'
-                + 'Fagene hentes med autocomplete - skriv første 1-3 bokstaver og velg fra lista.'
-                + 'Du kan bare registrer prøver på fag med navn som finnes i SATS.'
-                + 'Klikk på eksisterende heldagsprøve for å redigere/slette.'
-                + 'Sletting:Klikk på prøven, fjern all tekst og klikk ok.' : '')
-         + ((edchoice == 2) ? '<p>Klikk på grønn sirkel for å legge til ny fagprøve. Klikk deretter på changeme og velg fag og legg til tekst. '
-                + 'Fagene hentes med autocomplete - skriv første 1-3 bokstaver og velg fra lista. '
-                + 'Du kan bare registrer prøver på fag med navn som finnes i SATS. '
-                + 'Klikk på eksisterende fagprøve for å redigere/slette. '
-                + 'Du må angi hvilke timer fagprøven holdes i.<br>'
-                + 'Sletting:Klikk på prøven, fjern all tekst og klikk ok.' : '')
-         + '</div>'
-         + '<div id="options">Heldag <input id="usehd"'+hdchecked+' type="checkbox">'
-         + 'Timeprøver <input id="usetp" '+tpchecked+' type="checkbox"></div></div>';
-    var theader ="<table class=\"year\" >"
-     + "<tr><th>Uke</th><th>Man</th><th>Tir</th><th>Ons</th>"
-     + "<th>Tor</th><th>Fre</th><th>Merknad</th></tr>";
-    s += theader;
-    var year = julian.jdtogregorian(start).year + '-' + julian.jdtogregorian(stop).year;
-    var caption = 'Årsplan '+year;
-    s += '<caption><div style="position:relative;" >'+caption+'<div></caption>';
-    for (var jd = start; jd < stop; jd += 7 ) {
-      s += "<tr>";
-      s += '<th><div class="weeknum">'+julian.week(jd)+'</div><br class="clear" /><div class="date">' + formatweekdate(jd) + "</div></th>";
-      e = events[Math.floor(jd/7)] || { pr:[],days:[]};
-      for (var j=0;j<6;j++) {
-        var hd = database.heldag[jd+j];
-        var ttpp = null;   // fetch out mdd tests
-        // these tests are like hd (whole day) tests - but are limited to 
-        // given timeslots - not the whole day. Studs are freed from
-        // normal lessons and take test instead 
-        // All studs taking SUBJECT are affected (not group) ????
-        var text = '';
-        var xtra = '';
-        tdclass = '';
-        if (database.freedays[jd+j]) {
-          text = database.freedays[jd+j];
-          tdclass += ' fridag';
-        } else {
-          text = e.days[j] || '';
-          if (j<5) {
-            if (hd || edchoice == 1) {
-              xtra += '<ul id="hd'+(jd+j)+'" class="hdliste">';
-                for (var f in hd) {
-                  f = f.toUpperCase();
-                  var cat = +database.category[f] || 0
-                  var idd = jd + j;
-                  xtra += '<li id="hd'+idd+'_'+f+'" class="hdedit catt'+cat+'">'+f+'&nbsp;'+hd[f]+'</li>';
+    database.heldag = data;
+    $j.getJSON( "/yyear", 
+    function(data) {
+      database.yearplan = data;
+      var iddx = 0;
+      edchoice   = typeof(edchoice) != 'undefined' ? edchoice : 0;
+      var events = database.yearplan;
+      var s="<h1>Rediger Årsplanen</h1>";
+      var hdchecked = (edchoice == 1) ? 'checked="true"' : '';
+      var tpchecked = (edchoice == 2) ? 'checked="true"' : '';
+      s += '<div class="centered sized1"><div id="editmsg"> Klikk på rutene for å redigere, klikk utenfor for å avbryte.'
+           + ((edchoice == 1) ? '<p>Klikk på grønn sirkel for å legge til ny heldag. Klikk deretter på changeme og velg fag og legg til tekst.'
+                  + 'Fagene hentes med autocomplete - skriv første 1-3 bokstaver og velg fra lista.'
+                  + 'Du kan bare registrer prøver på fag med navn som finnes i SATS.'
+                  + 'Klikk på eksisterende heldagsprøve for å redigere/slette.'
+                  + 'Sletting:Klikk på prøven, fjern all tekst og klikk ok.' : '')
+           + ((edchoice == 2) ? '<p>Klikk på grønn sirkel for å legge til ny fagprøve. Klikk deretter på changeme og velg fag og legg til tekst. '
+                  + 'Fagene hentes med autocomplete - skriv første 1-3 bokstaver og velg fra lista. '
+                  + 'Du kan bare registrer prøver på fag med navn som finnes i SATS. '
+                  + 'Klikk på eksisterende fagprøve for å redigere/slette. '
+                  + 'Du må angi hvilke timer fagprøven holdes i eks:3.<br>'
+                  + 'Sletting:Klikk på prøven, fjern all tekst og klikk ok.' : '')
+           + '</div>'
+           + '<div id="options">Heldag <input id="usehd"'+hdchecked+' type="checkbox">'
+           + 'Timeprøver <input id="usetp" '+tpchecked+' type="checkbox"></div></div>';
+      var theader ="<table class=\"year\" >"
+       + "<tr><th>Uke</th><th>Man</th><th>Tir</th><th>Ons</th>"
+       + "<th>Tor</th><th>Fre</th><th>Merknad</th></tr>";
+      s += theader;
+      var year = julian.jdtogregorian(start).year + '-' + julian.jdtogregorian(stop).year;
+      var caption = 'Årsplan '+year;
+      s += '<caption><div style="position:relative;" >'+caption+'<div></caption>';
+      for (var jd = start; jd < stop; jd += 7 ) {
+        s += "<tr>";
+        s += '<th><div class="weeknum">'+julian.week(jd)+'</div><br class="clear" /><div class="date">' + formatweekdate(jd) + "</div></th>";
+        e = events[Math.floor(jd/7)] || { pr:[],days:[]};
+        for (var j=0;j<6;j++) {
+          var hd = database.heldag[jd+j];
+          var text = '';
+          var xtra = '';
+          tdclass = '';
+          var ttpp = '';   // fetch out mdd tests
+          var hasttpp = false;
+          // these tests are like hd (whole day) tests - but are limited to 
+          // given timeslots - not the whole day. Studs are freed from
+          // normal lessons and take test instead 
+          // All studs taking SUBJECT are affected (not group) ????
+          if (database.freedays[jd+j]) {
+            text = database.freedays[jd+j];
+            tdclass += ' fridag';
+          } else {
+            text = e.days[j] || '';
+            if (j<5) {
+              // show full-day tests and add link for adding
+              if (hd || edchoice == 1) {
+                xtra += '<ul id="hd'+(jd+j)+'" class="hdliste">';
+                  for (var f in hd) {
+                    if (hd[f].klass == 0) {
+                      f = f.toUpperCase();
+                      var cat = +database.category[f] || 0
+                      var idd = jd + j;
+                      xtra += '<li id="hd'+idd+'_'+f+'" class="hdedit catt'+cat+'">'+f+'&nbsp;'+hd[f].value+'</li>';
+                    }
+                  }
+                if (edchoice == 1) {
+                  xtra += '<li class="addhd"></li>';
                 }
-              if (edchoice == 1) {
-                xtra += '<li class="addhd"></li>';
+                xtra += '</ul>';
               }
-              xtra += '</ul>';
-            }
-            if (ttpp || edchoice == 2) {
-              xtra += '<ul id="hd'+(jd+j)+'" class="hdliste">';
-                for (var f in hd) {
-                  f = f.toUpperCase();
-                  var cat = +database.category[f] || 0
-                  var idd = jd + j;
-                  xtra += '<li id="hd'+idd+'_'+f+'" class="hdedit catt'+cat+'">'+f+'&nbsp;'+hd[f]+'</li>';
+              if (hd || edchoice == 2) {
+                ttpp += '<ul id="md'+(jd+j)+'" class="hdliste">';
+                  for (var f in hd) {
+                    if (hd[f].klass == 1) {
+                      f = f.toUpperCase();
+                      var cat = +database.category[f] || 0
+                      var idd = jd + j;
+                      ttpp += '<li id="md'+idd+'_'+f+'" class="hdedit catt'+cat+'">'+f+'&nbsp;'+hd[f].value+'</li>';
+                      hasttpp = true;
+                    }
+                  }
+                if (edchoice == 2) {
+                  ttpp += '<li class="addhd"></li>';
+                  hasttpp = true;
                 }
-              if (edchoice == 2) {
-                xtra += '<li class="addhd"></li>';
+                ttpp += '</ul>';
               }
-              xtra += '</ul>';
             }
           }
+          ttpp = (hasttpp) ? ttpp : '';
+          s += '<td class="'+tdclass+'"><div id="year'+(jd+j)+'" class="edit_area">' + text + '</div>'+xtra+ttpp+"</td>";
         }
-        s += '<td class="'+tdclass+'"><div id="year'+(jd+j)+'" class="edit_area">' + text + '</div>'+xtra+"</td>";
+        s += "</tr>";
       }
-      s += "</tr>";
-    }
-    s += "</table>";
-    $j("#main").html(s);
-    enable_editing("aarsplan");
-    heldag_enable_editing();
-    $j("li.addhd").click(function() {
-        $j(this).before('<li id="new'+iddx+'" class="catt0 hdedit">changeme</span>');
-        heldag_enable_editing();
-        iddx++;
+      s += "</table>";
+      $j("#main").html(s);
+      enable_editing("aarsplan");
+      heldag_enable_editing();
+      $j("li.addhd").click(function() {
+          $j(this).before('<li id="new'+iddx+'" class="catt0 hdedit">changeme</span>');
+          heldag_enable_editing();
+          iddx++;
+      });
+      $j("#usetp").click(function() {
+            edchoice = (edchoice == 2) ? 0 : 2;
+            edit_aarsplan(edchoice);
+          });
+      $j("#usehd").click(function() {
+            edchoice = (edchoice == 1) ? 0 : 1;
+            edit_aarsplan(edchoice);
+          });
     });
-    $j("#usetp").click(function() {
-          edchoice = (edchoice == 2) ? 0 : 2;
-          edit_aarsplan(edchoice);
-        });
-    $j("#usehd").click(function() {
-          edchoice = (edchoice == 1) ? 0 : 1;
-          edit_aarsplan(edchoice);
-        });
   });
 }
 
@@ -800,17 +813,31 @@ function check_heldag(value,settings) {
         // a legal name - set id of element to 'hd'+julday+'_'+fagnavn
         // so that it can be removed for mysql later
         var jd = $j("#"+this.id).parent().attr("id").substr(2);
+        var kl = $j("#"+this.id).parent().attr("id").substr(0,2);
+        var klass = (kl == 'md') ? 1 : 0;
+        if (klass == 1) {
+          var timer = beskrivelse.match(/\((.+)\)/);
+          if (timer && timer[1]) {
+            var tt = timer[1].split(/[,+]/);
+            for (var tts in tt) {
+              if (isNaN(tt[tts]) )
+                  return("Ugyldig - Angi timene slik: (5,6,7). "+correct);
+            }
+          } else {
+            return("Ugyldig - Mangler timeliste (5,6,7). "+correct);
+          }
+        }
         $j("#"+this.id).attr("id","hd" + jd + "_" + fagnavn).removeClass("catt0").addClass("catt"+category[fagnavn]);
         //$j.post( "/save_heldag", { "julday":jd, "fag":fagnavn, "value":beskrivelse });
         // this is the code that actually sends the new info to the server and inserts into mysql
         if (!database.heldag[jd]) {
           database.heldag[jd] = {};
         }
-        database.heldag[jd][fagnavn] = beskrivelse;
+        database.heldag[jd][fagnavn] = { value:beskrivelse, klass:klass };
         //console.log("added "+jd+" "+fagnavn);
         //console.log(database.heldag);
         //console.log(database.heldag[jd]);
-        $j.post( "/savehd", { "fag":fagnavn, "myid":jd, "value":beskrivelse },
+        $j.post( "/savehd", { "fag":fagnavn, "myid":jd, "value":beskrivelse, klass:klass },
             function(data) {
                 if (data.ok) {
                     $j("#editmsg").html('Du kan redigere planen ved å klikke på en rute');
@@ -943,7 +970,7 @@ function translatebreaks(s) {
     if (!s) return '';
     s = s.replace('changeme','');
     s = s.replace('[Blokknummer]','');
-    s = s.replace('Ugyldig blokk ','');
+    s = s.replace(/Ugyldig .+\. /,'');
     return s.replace(/<br>/g,"\n").replace(/\&nbsp;/g,' ');
 }
 

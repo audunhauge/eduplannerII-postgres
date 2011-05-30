@@ -515,6 +515,7 @@ var savehd = function(user,query,callback) {
     var jd = query.myid;
     var val = query.value;
     var fag = query.fag;
+    var klass = query.klass || 0;
     var kill = query.kill;
     var pid = query.pid;
     if (kill) {
@@ -553,8 +554,8 @@ var savehd = function(user,query,callback) {
       }
     }
     client.query(
-        'insert into mdl_bookings_calendar (julday,name,value,itemid,courseid,userid,eventtype)'
-        + ' values (?,?,?,?,3745,2,"heldag")' , [jd,fag,val,itemid],
+        'insert into mdl_bookings_calendar (julday,name,value,itemid,courseid,userid,eventtype,class)'
+        + ' values (?,?,?,?,3745,2,"heldag",?)' , [jd,fag,val,itemid,klass],
         function (err, results, fields) {
             if (err) {
                 callback( { ok:false, msg:err.message } );
@@ -1251,7 +1252,7 @@ var getyearplan = function(callback) {
 var getexams = function(callback) {
   client.query(
       // fetch big tests (exams and other big tests - they block a whold day )
-      'select id,julday,name,value from mdl_bookings_calendar where eventtype="heldag"',
+      'select id,julday,name,value,class from mdl_bookings_calendar where eventtype="heldag"',
       function (err, results, fields) {
           if (err) {
               console.log("ERROR: " + err.message);
@@ -1262,7 +1263,7 @@ var getexams = function(callback) {
               if (!db.heldag[free.julday]) {
                 db.heldag[free.julday] = {};
               }
-              db.heldag[free.julday][free.name.toUpperCase()] = free.value;
+              db.heldag[free.julday][free.name.toUpperCase()] = { value:free.value, klass:free.class };
           }
           if (callback) callback(db.heldag);
           //console.log(db.heldag);
