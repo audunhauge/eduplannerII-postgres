@@ -47,7 +47,7 @@ function getYearPlanThisWeek(thisweek) {
           for (var f in hd) {
             f = f.toUpperCase();
             var cat = +category[f] || 0;
-            header[j] += '<li class="catt'+cat+'">'+f+'&nbsp;'+hd[f]+'</li>';
+            header[j] += '<li class="catt'+cat+'">'+f+'&nbsp;'+hd[f].value+'</li>';
           }
           header[j] += '</ul>';
         }

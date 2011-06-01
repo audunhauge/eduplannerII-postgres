@@ -241,6 +241,7 @@ function visEnPlan(inifagnavn,plandata) {
       // we have all info in plandata
       fagnavn = plandata.name;
       plandata = plandata.weeks;
+      egne = (inlogged && isteach); 
     } else {
       $j.bbq.pushState("#plans/"+fagnavn);
       if (!plandata ) plandata = courseplans[fagnavn];
@@ -250,9 +251,9 @@ function visEnPlan(inifagnavn,plandata) {
           plandata[i] = '';
         }
       }
+      egne = (inlogged && isteach && ($j.inArray(fagnavn,fagenemine) >= 0));
     }
     activeplan = plandata;
-    egne = (inlogged && isteach && ($j.inArray(fagnavn,fagenemine) >= 0));
     minfagplan = fagnavn;
     var myteachers = '';
     if (database.courseteach[fagnavn]) {
@@ -265,12 +266,16 @@ function visEnPlan(inifagnavn,plandata) {
     s += '<h3 class="textcenter" >'+ myteachers  +'</h3>';
     if (isteach && egne) {
         s += '<div id="saveme" class="button fixx">Lagre</div>'
-          + ' <span id="editmsg">Du kan redigere planen ved å klikke på en rute</span>';
+          + ' <span id="editmsg">Du kan redigere planen ved å klikke på en rute. Klikk og dra for å kopiere.</span>';
     }
     s += '<div class="button float gui" id="toot">Hele</div>'
       + '<div  class="button float gui" id="rest">Fra idag</div>';
-    if (isteach) {
+    if (isteach && inlogged) {
        s += '<div  class="button float gui" id="copy">Ta kopi</div>';
+    }
+    if (isteach && egne) {
+       s += '<div  class="button float gui" title="Eksporter til itslearning - lagres som fil. Kan importeres i itslearning." id="export">Export</div>';
+       s += '<div  class="button float gui" title="Importer fra fil " id="import">Import</div>';
     }
     if (isteach && egne && mycopy) {
       s += '<div  class="button float gui" id="paste">Lim inn</div>';
@@ -333,6 +338,10 @@ function visEnPlan(inifagnavn,plandata) {
     //$j(".totip").tooltip();
     $j(".totip").tooltip({position:"bottom right" } );
     fagplan_enable_editing(isteach,egne);
+    $j("#export").click(function() {
+        var planid = cpinfo[fagnavn] || 0;
+        window.location.href="/itsplain?course="+fagnavn+"&planid="+planid;
+    });
 
 
     $j("#paste").click(function() {
@@ -342,6 +351,7 @@ function visEnPlan(inifagnavn,plandata) {
     });
     $j("#copy").click(function() {
         mycopy = activeplan;
+        alert(fagnavn+" ligger i minne");
     });
     $j("#vurd > div").slideUp(3000);
     $j("#vurd > span").click(function() {
@@ -706,7 +716,7 @@ function edit_aarsplan(edchoice) {
                   + 'Fagene hentes med autocomplete - skriv første 1-3 bokstaver og velg fra lista. '
                   + 'Du kan bare registrer prøver på fag med navn som finnes i SATS. '
                   + 'Klikk på eksisterende fagprøve for å redigere/slette. '
-                  + 'Du må angi hvilke timer fagprøven holdes i eks:3.<br>'
+                  + 'Du må angi hvilke timer fagprøven holdes i eks: (3,4,5).<br>'
                   + 'Sletting:Klikk på prøven, fjern all tekst og klikk ok.' : '')
            + '</div>'
            + '<div id="options">Heldag <input id="usehd"'+hdchecked+' type="checkbox">'

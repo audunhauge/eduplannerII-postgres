@@ -25,7 +25,7 @@ html {
 #editmsg {
   /* messages while editing yearplan */
   float:left;
-  width:600px;
+  width:350px;
 }
 #options {
   /* editor options for yearplan */

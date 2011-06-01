@@ -694,6 +694,92 @@ app.get('/plain', function(req, res) {
 	res.render('yearplan/plain', { layout:'plain.jade' } );
 });
 
+app.get('/itsplain', function(req, res) {
+  if (req.query.planid ) {
+    var filename = req.query.course || 'plan';
+      database.getAplan(req.query.planid, function(data) {
+          var xhtml = '<?xml version="1.0" encoding="utf-8"?>\n\
+<plan xmlns="xsdLessonPlan">\n\
+  <columns xmlns="">\n\
+    <theme_columns>\n\
+      <column colType="1" colName="Emne" showOnCoursePage="true" id="8938" />\n\
+      <column colType="0" colName="L&amp;#230;rernotater" showOnCoursePage="false" id="8939" />\n\
+    </theme_columns>\n\
+    <lesson_columns>\n\
+      <column colType="3" colName="Leksjon" showOnCoursePage="true" id="8931" />\n\
+      <column colType="4" colName="Leksjonsbeskrivelse" showOnCoursePage="true" id="8932" />\n\
+      <column colType="5" colName="Dato" showOnCoursePage="true" id="8933" />\n\
+      <column colType="6" colName="Undervisningstimer" showOnCoursePage="true" id="8934" />\n\
+      <column colType="7" colName="L&amp;#230;replanm&amp;#229;l" showOnCoursePage="true" id="8935" />\n\
+      <column colType="8" colName="Ressurser" showOnCoursePage="true" id="8936" />\n\
+      <column colType="9" colName="Aktiviteter" showOnCoursePage="true" id="8937" />\n\
+      <column colType="0" colName="L&amp;#230;rernotater" showOnCoursePage="false" id="8940" />\n\
+      <column colType="0" colName="Leksjonsresultater" showOnCoursePage="false" id="8941" />\n\
+      <column colType="0" colName="N&amp;#248;kkelord" showOnCoursePage="false" id="8942" />\n\
+      <column colType="0" colName="Vurdering" showOnCoursePage="true" id="8980" />\n\
+      <column colType="0" colName="Logg" showOnCoursePage="true" id="8982" />\n\
+    </lesson_columns>\n\
+  </columns>\n\
+  <themes xmlns="" />\n\
+  <lessons xmlns="">\n\ ';
+            var julday = db.startjd;
+            for (var week in data.weeks) {
+                var summary = data.weeks[week];
+                if (summary ) {
+                    var elm = summary.split('|');
+                    var title_elm;
+                    if (elm[2]) {
+                      title_elm = elm[2].split('.',2);
+                    } else {
+                      title_elm = ['',''];
+                    }
+                    var name        = elm[0] || '';
+                    var description = elm[3] || '';
+                    var vurdering   = elm[1] || '';
+                    var logg        = elm[4] || '';
+                    var title       = title_elm[0] || '';
+                    var tdesc       = title_elm[1] || '';
+                    xhtml += "    <lesson>\n";
+                    xhtml += "      <name>"+name+"</name>\n" ;
+                    xhtml += "      <description>"+description+"</description>\n" ;
+
+                    var mydate = julian.jdtogregorian(julday-6);
+                    mydate.month = (mydate.month < 10) ? "0"+mydate.month : mydate.month;
+                    mydate.day = (mydate.day < 10) ? "0"+mydate.day : mydate.day;
+                    var strdate = ""+mydate.year+"-"+mydate.month+"-"+mydate.day+"T00:00:00";
+                    xhtml += "      <start>"+strdate+"</start>\n" ;
+
+                    mydate = julian.jdtogregorian(julday);
+                    mydate.month = (mydate.month < 10) ? "0"+mydate.month : mydate.month;
+                    mydate.day = (mydate.day < 10) ? "0"+mydate.day : mydate.day;
+                    var strdate = ""+mydate.year+"-"+mydate.month+"-"+mydate.day+"T23:59:59";
+                    xhtml += "      <stop>"+strdate+"</stop>\n" ;
+
+                    //usum = oversikt[section]->count;
+                    var usum = 5;
+                    xhtml += "      <class_hours>"+usum+"</class_hours>\n" ;
+                    xhtml += "      <customs>\n" ;
+                    xhtml += '        <custom colName="Vurdering" id="8980">'+vurdering+'</custom>'+"\n";
+                    xhtml += '        <custom colName="Logg"      id="8982">'+logg+'</custom>'+"\n";
+                    xhtml += "      </customs>\n" ;
+                    xhtml += "      <objectives>\n" ;
+                    xhtml += "        <objective>\n" ;
+                    xhtml += '          <title loName="'+title+'" />'+"\n";
+                    xhtml += '            <description>'+tdesc+'</description>'+"\n";
+                    xhtml += "        </objective>\n" ;
+                    xhtml += "      </objectives>\n" ;
+
+                    xhtml += "    </lesson>\n";
+                }
+                julday += 7;
+            }
+
+            res.writeHead(200 , { "Content-Disposition": 'attachment; filename='+filename+'.xml', "Content-Type":'text/xml' } );
+            res.end( xhtml + "  </lessons>\n</plan>");
+      });
+  }
+});
+
 app.get('/', function(req, res) {
   res.redirect('/yearplan');
 });

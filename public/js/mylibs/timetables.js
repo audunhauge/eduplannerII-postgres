@@ -82,7 +82,7 @@ function getYearPlanThisWeek(thisweek) {
           for (var f in hd) {
             f = f.toUpperCase();
             var cat = +database.category[f] || 0
-            header[j] += '<li class="catt'+cat+'">'+f+'&nbsp;'+hd[f]+'</li>';
+            header[j] += '<li class="catt'+cat+'">'+f+'&nbsp;'+hd[f].value+'</li>';
           }
           header[j] += '</ul>';
         }
@@ -265,7 +265,13 @@ function getAbsentBecauseTest(jd,fagliste) {
   var hd = database.heldag[jd];
   for (fag in hd) {
     if ($j.inArray(fag.toUpperCase(),fagliste.fag) != -1) {
-      heldag.push( { hd:fag+' '+hd[fag],elever:fagliste.fagelev[fag] } );
+      var ahd = hd[fag];
+      var slots = null;
+      // some whole day tests are only half day (some slots may be unaffected)
+      if (ahd.klass == 1) {
+        slots = ahd.value.match(/\((.+)\)/)[1].split(/[,+]/);
+      }
+      heldag.push( { hd:fag+' '+ahd.value, slots:slots, elever:fagliste.fagelev[fag] } );
     }
   } 
   return heldag;
@@ -380,6 +386,12 @@ function build_plantable(jd,uid,username,timeplan,xtraplan,filter) {
           }
           if (absentDueTest[j] && absentDueTest[j][subject] && absentDueTest[j][subject].length > 0) {
             for (var abs in absentDueTest[j][subject]) {
+              var adt = absentDueTest[j][subject][abs];
+              if (adt.slots) {
+                // this is a half-day test - only some slots are affected
+                if ($j.inArray(""+(i+1),adt.slots) == -1) continue;
+                // skip if we are in unaffected slot
+              }
               for (var el in absentDueTest[j][subject][abs].elever) {
                var elev = absentDueTest[j][subject][abs].elever[el]; 
                if (students[elev] && !already[elev] ) {
@@ -895,12 +907,12 @@ function add_tests(uid,jd) {
       var hd =  database.heldag[jd+day] || {} ;
       for (fag in hd) {
           if (faggrupper[fag]) {
-            prover.tests[jd+day] = { shortname:fag,value:hd[fag] };
+            prover.tests[jd+day] = { shortname:fag,value:hd[fag].value };
             for (var dd=0; dd < 9; dd++) {
               if (!prover[dd]) {    // ingen rad definert ennå
                   prover[dd] = {};  // ny rad
               }
-              var hdf = hd[fag].replace('heldag','hd').replace('hovedmål','hm').replace('sidemål','sm');
+              var hdf = hd[fag].value.replace('heldag','hd').replace('hovedmål','hm').replace('sidemål','sm');
               prover[dd][day] = fag + ' ' + hdf;
             }
           }

@@ -55,12 +55,12 @@ function synopsis(coursename,plandata,tests) {
         }
         var hd = database.heldag[jd+j];
         for (fag in hd) {
-          if (coursename.indexOf(fag) >= 0) {
+          if (coursename.indexOf(fag) >= 0) {  // whole day test/exam in this course
             title.push(fag+' '+hd[fag].value);
             s += '<div title="'+title.join('<br>')+'" class="totip tinyhd" style="left:'+(j*6)+'px;"></div>';
             if (!heldag[j]) heldag[j] = [];
             heldag[j].push(fag+' '+hd[fag].value);
-          } else if ($j.inArray(fag.toUpperCase(),andre.fag) != -1) {
+          } else if ($j.inArray(fag.toUpperCase(),andre.fag) != -1) {  // other course - some of my students
             title.push(fag+' '+hd[fag].value);
             if (!heldag[j]) heldag[j] = [];
             heldag[j].push(fag+' '+hd[fag].value);

@@ -768,7 +768,7 @@ $j(document).ready(function() {
     $j("#htitle").click(function(event) {
         toggle_year();
     });
-    $j("#login").html('login').click(function(event) {
+    $j(".llogin").html('Login').click(function(event) {
         event.preventDefault();
         get_login();
     });
