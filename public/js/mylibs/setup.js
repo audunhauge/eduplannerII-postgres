@@ -9,6 +9,8 @@ var brukerliste = {};   // brukerliste[elev,teach,klasse]
 var valg;               // siste valg (teach,elev,klasse,sammensatt)
 var fagenemine;         // for teach this is a list of courses owned
 var inlogged = false;   // easy test for logged in (not related to security - just to menues shown)
+var plannames;          // list of logged in users plans (assumed to be teach - only used if so)
+                        // { 'name':pid, ... }
 
 var showyear = 0;       // used to choose school year to show
     // can show this or next school year

@@ -726,6 +726,8 @@ app.get('/itsplain', function(req, res) {
             for (var week in data.weeks) {
                 var summary = data.weeks[week];
                 if (summary ) {
+                    summary = summary.replace(/<.+>/g,' ');
+                    summary = summary.replace(/&/g,' ');
                     var elm = summary.split('|');
                     var title_elm;
                     if (elm[2]) {
@@ -739,6 +741,8 @@ app.get('/itsplain', function(req, res) {
                     var logg        = elm[4] || '';
                     var title       = title_elm[0] || '';
                     var tdesc       = title_elm[1] || '';
+                    var shortname = name.replace(/ /g,'');
+                    if (shortname == '' ) continue;
                     xhtml += "    <lesson>\n";
                     xhtml += "      <name>"+name+"</name>\n" ;
                     xhtml += "      <description>"+description+"</description>\n" ;

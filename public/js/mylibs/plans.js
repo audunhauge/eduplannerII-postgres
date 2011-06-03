@@ -540,10 +540,12 @@ function makeplans() {
   function(data) {
        var ss = 'Dine planer:';
        var planlist = {};
+       plannames = {};
        var courseids = [];   // all your courses connected to plans
        for (var i in data) {
          var p = data[i];
          if (!planlist[p.id]) {
+           plannames[p.name] = p.id;
            planlist[p.id] = p;
            planlist[p.id].courses = [];
            planlist[p.id].ccex = {};  // quick check to fing courses not connected
