@@ -38,6 +38,10 @@ html {
   font-size:0.9em;
 }
 
+#filvelger {
+  display:none;
+}
+
 ul.hdliste {
    list-style: none;
    margin-left: 0;

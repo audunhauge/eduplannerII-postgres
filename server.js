@@ -5,6 +5,8 @@ var client = database.client;
 db.roomdata = require('./static').roomdata;
 db.starttime = db.roomdata.slotlabels.split(',');
 
+var fs = require('fs');
+
 
 var addons = {}
 // extra data that we send AFTER the main page has been drawn
@@ -13,6 +15,50 @@ addons.update = {};
 // used to store time info for resources
 // we refetch if the resource is stale
 
+function doit(dom,line) {
+  var islessons = new RegExp(/<lessons/);
+  var islesson  = new RegExp(/<lesson>/);
+  var isname    = new RegExp(/<name>/);
+  var isstart   = new RegExp(/<start>/);
+  var isdesc    = new RegExp(/<description>/);
+  var islogg    = new RegExp(/"Logg">/);
+  var isvurd    = new RegExp(/"Vurdering"/);
+  if (islesson.test(line)) return 2;
+  switch (dom.state) {
+    case 0:
+      if (islessons.test(line)) return 1;
+      break;
+    case 1:
+      if (islesson.test(line)) return 2;
+      break;
+    case 2:
+      if (isname.test(line)) {
+        var m = line.match(/<name>(.+)<\/name>/);
+        dom.id++; 
+        dom.dom[dom.id] = { name:m[1] };
+      }
+      return 3;
+      break;
+    case 3:
+      if (isdesc.test(line)) {
+        var m = line.match(/<description>(.+)<\/description>/);
+        if (m) dom.dom[dom.id].desc = m[1]; 
+      }
+      return 3;
+      break;
+  }
+ return dom.state;
+}
+
+function parse_plan(planid,data) {
+  var lines = data.split(/\r?\n/);
+  var dom = { dom:[], state:0, id:0 };
+  for (var i in lines) {
+    var line = lines[i];
+    dom.state = doit(dom,line);
+  }
+  console.log(dom);
+}
 
 function findUser(firstname,lastname) {
   // search for a user given firstname and lastname
@@ -151,6 +197,7 @@ var memory = new connect.session.MemoryStore({
 });
 
 var express = require('express');
+var form = require('connect-form');
 var dummyHelper = require('./lib/dummy-helper');
 var SocketServer = require('./lib/socket-server');
 var fs = require('fs');
@@ -231,7 +278,7 @@ var assets = assetManager({
 	}
 });
 var port = 3000;
-var app = module.exports = express.createServer();
+var app = module.exports = express.createServer(   form({ keepExtensions: true })  );
 
 
 
@@ -526,6 +573,29 @@ app.post('/modifyplan', function(req, res) {
     } else {
       res.send({ok:false, msg:"bad user"});
     }
+
+});
+
+
+app.post('/import', function(req, res, next){
+
+  // connect-form adds the req.form object
+  // we can (optionally) define onComplete, passing
+  // the exception (if any) fields parsed, and files parsed
+  req.form.complete(function(err, fields, files){
+  var planid = fields.planid;
+    if (err) {
+      next(err);
+    } else {
+      //console.log('\nuploaded %s to %s' ,  files.image.filename , files.image.path);
+      fs.readFile(files.image.path,'utf-8', function (err, data) {
+          if (err) throw err;
+          parse_plan(planid,data);
+          console.log("planid=",planid);
+      });
+      res.redirect('back');
+    }
+  });
 
 });
 

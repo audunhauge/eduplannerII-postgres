@@ -342,6 +342,11 @@ function visEnPlan(inifagnavn,plandata) {
         var planid = cpinfo[fagnavn] || plannames[fagnavn] || 0;
         window.location.href="/itsplain?course="+fagnavn+"&planid="+planid;
     });
+    $j("#import").click(function() {
+       $j("#filvelger").toggle();
+        var planid = cpinfo[fagnavn] || plannames[fagnavn] || 0;
+        $j("#ppid").val(planid);
+    });
 
 
     $j("#paste").click(function() {
@@ -431,6 +436,14 @@ function visEnValgtPlan(plandata,egne,start,stop) {
     }
     if (vurdering || (egne && isteach ) ) {
       vurdering = '<div id="vurd"><span>Vurdering</span><div class="gradback" >'+vurdering+'</div></div>';
+    }
+    if (egne && isteach ) {
+      vurdering += '<div id="filvelger">'
+                 + '<form action="/import" method="post" enctype="multipart/form-data">'
+                 + '<p>Fagplan: <input type="file" name="image" /></p>'
+                 + '<input id="ppid" type="hidden" name="planid" value="42" />'
+                 + '<p><input type="submit" value="Upload" /></p>'
+                 + '</form></div>';
     }
     var s = vurdering;
     s += '<table class="fagplan" >'
