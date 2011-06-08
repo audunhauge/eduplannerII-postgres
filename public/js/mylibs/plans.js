@@ -448,6 +448,28 @@ function vis_andreplaner() {
 // visEnPlan har flytta til rediger.js
 // da den lar deg redigere dersom du er eier av planene
 
+function myattend() {
+    // show my attendance
+    var s = '';
+    if (attend) {
+      s += '<ol>';
+      for (var i=0; i< attend.length; i++) {
+        var att = attend[i];
+        var t = teachers[att.teachid] || {firstname:'', lastname:''};
+        s += '<li>'+ att.name + ' ' + t.firstname+' ' + t.lastname+'</li>';
+
+      }
+      s += '</ol>';
+    }
+    $j("#main").html('<div id="timeplan"><h1>Starb-reg total</h1>'+s+'</div>');
+    return;
+}
+
+function weekattend() {
+    // show my attendance
+    $j("#main").html('<div id="timeplan"><h1>Starb-reg this week</h1></div>');
+    return;
+}
 
 function show_next4() {
     // vis neste fire uker

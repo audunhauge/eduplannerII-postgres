@@ -236,6 +236,12 @@ var activeplan;            //  plandata for chosen plan
 
 function visEnPlan(inifagnavn,plandata) {
     var fagnavn = inifagnavn;
+    if (getdom) {
+      $j.get('/getdom',function(dom) {
+        mycopy = dom;
+        getdom = false;
+      });
+    }
     if (inifagnavn == "showplan") {
       // show a plan not connected to a course
       // we have all info in plandata
@@ -277,7 +283,7 @@ function visEnPlan(inifagnavn,plandata) {
        s += '<div  class="button float gui" title="Eksporter til itslearning - lagres som fil. Kan importeres i itslearning." id="export">Export</div>';
        s += '<div  class="button float gui" title="Importer fra fil " id="import">Import</div>';
     }
-    if (isteach && egne && mycopy) {
+    if (isteach && egne && (getdom || mycopy) ) {
       s += '<div  class="button float gui" id="paste">Lim inn</div>';
     }
     s += '<div class="clear"></div>'
@@ -442,6 +448,7 @@ function visEnValgtPlan(plandata,egne,start,stop) {
                  + '<form action="/import" method="post" enctype="multipart/form-data">'
                  + '<p>Fagplan: <input type="file" name="image" /></p>'
                  + '<input id="ppid" type="hidden" name="planid" value="42" />'
+                 + '<input id="loc" type="hidden" name="loc" value="'+document.location+'" />'
                  + '<p><input type="submit" value="Upload" /></p>'
                  + '</form></div>';
     }

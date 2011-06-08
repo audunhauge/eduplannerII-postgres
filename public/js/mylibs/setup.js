@@ -12,6 +12,9 @@ var inlogged = false;   // easy test for logged in (not related to security - ju
 var plannames;          // list of logged in users plans (assumed to be teach - only used if so)
                         // { 'name':pid, ... }
 
+var attend;         // attendance for logged in user - simple select * from starbreg where userid=?
+
+
 var showyear = 0;       // used to choose school year to show
     // can show this or next school year
     // changing showyear influences yearplan mostly
@@ -24,6 +27,7 @@ var showyear = 0;       // used to choose school year to show
 var user = Url.decode(gup("navn"));
 var currentloc = "yearplan?navn="+user;    // current location - used by popstate and others
 var action = gup("action") || 'default';   // brukes i switch til å velge alternative visninger
+var getdom = gup("getdom") || null;        // hent importert fil fra server
 var page;                                  // brukes som adresse for valgt side, history
 for (page in $j.deparam.fragment()) {
   break;  // the page is the key in the returned object
@@ -506,8 +510,27 @@ function afterloggin(uinfo) {
       userinfo.fullname = fullname;
       isteach = true;
       isadmin = (database.userinfo.isadmin);
+    } else {
+       $j.get( '/attendance', function(att) {
+          attend = att;
+          s =  '<li><a id="show" href="#">Starb</a><ul>'
+              +    '<li><a id="myattend"    href="#">Starb-oversikt</a></li>'
+              +    '<li><a id="weekattend"  href="#">Denne uka</a></li>'
+              + '</ul></li>';
+          $j("#nav").append(s);
+          $j("#myattend").click(function(event) {
+              event.preventDefault();
+              myattend();
+          });
+          $j("#weekattend").click(function(event) {
+              event.preventDefault();
+              weekattend();
+          });
+         });
     }
 }
+
+
 
 var prevtitle;
 

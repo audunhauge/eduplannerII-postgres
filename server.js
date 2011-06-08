@@ -5,6 +5,8 @@ var client = database.client;
 db.roomdata = require('./static').roomdata;
 db.starttime = db.roomdata.slotlabels.split(',');
 
+var mydom = {};  // for each user - result of file import
+
 var fs = require('fs');
 
 
@@ -16,6 +18,7 @@ addons.update = {};
 // we refetch if the resource is stale
 
 function doit(dom,line) {
+  // state machine for parsing xml
   var islessons = new RegExp(/<lessons/);
   var islesson  = new RegExp(/<lesson>/);
   var isname    = new RegExp(/<name>/);
@@ -34,15 +37,17 @@ function doit(dom,line) {
     case 2:
       if (isname.test(line)) {
         var m = line.match(/<name>(.+)<\/name>/);
-        dom.id++; 
-        dom.dom[dom.id] = { name:m[1] };
+        if (m) {
+          dom.id++; 
+          dom.dom[dom.id] = m[1];
+        }
       }
       return 3;
       break;
     case 3:
       if (isdesc.test(line)) {
         var m = line.match(/<description>(.+)<\/description>/);
-        if (m) dom.dom[dom.id].desc = m[1]; 
+        if (m) dom.dom[dom.id] += '|'+m[1]; 
       }
       return 3;
       break;
@@ -51,13 +56,57 @@ function doit(dom,line) {
 }
 
 function parse_plan(planid,data) {
-  var lines = data.split(/\r?\n/);
-  var dom = { dom:[], state:0, id:0 };
-  for (var i in lines) {
-    var line = lines[i];
-    dom.state = doit(dom,line);
+  var lines   = data.split(/\r?\n/);
+  var isxml   = new RegExp(/<\?xml/);
+  var isnumb  = new RegExp(/^\d+/);
+  var isweek  = new RegExp(/^u\d+/i);
+  var dom = { dom:{}, state:0, id:0 };
+  for (var id=0; id < 48; id++) {
+    dom.dom[id] = '';
   }
-  console.log(dom);
+  if (isxml.test(lines[0]) ) {
+    // parse as xml
+    for (var i in lines) {
+      var line = lines[i];
+      dom.state = doit(dom,line);
+    }
+  } else {
+     // parse as plain text, just stuff line into name
+     for (var i in lines) {
+      var line = lines[i];
+      // check if we have a leading number in range [0,47]
+      if (isnumb.test(line)) {
+        // the line starts with a number
+        var num = +line.match(/^(\d+)/)[1];
+        console.log("came here",num);
+        if (num >= 0 && num < 48) {
+          dom.id = num;
+          var nl = line.match(/^(\d+)[ :]?(.+)/);
+          line = nl[2] || '';
+          console.log("lines is now ",line);
+        }
+      }
+      if (isweek.test(line)) {
+        // the line starts with a number
+        var num = +line.match(/^.(\d+)/)[1];
+        console.log("came here",num);
+        if (num >= 0 && num < 53) {
+          if (num < 33 ) {
+            num += 20;
+          } else {
+            num -= 33;
+          }
+          dom.id = num;
+          var nl = line.match(/^.(\d+)[ :]?(.+)/);
+          line = nl[2] || '';
+          console.log("lines is now ",line);
+        }
+      }
+      dom.dom[dom.id] = line ;
+      dom.id++;
+    }
+  }
+  return dom.dom;
 }
 
 function findUser(firstname,lastname) {
@@ -576,25 +625,30 @@ app.post('/modifyplan', function(req, res) {
 
 });
 
+app.get('/getdom', function(req, res) {
+    if (mydom[req.session.user]) {
+      res.send(mydom[req.session.user]);
+    } else {
+      res.send(null);
+    }
+    //mydom[req.session.user] = null;
+});
 
 app.post('/import', function(req, res, next){
-
-  // connect-form adds the req.form object
-  // we can (optionally) define onComplete, passing
-  // the exception (if any) fields parsed, and files parsed
   req.form.complete(function(err, fields, files){
   var planid = fields.planid;
+  var loc = fields.loc;
     if (err) {
       next(err);
     } else {
-      //console.log('\nuploaded %s to %s' ,  files.image.filename , files.image.path);
       fs.readFile(files.image.path,'utf-8', function (err, data) {
           if (err) throw err;
-          parse_plan(planid,data);
-          console.log("planid=",planid);
+          mydom[req.session.user] = parse_plan(planid,data);
+          //console.log("loc=",loc," planid=",planid," dom=",dom);
+          res.redirect(loc+'&getdom=yes');
       });
-      res.redirect('back');
     }
+    //res.redirect('back');
   });
 
 });
@@ -716,6 +770,12 @@ app.get('/blocks', function(req, res) {
           });
 });
 
+app.get('/attendance', function(req, res) {
+    // get attendance
+    database.getAttend(req.session.user,function(attend) {
+            res.send(attend);
+          });
+});
 
 
 app.get('/timetables', function(req, res) {

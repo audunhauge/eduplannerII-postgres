@@ -804,6 +804,21 @@ var getAplan = function(planid,callback) {
       });
 }
 
+var getAttend = function(user,callback) {
+  // returns a hash of all info for all plans
+  var uid = user.id || 0;
+  client.query(
+      'select s.*, i.name from starbreg s inner join mdl_bookings_item i '
+      + ' on (s.room = i.id) where userid=? order by julday ' ,[uid ],
+      function (err, results, fields) {
+          if (err) {
+              console.log("ERROR: " + err.message);
+              throw err;
+          }
+          callback(results);
+      });
+}
+
 var getAllPlans = function(callback) {
   // returns a hash of all info for all plans
   client.query(
@@ -1321,6 +1336,7 @@ module.exports.saveTest = saveTest;
 module.exports.getBlocks = getBlocks;
 module.exports.savesimple = savesimple;
 module.exports.savehd = savehd;
+module.exports.getAttend = getAttend;
 module.exports.saveblokk = saveblokk; 
 module.exports.saveVurd = saveVurd;
 module.exports.getMyPlans = getMyPlans;
