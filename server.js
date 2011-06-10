@@ -772,7 +772,7 @@ app.get('/blocks', function(req, res) {
 
 app.get('/attendance', function(req, res) {
     // get attendance
-    database.getAttend(req.session.user,function(attend) {
+    database.getAttend(req.session.user,req.query,function(attend) {
             res.send(attend);
           });
 });

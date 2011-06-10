@@ -9,6 +9,7 @@ function formatweekdate(jd) {
     return "" + d1.getDate() + '.' + (d1.getMonth()+1) + '-'+d2.getDate()+ '.'  + (d2.getMonth()+1);
 }    
 
+
 function countme(obj) {
   var count = 0;
   for (var k in obj) {

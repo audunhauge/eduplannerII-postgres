@@ -4,14 +4,20 @@
 function rom_reservering(room,delta,makeres) {
     // vis timeplan for room med reserveringer
     // delta is offset from current day
+    var start = (showyear == 0) ? database.startjd: database.nextyear.firstweek; 
+    var stop =  (showyear == 0) ? database.lastweek  : database.nextyear.lastweek;
+    promises.toggle_year = function() { 
+          rom_reservering(room,delta,makeres);
+        };
     delta = typeof(delta) != 'undefined' ?  +delta : 0;
     makeres = typeof(makeres) != 'undefined' ?  makeres : true;
-    var current = database.startjd+delta*7;
+    var current = start+delta*7;
+    //var current = database.startjd+delta*7;
     var data = getRoomPlan(room);
     var plan = data.plan;
     var timetable = [ [],[],[],[],[],[],[] ];
     if (reservations) {
-        for (var jd = current; jd < database.startjd+(1+delta)*7; jd++) {
+        for (var jd = current; jd < stop+(1+delta)*7; jd++) {
             if (reservations[jd]) {
                 var reslist = reservations[jd];
                 for (var r in reslist) {
@@ -140,7 +146,7 @@ function rom_reservering(room,delta,makeres) {
       submit    : 'OK'
     });
     $j("#nxt").click(function() {
-      if (database.startjd+7*delta < database.lastweek+7)
+      if (start+7*delta < stop)
          rom_reservering(room,delta+1);
       });
     $j("#prv").click(function() {

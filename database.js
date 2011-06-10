@@ -804,10 +804,52 @@ var getAplan = function(planid,callback) {
       });
 }
 
-var getAttend = function(user,callback) {
+var getAttend = function(user,params,callback) {
   // returns a hash of all info for all plans
   var uid = user.id || 0;
-  client.query(
+  var all = params.all || false;
+  if (all) { client.query(
+      'select * from starbreg order by julday ' ,
+      function (err, results, fields) {
+          if (err) {
+              console.log("ERROR: " + err.message);
+              throw err;
+          }
+          var studs={}, daycount = {}, rooms={}, teach={};
+          for (var i=0,k= results.length; i < k; i++) {
+            var att = results[i];
+
+            if (!studs[att.userid]) {
+              studs[att.userid] = {};
+            }
+            studs[att.userid][att.julday] = [att.teachid, att.room ];
+
+            if (!daycount[att.julday]) {
+              daycount[att.julday] = 0;
+            }
+            daycount[att.julday]++; 
+
+            if (!rooms[att.room]) {
+              rooms[att.room] = {};
+            }
+            if (!rooms[att.room][att.julday]) {
+              rooms[att.room][att.julday] = [];
+              rooms[att.room][att.julday].teach = att.teachid;
+            }
+            rooms[att.room][att.julday].push(att.userid);
+
+            if (!teach[att.teachid]) {
+              teach[att.teachid] = {};
+            }
+            if (!teach[att.teachid][att.julday]) {
+              teach[att.teachid][att.julday] = att.room;
+            }
+
+          }
+          db.daycount = daycount;
+          callback( { studs:studs, daycount:daycount, rooms:rooms, teach:teach } );
+      });
+  } else client.query(
       'select s.*, i.name from starbreg s inner join mdl_bookings_item i '
       + ' on (s.room = i.id) where userid=? order by julday ' ,[uid ],
       function (err, results, fields) {

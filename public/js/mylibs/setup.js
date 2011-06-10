@@ -12,7 +12,8 @@ var inlogged = false;   // easy test for logged in (not related to security - ju
 var plannames;          // list of logged in users plans (assumed to be teach - only used if so)
                         // { 'name':pid, ... }
 
-var attend;         // attendance for logged in user - simple select * from starbreg where userid=?
+var attend;             // attendance for logged in user - simple select * from starbreg where userid=?
+var allattend;          // attendance for all students
 
 
 var showyear = 0;       // used to choose school year to show
@@ -510,6 +511,23 @@ function afterloggin(uinfo) {
       userinfo.fullname = fullname;
       isteach = true;
       isadmin = (database.userinfo.isadmin);
+      $j.get( '/attendance', { all:1 },function(att) {
+            allattend = att;
+            $j("#timeplaner").html("Timeplan/Starb");
+            s =  '<li><a id="show" href="#">Starb</a><ul>'
+              +    '<li><a id="myattend"    href="#">Starb-oversikt</a></li>'
+              +    '<li><a id="weekattend"  href="#">Denne uka</a></li>'
+              + '</ul></li>';
+            $j("#timeplaner + ul").append(s);
+            $j("#myattend").click(function(event) {
+                event.preventDefault();
+                teachattend();
+            });
+            $j("#weekattend").click(function(event) {
+                event.preventDefault();
+                weekattend();
+            });
+          });
     } else {
        $j.get( '/attendance', function(att) {
           attend = att;

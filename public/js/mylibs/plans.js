@@ -276,7 +276,6 @@ function show_all(thisweek,options) {
     var e;
     var pro;   // dagens prover
     var txt;
-    var thclass;
     var cc;
 
     var events = database.yearplan;
@@ -297,10 +296,6 @@ function show_all(thisweek,options) {
       }
       pro = { pr:(prover[i] || []) , hd:(database.heldag[i] || [] ) };
       s += "<tr>";
-      //thclass = e.klass;
-      thclass = '';
-      //s += "<th class=\""+thclass+"\">"+e.week+"</th>";
-      //s += "<th>"+julian.week(i)+'<br><span class="date">' + formatweekdate(i) + "</span></th>";
       s += '<th><div class="weeknum">'+julian.week(i)+'</div><br class="clear" /><div class="date">' + formatweekdate(i) + "</div></th>";
       for (j=0;j<6;j++) {
         var xtra = '';
@@ -448,21 +443,131 @@ function vis_andreplaner() {
 // visEnPlan har flytta til rediger.js
 // da den lar deg redigere dersom du er eier av planene
 
+function teachattend() {
+    // show my attendance (for teachers)
+    var attention = {};
+    if (allattend && allattend.teach[userinfo.id] ) {
+      for (var i in  allattend.teach[userinfo.id]) {
+        var rid = allattend.teach[userinfo.id][i];
+        var room = database.roomnames[rid] || 'uspes';
+        attention[i] = room;
+        if (allattend.rooms[rid] && allattend.rooms[rid][i]) {
+          var members = allattend.rooms[rid][i]
+          var mempop = makepop(members.length,members,'','','');
+          var mm = '<ul id="members" class="gui nav">' + mempop + '</ul>';
+          attention[i] = room + ' ' + mm;
+        }
+      }
+    } 
+    var prover = alleprover;
+    var theader ="<table class=\"year\" >"
+     + "<tr><th>Uke</th><th>Man</th><th>Tir</th><th>Ons</th>"
+     + "<th>Tor</th><th>Fre</th><th>Merknad</th></tr>";
+    var tfooter ="</table>";
+    var s = theader;
+    start =  database.firstweek; 
+    stop =   database.lastweek;
+    var week = julian.week(start);
+    var i,j;
+    var e;
+    var pro;   // dagens prover
+    var txt;
+    var thclass;
+    var cc;
+
+    var events = database.yearplan;
+    for (i= start; i < stop; i += 7) {
+      e = events[Math.floor(i/7)] || { pr:[],days:[]};
+      s += "<tr>";
+      thclass = '';
+      s += '<th><div class="weeknum">'+julian.week(i)+'</div><br class="clear" /><div class="date">' + formatweekdate(i) + "</div></th>";
+      for (j=0;j<6;j++) {
+        if (database.freedays[i+j]) {
+          txt = database.freedays[i+j];
+          tdclass = 'fridag';
+        } else {
+          txt = (j == 5) ? (e.days[j] || '') : '';
+          //txt = '';
+          if (attention[i+j]) {
+            tdclass='hd';
+            var att = attention[i+j];
+            txt = att;
+          } else {
+            tdclass = '';
+          }
+        }
+        s += '<td class="'+tdclass+'">' + txt + "</td>";
+      }
+      s += "</tr>";
+    }
+    s += "</table>";
+    $j("#main").html(s);
+}
+
 function myattend() {
-    // show my attendance
-    var s = '';
+    // show my attendance (for students)
+    var attention = {};
+    if (database.daycount ) {
+      for (var jd in database.daycount) {
+        var ant = database.daycount[jd];
+        if (ant > 40) attention[jd] = 'UREG';
+      }
+    }
     if (attend) {
-      s += '<ol>';
       for (var i=0; i< attend.length; i++) {
         var att = attend[i];
-        var t = teachers[att.teachid] || {firstname:'', lastname:''};
-        s += '<li>'+ att.name + ' ' + t.firstname+' ' + t.lastname+'</li>';
-
+        att.teachname = teachers[att.teachid] || {firstname:'', lastname:''};
+        var txt = att.teachname.firstname + ' ' + att.teachname.lastname + ' ' + att.name;
+        attention[att.julday] = txt;
       }
-      s += '</ol>';
     }
-    $j("#main").html('<div id="timeplan"><h1>Starb-reg total</h1>'+s+'</div>');
-    return;
+    var prover = alleprover;
+    var theader ="<table class=\"year\" >"
+     + "<tr><th>Uke</th><th>Man</th><th>Tir</th><th>Ons</th>"
+     + "<th>Tor</th><th>Fre</th><th>Merknad</th></tr>";
+    var tfooter ="</table>";
+    var s = theader;
+    start =  database.firstweek; 
+    stop =   database.lastweek;
+    var week = julian.week(start);
+    var i,j;
+    var e;
+    var pro;   // dagens prover
+    var txt;
+    var thclass;
+    var cc;
+
+    var events = database.yearplan;
+    for (i= start; i < stop; i += 7) {
+      e = events[Math.floor(i/7)] || { pr:[],days:[]};
+      // add a page break if we pass new year
+      s += "<tr>";
+      thclass = '';
+      s += '<th><div class="weeknum">'+julian.week(i)+'</div><br class="clear" /><div class="date">' + formatweekdate(i) + "</div></th>";
+      for (j=0;j<6;j++) {
+        if (database.freedays[i+j]) {
+          txt = database.freedays[i+j];
+          tdclass = 'fridag';
+        } else {
+          txt = (j == 5) ? (e.days[j] || '') : '';
+          if (attention[i+j]) {
+            if (attention[i+j] == 'UREG') {
+              txt = 'Ikke registrert';
+              tdclass = 'redfont';
+            } else {
+              tdclass='hd';
+              txt = attention[i+j];
+            }
+          } else {
+            tdclass = '';
+          }
+        }
+        s += '<td class="'+tdclass+'">' + txt + "</td>";
+      }
+      s += "</tr>";
+    }
+    s += "</table>";
+    $j("#main").html(s);
 }
 
 function weekattend() {
