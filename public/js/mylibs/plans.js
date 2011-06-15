@@ -409,6 +409,11 @@ function updateFagplanMenu() {
             s += '<li><a id="prove_'+fag+'" href="#">' + fag + '</a></li>';
         }
         s += '</ul></li>';
+        $j("#andref").after('<li><a id="oldfags" href="#">Gamle planer</a></li>');
+        $j("#oldfags").click(function(event) {
+            event.preventDefault();
+            oldplans();
+        } );
     }
     s += '</ul>';
     database.userinfo.minefag = minefag;
@@ -433,6 +438,56 @@ function updateFagplanMenu() {
     }
 }
 
+function oldplans() {
+    // show list of old plans for copying
+    $j.getJSON( "/getallplans", { state:2 },
+         function(data) {
+             var s = '<div id="timeviser"><h1>Liste over gamle planer for kopiering</h1><ul class="nav"><li><a href="#">Skoleår</a><ul>';
+             var grouping = {};
+             for (var i in data) {
+               var pinf = data[i];
+               var gname = pinf.name.substr(0,4);
+               var rname = pinf.name.substr(5);
+               var fname = rname.split('_')[0];
+               var trinn = fname.substr(0,1);
+               if (!(trinn == "1" || trinn == "2" || trinn == "3")) continue;
+               if (!grouping[gname]) grouping[gname] = {};
+               if (!grouping[gname][trinn]) grouping[gname][trinn] = {};
+               if (!grouping[gname][trinn][fname]) grouping[gname][trinn][fname] = [];
+               grouping[gname][trinn][fname].push([rname,pinf.id]);
+             }
+             for (var gg in grouping) {
+               s += '<li><a href="#">' + gg + '</a><ul>';
+               for (var tr in grouping[gg]) {
+                 s += '<li><a href="#">' + tr + '</a><ul>';
+                 for (var fgg in grouping[gg][tr]) {
+                   if (grouping[gg][tr][fgg].length > 1) {
+                     s += '<li><a href="#">' + fgg + '</a><ul><li><a href="#"' 
+                       + ($j.map(grouping[gg][tr][fgg],function(e,i) {
+                                 return ' id="eg'+e[1]+'">'+e[0];
+                             })).join('</a></li><li><a class="elink" href="#"')
+                       //+ grouping[gg][tr][fgg].join('</a></li><li><a class="elink" href="#">') + '</a></li></ul></li>';
+                       + '</a></li></ul></li>';
+                   } else {
+                     var egg = grouping[gg][tr][fgg][0][1];
+                     s += '<li><a class="elink" href="#" id="eg'+egg+'" >' + fgg + '</a></li>';
+                   }
+                 }
+                 s += '</ul></li>';
+               }
+               s += '</ul></li>';
+             }
+             s += '</ul></li></ul></div>';
+             $j("#main").html(s);
+             $j(".elink").click(function() {
+                 event.stopPropagation()
+                 var myid = this.id.substr(2);
+                 $j.get('/getaplan',{ planid:myid }, function(pplan) {
+                      visEnPlan("showplan",pplan,true);
+                   });
+               });
+         });
+}
 
 function vis_andreplaner() {
     var s="<div id=\"timeviser\"><h1>Andre fagplaner</h1><h4>Velg fra menyen Fagplaner-&gt;AndreFag ..</h4>";

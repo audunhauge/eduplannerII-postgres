@@ -789,16 +789,18 @@ var getAplan = function(planid,callback) {
               throw err;
           }
           var plan = {};
-          plan.name = results[0].name;
-          plan.weeks = {};
-          for (var i=0,k= results.length; i < k; i++) {
-            fag = results[i];
-            summary = fag.plantext || '';
-            summary = summary.replace(/\n/g,'<br>');
-            summary = summary.replace(/\r/g,'<br>');
-            section = fag.sequence || '0';
-            shortname = fag.shortname;
-            plan.weeks[section] = summary;
+          if (results[0]) { 
+            plan.name = results[0].name;
+            plan.weeks = {};
+            for (var i=0,k= results.length; i < k; i++) {
+              fag = results[i];
+              summary = fag.plantext || '';
+              summary = summary.replace(/\n/g,'<br>');
+              summary = summary.replace(/\r/g,'<br>');
+              section = fag.sequence || '0';
+              shortname = fag.shortname;
+              plan.weeks[section] = summary;
+            }
           }
           callback(plan);
       });
@@ -861,10 +863,14 @@ var getAttend = function(user,params,callback) {
       });
 }
 
-var getAllPlans = function(callback) {
+var getAllPlans = function(state,callback) {
   // returns a hash of all info for all plans
+  // 0 == active plans
+  // 1 == new plans (editing mode)
+  // 2 == oldplans - for copying
   client.query(
-      'select p.*,c.shortname from plan p left outer join mdl_course c on (c.planid = p.id) ',
+        'select p.*,c.shortname from plan p left outer join mdl_course c '
+      + ' on (c.planid = p.id) where p.state = ? order by name',[ state ],
       function (err, results, fields) {
           if (err) {
               console.log("ERROR: " + err.message);

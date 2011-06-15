@@ -660,7 +660,7 @@ app.get('/getaplan', function(req, res) {
 });
 
 app.get('/getallplans', function(req,res) {
-    database.getAllPlans(function(plandata) {
+    database.getAllPlans(req.query.state,function(plandata) {
             res.send(plandata);
           });
 });
