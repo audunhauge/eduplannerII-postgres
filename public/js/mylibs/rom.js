@@ -17,7 +17,7 @@ function rom_reservering(room,delta,makeres) {
     var plan = data.plan;
     var timetable = [ [],[],[],[],[],[],[] ];
     if (reservations) {
-        for (var jd = current; jd < stop+(1+delta)*7; jd++) {
+        for (var jd = current; jd < current+7; jd++) {
             if (reservations[jd]) {
                 var reslist = reservations[jd];
                 for (var r in reslist) {

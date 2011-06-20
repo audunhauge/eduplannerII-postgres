@@ -345,7 +345,7 @@ function visEnPlan(inifagnavn,plandata) {
     $j(".totip").tooltip({position:"bottom right" } );
     fagplan_enable_editing(isteach,egne);
     $j("#export").click(function() {
-        var planid = cpinfo[fagnavn] || plannames[fagnavn] || 0;
+        var planid =  plannames[fagnavn] || cpinfo[fagnavn] || 0;
         window.location.href="/itsplain?course="+fagnavn+"&planid="+planid;
     });
     $j("#import").click(function() {

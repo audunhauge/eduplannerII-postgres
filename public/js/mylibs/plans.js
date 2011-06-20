@@ -395,7 +395,7 @@ function updateFagplanMenu() {
     var minefag = getfagliste(uid);
     var s = '<a id="mineplaner"   href="#">Mine fag</a><ul>';
     if (isteach) {
-      s += '<li><a href="#">Planer</a><ul>';
+      s += '<li><a href="#">FagPlaner</a><ul>';
     }
     for (var i in minefag) {
         var fag = minefag[i];
@@ -403,13 +403,13 @@ function updateFagplanMenu() {
     }
     if (isteach) {
         s += '</ul></li>';
-        s += '<li><a href="#">Prøver</a><ul>';
+        s += '<li><a href="#">Prøveplaner</a><ul>';
         for (var i in minefag) {
             var fag = minefag[i];
             s += '<li><a id="prove_'+fag+'" href="#">' + fag + '</a></li>';
         }
         s += '</ul></li>';
-        $j("#andref").after('<li><a id="oldfags" href="#">Gamle planer</a></li>');
+        $j("#andref").after('<li><a id="oldfags" href="#">Gamle fagplaner</a></li>');
         $j("#oldfags").click(function(event) {
             event.preventDefault();
             oldplans();
@@ -625,10 +625,69 @@ function myattend() {
     $j("#main").html(s);
 }
 
-function weekattend() {
-    // show my attendance
-    $j("#main").html('<div id="timeplan"><h1>Starb-reg this week</h1></div>');
-    return;
+function weekattend(groupid) {
+    // show attendance for a group
+    var attention = {};
+    var attrition = {};
+    if (allattend && allattend.studs && memberlist[groupid]) {
+      for (var i in  memberlist[groupid]) {
+        var stuid = memberlist[groupid][i];
+        var att = allattend.studs[stuid];
+        for (var jd in  att) {
+            if (!attrition[jd]) attrition[jd] = [];
+            attrition[jd].push(stuid);
+        }
+      }
+    } 
+    for (var jd in attrition) {
+       var members = attrition[jd];
+       var mempop = makepop(members.length,members,'','','');
+       var mm = '<ul id="members" class="gui nav">' + mempop + '</ul>';
+       attention[jd] = mm;
+    }
+    var prover = alleprover;
+    var theader ="<table class=\"year\" >"
+     + "<tr><th>Uke</th><th>Man</th><th>Tir</th><th>Ons</th>"
+     + "<th>Tor</th><th>Fre</th><th>Merknad</th></tr>";
+    var tfooter ="</table>";
+    var s = theader;
+    start =  database.firstweek; 
+    stop =   database.lastweek;
+    var week = julian.week(start);
+    var i,j;
+    var e;
+    var pro;   // dagens prover
+    var txt;
+    var thclass;
+    var cc;
+
+    var events = database.yearplan;
+    for (i= start; i < stop; i += 7) {
+      e = events[Math.floor(i/7)] || { pr:[],days:[]};
+      s += "<tr>";
+      thclass = '';
+      s += '<th><div class="weeknum">'+julian.week(i)+'</div><br class="clear" /><div class="date">' + formatweekdate(i) + "</div></th>";
+      for (j=0;j<6;j++) {
+        if (database.freedays[i+j]) {
+          txt = database.freedays[i+j];
+          tdclass = 'fridag';
+        } else {
+          txt = (j == 5) ? (e.days[j] || '') : '';
+          //txt = '';
+          if (attention[i+j]) {
+            tdclass='hd';
+            var att = attention[i+j];
+            txt = att;
+          } else {
+            tdclass = '';
+          }
+        }
+        s += '<td class="'+tdclass+'">' + txt + "</td>";
+      }
+      s += "</tr>";
+    }
+    s += "</table>";
+    $j("#main").html(s);
 }
 
 function show_next4() {

@@ -12,7 +12,7 @@ var db = {
   ,students    : {}    // hash of student objects {  2343:{username,firstname,lastname,institution,department} , ... ]
   ,teachIds    : []    // array of teacher ids [ 654,1493 ... ]
   ,teachers    : {}    // hash of teach objects { 654:{username,firstname,lastname,institution}, ... }
-  ,course      : []    // array of coursenames [ '1MAP5', '3INF5' ... ] - used by autocomplete
+  ,course      : [ '3TY5','3SP5' ]    // array of coursenames [ '1MAP5', '3INF5' ... ] - used by autocomplete
   ,freedays    : {}    // hash of juliandaynumber:freedays { 2347889:"Xmas", 2347890:"Xmas" ... }
   ,heldag      : {}    // hash of { 2345556:{"3inf5":"Exam", ... } }
   ,prover      : {}    // hash of { 2345556:[ {shortname:"3inf5_3304",value::"3,4,5",username:"haau6257" } ... ], ... }
@@ -792,6 +792,7 @@ var getAplan = function(planid,callback) {
           if (results[0]) { 
             plan.name = results[0].name;
             plan.weeks = {};
+            for (var i=0;i<48;i++) plan.weeks[''+i] = '';
             for (var i=0,k= results.length; i < k; i++) {
               fag = results[i];
               summary = fag.plantext || '';

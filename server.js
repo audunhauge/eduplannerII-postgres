@@ -852,7 +852,7 @@ app.get('/itsplain', function(req, res) {
   </columns>\n\
   <themes xmlns="" />\n\
   <lessons xmlns="">\n\ ';
-            var julday = db.startjd;
+            var julday = db.firstweek+7;
             for (var week in data.weeks) {
                 var summary = data.weeks[week];
                 if (summary ) {
@@ -872,38 +872,39 @@ app.get('/itsplain', function(req, res) {
                     var title       = title_elm[0] || '';
                     var tdesc       = title_elm[1] || '';
                     var shortname = name.replace(/ /g,'');
-                    if (shortname == '' ) continue;
-                    xhtml += "    <lesson>\n";
-                    xhtml += "      <name>"+name+"</name>\n" ;
-                    xhtml += "      <description>"+description+"</description>\n" ;
+                    if (shortname != '' ) {
+                      xhtml += "    <lesson>\n";
+                      xhtml += "      <name>"+name+"</name>\n" ;
+                      xhtml += "      <description>"+description+"</description>\n" ;
 
-                    var mydate = julian.jdtogregorian(julday-6);
-                    mydate.month = (mydate.month < 10) ? "0"+mydate.month : mydate.month;
-                    mydate.day = (mydate.day < 10) ? "0"+mydate.day : mydate.day;
-                    var strdate = ""+mydate.year+"-"+mydate.month+"-"+mydate.day+"T00:00:00";
-                    xhtml += "      <start>"+strdate+"</start>\n" ;
+                      var mydate = julian.jdtogregorian(julday-6);
+                      mydate.month = (mydate.month < 10) ? "0"+mydate.month : mydate.month;
+                      mydate.day = (mydate.day < 10) ? "0"+mydate.day : mydate.day;
+                      var strdate = ""+mydate.year+"-"+mydate.month+"-"+mydate.day+"T00:00:00";
+                      xhtml += "      <start>"+strdate+"</start>\n" ;
 
-                    mydate = julian.jdtogregorian(julday);
-                    mydate.month = (mydate.month < 10) ? "0"+mydate.month : mydate.month;
-                    mydate.day = (mydate.day < 10) ? "0"+mydate.day : mydate.day;
-                    var strdate = ""+mydate.year+"-"+mydate.month+"-"+mydate.day+"T23:59:59";
-                    xhtml += "      <stop>"+strdate+"</stop>\n" ;
+                      mydate = julian.jdtogregorian(julday);
+                      mydate.month = (mydate.month < 10) ? "0"+mydate.month : mydate.month;
+                      mydate.day = (mydate.day < 10) ? "0"+mydate.day : mydate.day;
+                      var strdate = ""+mydate.year+"-"+mydate.month+"-"+mydate.day+"T23:59:59";
+                      xhtml += "      <stop>"+strdate+"</stop>\n" ;
 
-                    //usum = oversikt[section]->count;
-                    var usum = 5;
-                    xhtml += "      <class_hours>"+usum+"</class_hours>\n" ;
-                    xhtml += "      <customs>\n" ;
-                    xhtml += '        <custom colName="Vurdering" id="8980">'+vurdering+'</custom>'+"\n";
-                    xhtml += '        <custom colName="Logg"      id="8982">'+logg+'</custom>'+"\n";
-                    xhtml += "      </customs>\n" ;
-                    xhtml += "      <objectives>\n" ;
-                    xhtml += "        <objective>\n" ;
-                    xhtml += '          <title loName="'+title+'" />'+"\n";
-                    xhtml += '            <description>'+tdesc+'</description>'+"\n";
-                    xhtml += "        </objective>\n" ;
-                    xhtml += "      </objectives>\n" ;
+                      //usum = oversikt[section]->count;
+                      var usum = 5;
+                      xhtml += "      <class_hours>"+usum+"</class_hours>\n" ;
+                      xhtml += "      <customs>\n" ;
+                      xhtml += '        <custom colName="Vurdering" id="8980">'+vurdering+'</custom>'+"\n";
+                      xhtml += '        <custom colName="Logg"      id="8982">'+logg+'</custom>'+"\n";
+                      xhtml += "      </customs>\n" ;
+                      xhtml += "      <objectives>\n" ;
+                      xhtml += "        <objective>\n" ;
+                      xhtml += '          <title loName="'+title+'" />'+"\n";
+                      xhtml += '            <description>'+tdesc+'</description>'+"\n";
+                      xhtml += "        </objective>\n" ;
+                      xhtml += "      </objectives>\n" ;
 
-                    xhtml += "    </lesson>\n";
+                      xhtml += "    </lesson>\n";
+                    }
                 }
                 julday += 7;
             }

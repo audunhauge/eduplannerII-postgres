@@ -525,7 +525,7 @@ function afterloggin(uinfo) {
             });
             $j("#weekattend").click(function(event) {
                 event.preventDefault();
-                weekattend();
+                weekattend(2106);
             });
           });
     } else {
