@@ -9,6 +9,23 @@ function formatweekdate(jd) {
     return "" + d1.getDate() + '.' + (d1.getMonth()+1) + '-'+d2.getDate()+ '.'  + (d2.getMonth()+1);
 }    
 
+function disjoint(g1,g2) {
+  // return elements in g2,g1 not in (g1 and g2)
+  var dis = [];
+  for (var i in g1) {
+    var eg1 = g1[i];
+    if ($j.inArray(eg1,g2) == -1) {
+      dis.push(eg1);
+    }
+  }
+  for (var i in g2) {
+    var eg2 = g2[i];
+    if ($j.inArray(eg2,g1) == -1) {
+      dis.push(eg2);
+    }
+  }
+  return dis;
+}
 
 function countme(obj) {
   var count = 0;

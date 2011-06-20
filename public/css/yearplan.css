@@ -568,6 +568,11 @@ div.tinyohd {
   -moz-border-radius: 2em;
 }
 
+#missing >  li > a {
+  color:red;
+}
+
+
 .removepart, .redfont {
     color:red !important;
 }
