@@ -462,7 +462,7 @@ function oldplans() {
                  s += '<li><a href="#">' + tr + '</a><ul>';
                  for (var fgg in grouping[gg][tr]) {
                    if (grouping[gg][tr][fgg].length > 1) {
-                     s += '<li><a href="#">' + fgg + '</a><ul><li><a href="#"' 
+                     s += '<li><a href="#">' + fgg + '</a><ul><li><a class="elink" href="#"' 
                        + ($j.map(grouping[gg][tr][fgg],function(e,i) {
                                  return ' id="eg'+e[1]+'">'+e[0];
                              })).join('</a></li><li><a class="elink" href="#"')

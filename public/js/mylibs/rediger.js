@@ -237,11 +237,13 @@ var activeplan;            //  plandata for chosen plan
 function visEnPlan(inifagnavn,plandata) {
     var fagnavn = inifagnavn;
     if (getdom) {
+      // this will be tru after an import
       $j.get('/getdom',function(dom) {
         mycopy = dom;
         getdom = false;
       });
     }
+    var myactive = $j.inArray(fagnavn,fagenemine) >= 0;
     if (inifagnavn == "showplan") {
       // show a plan not connected to a course
       // we have all info in plandata
@@ -257,7 +259,7 @@ function visEnPlan(inifagnavn,plandata) {
           plandata[i] = '';
         }
       }
-      egne = (inlogged && isteach && ($j.inArray(fagnavn,fagenemine) >= 0));
+      egne = (inlogged && isteach && myactive);
     }
     activeplan = plandata;
     minfagplan = fagnavn;
@@ -279,7 +281,7 @@ function visEnPlan(inifagnavn,plandata) {
     if (isteach && inlogged) {
        s += '<div  class="button float gui" id="copy">Ta kopi</div>';
     }
-    if (isteach && egne) {
+    if (isteach && egne && myactive) {
        s += '<div  class="button float gui" title="Eksporter til itslearning - lagres som fil. Kan importeres i itslearning." id="export">Export</div>';
        s += '<div  class="button float gui" title="Importer fra fil " id="import">Import</div>';
     }
@@ -427,6 +429,9 @@ function visEnValgtPlan(plandata,egne,start,stop) {
     //for (i= thisweek; i < database.lastweek; i += 7) {
     var jd = database.firstweek;
     var vurdering = '';
+    for (var i=1; i < 48; i++) {
+        if (!plandata[i]) plandata[i] = '';
+    }
     nocourse = false;
     if (myplans && myplans[minfagplan]) {
         var pp = myplans[minfagplan];
