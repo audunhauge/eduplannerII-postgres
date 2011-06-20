@@ -629,9 +629,10 @@ function weekattend(groupid) {
     // show attendance for a group
     var attention = {};
     var attrition = {};
-    if (allattend && allattend.studs && memberlist[groupid]) {
-      for (var i in  memberlist[groupid]) {
-        var stuid = memberlist[groupid][i];
+    var groupmem = memberlist[groupid] || [];
+    if (allattend && allattend.studs && groupmem ) {
+      for (var i in  groupmem) {
+        var stuid = groupmem[i];
         var att = allattend.studs[stuid];
         for (var jd in  att) {
             if (!attrition[jd]) attrition[jd] = [];
@@ -641,8 +642,11 @@ function weekattend(groupid) {
     } 
     for (var jd in attrition) {
        var members = attrition[jd];
-       var mempop = makepop(members.length,members,'','','');
-       var mm = '<ul id="members" class="gui nav">' + mempop + '</ul>';
+       var absent  = disjoint(members,groupmem);
+       var present = makepop(members.length,members,'','','');
+       var missing = makepop(absent.length,absent,'','','');
+       var mm = '<ul id="present" class="gui nav">' + present + '</ul>';
+       mm += '<ul id="missing" class="gui nav">' + missing + '</ul>';
        attention[jd] = mm;
     }
     var prover = alleprover;
