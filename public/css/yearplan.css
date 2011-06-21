@@ -63,6 +63,20 @@ ul.prliste {
   font-size:0.9em;
 }
 
+div.present {
+  margin-right:2px;
+  width:5px;
+  height:16px;
+  background:green;
+  float:left;
+}
+div.notpresent {
+  margin-right:2px;
+  width:5px;
+  height:8px;
+  background:red;
+  float:left;
+}
 
 .cattblocknew, .cattblock {
   font-size:1em;
@@ -135,7 +149,34 @@ div.killer {
   -moz-border-radius: 10px;
 }
 
+table.starbtab {
+  margin-top:200px;
+}
 
+table.starbtab td {
+  width:30px;
+  height:20px;
+
+}
+
+div.rel {
+  position:relative;
+}
+
+div.angled {
+  position:absolute;
+  width: 200px;
+  height: 25px;
+  top:-100px;
+  left:-20px;
+  -moz-transform-origion:left;
+  -webkit-transform-origion:left;
+  -ie-transform-origion:left;
+  -moz-transform:rotate( -45deg);
+  -webkit-transform:rotate( -45deg);
+  -ie-transform:rotate( -45deg);
+
+}
 
 
 .catt0  { color:#c33; }
@@ -575,6 +616,10 @@ div.tinyohd {
 
 .removepart, .redfont {
     color:red !important;
+}
+
+.greenfont {
+    color:green !important;
 }
 
 .pinkfont {
