@@ -625,6 +625,73 @@ function myattend() {
     $j("#main").html(s);
 }
 
+function tabular_view(groupid) {
+    // show attendance for a group in a grid
+    var groupmem = memberlist[groupid] || [];
+    var theader ='<table class="starbtab" >';
+    var tfooter ="</table>";
+    var s = '<div id="toggleview" class="button gui float">Pr dag</div>'+ theader;
+    start =  database.firstweek; 
+    stop =   database.lastweek;
+    var week = julian.week(start);
+    var i,j;
+    var counting = {};
+    var tot = 0;
+    var antall = 0;
+    s += "<tr><th>Dato</th>";
+    for (var i in  groupmem) {
+        var stuid = groupmem[i];
+        elev = id2elev[stuid];
+        if (elev)  {
+          counting[stuid] = 0;
+          antall++;
+          s += '<td><div class="rel"><div class="angled">' + elev.firstname+ ' ' + elev.lastname + '</div></div></td>';
+        }
+    }
+    s += "</tr>";
+    var starbdays = [0,2,3];
+    for (j= start; j < stop; j += 7) {
+      s += "<tr>";
+      s += '<th><div class="weeknum">'+julian.week(j)+'</div><br class="clear" /><div class="date">' + formatweekdate(j) + "</div></th>";
+      for (var i in  groupmem) {
+          var stuid = groupmem[i];
+          if (!id2elev[stuid]) continue;
+          var txt = '';
+          var any = false;
+          for (var k in starbdays) {
+            var kk = starbdays[k];
+            if (allattend.studs[stuid][j+kk]) {
+              txt += '<div class="present"></div>';
+              any = true;
+              counting[stuid]++;
+              tot++;
+            } else {
+              txt += '<div class="notpresent"></div>';
+            }
+          }
+          if (!any) txt = '';
+          s += '<td>' + txt + "</td>";
+      }
+      s += "</tr>";
+    }
+    var avg = tot/antall;
+    s += "<tr><th>Antall</th>";
+    for (var i in  groupmem) {
+        var stuid = groupmem[i];
+        elev = id2elev[stuid];
+        if (elev)  {
+          var tdclass = (counting[stuid] > avg) ? 'greenfont' : 'redfont';
+          s += '<td class="'+tdclass+'">'+counting[stuid]+'</td>';
+        }
+    }
+    s += "</tr>";
+    s += '</table>';
+    $j("#main").html(s);
+    $j("#toggleview").click(function() {
+            weekattend(groupid);
+        });
+}
+
 function weekattend(groupid) {
     // show attendance for a group
     var attention = {};
@@ -654,7 +721,7 @@ function weekattend(groupid) {
      + "<tr><th>Uke</th><th>Man</th><th>Tir</th><th>Ons</th>"
      + "<th>Tor</th><th>Fre</th><th>Merknad</th></tr>";
     var tfooter ="</table>";
-    var s = theader;
+    var s = '<div id="toggleview" class="button gui float">Pr elev</div>'+ theader;
     start =  database.firstweek; 
     stop =   database.lastweek;
     var week = julian.week(start);
@@ -690,8 +757,11 @@ function weekattend(groupid) {
       }
       s += "</tr>";
     }
-    s += "</table>";
+    s += '</table>';
     $j("#main").html(s);
+    $j("#toggleview").click(function() {
+            tabular_view(groupid);
+        });
 }
 
 function show_next4() {
