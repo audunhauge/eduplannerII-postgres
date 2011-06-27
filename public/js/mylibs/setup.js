@@ -533,16 +533,11 @@ function afterloggin(uinfo) {
           attend = att;
           s =  '<li><a id="show" href="#">Starb</a><ul>'
               +    '<li><a id="myattend"    href="#">Starb-oversikt</a></li>'
-              +    '<li><a id="weekattend"  href="#">Denne uka</a></li>'
               + '</ul></li>';
           $j("#nav").append(s);
-          $j("#myattend").click(function(event) {
+          $j("#myattend,#show").click(function(event) {
               event.preventDefault();
-              myattend();
-          });
-          $j("#weekattend").click(function(event) {
-              event.preventDefault();
-              weekattend();
+              myattend(userinfo.id);
           });
          });
     }

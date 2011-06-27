@@ -77,6 +77,27 @@ div.notpresent {
   background:red;
   float:left;
 }
+div.notabsent {
+  margin-right:2px;
+  width:5px;
+  height:8px;
+  background:#cca;
+  float:left;
+}
+div.freeabsent {
+  margin-right:2px;
+  width:5px;
+  height:8px;
+  background:#8dd;
+  float:left;
+}
+div.someabsent {
+  margin-right:2px;
+  width:5px;
+  height:8px;
+  background:#c4c;
+  float:left;
+}
 
 .cattblocknew, .cattblock {
   font-size:1em;

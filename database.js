@@ -12,7 +12,7 @@ var db = {
   ,students    : {}    // hash of student objects {  2343:{username,firstname,lastname,institution,department} , ... ]
   ,teachIds    : []    // array of teacher ids [ 654,1493 ... ]
   ,teachers    : {}    // hash of teach objects { 654:{username,firstname,lastname,institution}, ... }
-  ,course      : [ '3TY5','3SP5' ]    // array of coursenames [ '1MAP5', '3INF5' ... ] - used by autocomplete
+  ,course      : [ '3TY5','3SP35' ]    // array of coursenames [ '1MAP5', '3INF5' ... ] - used by autocomplete
   ,freedays    : {}    // hash of juliandaynumber:freedays { 2347889:"Xmas", 2347890:"Xmas" ... }
   ,heldag      : {}    // hash of { 2345556:{"3inf5":"Exam", ... } }
   ,prover      : {}    // hash of { 2345556:[ {shortname:"3inf5_3304",value::"3,4,5",username:"haau6257" } ... ], ... }
@@ -25,7 +25,7 @@ var db = {
   ,coursesgr   : {}    // hash of { "3inf5":[ "3304" ] , ... }  -- groups connected to a course
   ,memgr       : {}    // hash of { 234:["3304","2303","3sta" ..], ... }  --- groups stud is member of
   ,teachcourse : {}    // array of courses the teacher teaches (inverse of courseteach)
-  ,category    : {}    // hash of coursename:category { '3inf5':4 , '1nat5':2 ... }
+  ,category    : { '3TY5':1,'3SP35':1 }    // hash of coursename:category { '3inf5':4 , '1nat5':2 ... }
   ,classes     : ("1STA,1STB,1STC,1STD,1STE,1MDA,1MDB,2STA,2STB,2STC,"
                   + "2STD,2STE,2DDA,2MUA,3STA,3STB,3STC,3STD,3STE,3DDA,3MUA").split(",")
                       // array of class-names ( assumes all studs are member of
@@ -808,7 +808,7 @@ var getAplan = function(planid,callback) {
 }
 
 var getAttend = function(user,params,callback) {
-  // returns a hash of all info for all plans
+  // returns a hash of attendance
   var uid = user.id || 0;
   var all = params.all || false;
   if (all) { client.query(
@@ -818,9 +818,10 @@ var getAttend = function(user,params,callback) {
               console.log("ERROR: " + err.message);
               throw err;
           }
-          var studs={}, daycount = {}, rooms={}, teach={};
+          var studs={}, daycount = {}, rooms={}, teach={}, klass={};
           for (var i=0,k= results.length; i < k; i++) {
             var att = results[i];
+            var stu = db.students[att.userid];
 
             if (!studs[att.userid]) {
               studs[att.userid] = {};
@@ -831,6 +832,17 @@ var getAttend = function(user,params,callback) {
               daycount[att.julday] = 0;
             }
             daycount[att.julday]++; 
+
+            // count pr klass
+            if (stu && stu.department) {
+                if (!klass[stu.department]) {
+                  klass[stu.department] = {};
+                }
+                if (!klass[stu.department][att.julday]) {
+                  klass[stu.department][att.julday] = 0;
+                }
+                klass[stu.department][att.julday]++;
+            }
 
             if (!rooms[att.room]) {
               rooms[att.room] = {};
@@ -850,7 +862,7 @@ var getAttend = function(user,params,callback) {
 
           }
           db.daycount = daycount;
-          callback( { studs:studs, daycount:daycount, rooms:rooms, teach:teach } );
+          callback( { studs:studs, daycount:daycount, rooms:rooms, teach:teach, klass:klass } );
       });
   } else client.query(
       'select s.*, i.name from starbreg s inner join mdl_bookings_item i '

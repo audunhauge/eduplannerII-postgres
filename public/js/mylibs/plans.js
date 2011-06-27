@@ -559,16 +559,25 @@ function teachattend() {
     $j("#main").html(s);
 }
 
-function myattend() {
+function myattend(stuid) {
     // show my attendance (for students)
     var attention = {};
+    var elev = id2elev[stuid];
     if (database.daycount ) {
       for (var jd in database.daycount) {
         var ant = database.daycount[jd];
-        if (ant > 40) attention[jd] = 'UREG';
+        var klassen = (allattend && allattend.klass[elev.department][jd] && allattend.klass[elev.department][jd] > 4);
+        if (ant > 40 && (!allattend || klassen)) attention[jd] = 'UREG';
       }
     }
-    if (attend) {
+    if (allattend) {
+      for (var jd in allattend.studs[stuid]) {
+        var att = allattend.studs[stuid][jd];
+        var teachname = teachers[att[0]] || {firstname:'', lastname:''};
+        var txt = teachname.firstname + ' ' + teachname.lastname + ' ' + database.roomnames[att[1]];
+        attention[jd] = txt;
+      }
+    } else if (attend) {
       for (var i=0; i< attend.length; i++) {
         var att = attend[i];
         att.teachname = teachers[att.teachid] || {firstname:'', lastname:''};
@@ -636,16 +645,18 @@ function tabular_view(groupid) {
     var week = julian.week(start);
     var i,j;
     var counting = {};
+    var stuabs = {};
     var tot = 0;
     var antall = 0;
     s += "<tr><th>Dato</th>";
     for (var i in  groupmem) {
         var stuid = groupmem[i];
-        elev = id2elev[stuid];
+        var elev = id2elev[stuid];
         if (elev)  {
           counting[stuid] = 0;
+          stuabs[stuid] = 0;
           antall++;
-          s += '<td><div class="rel"><div class="angled">' + elev.firstname+ ' ' + elev.lastname + '</div></div></td>';
+          s += '<td><div class="rel"><div id="stu'+stuid+'" class="angled stud">' + elev.firstname+ ' ' + elev.lastname + '</div></div></td>';
         }
     }
     s += "</tr>";
@@ -656,6 +667,7 @@ function tabular_view(groupid) {
       for (var i in  groupmem) {
           var stuid = groupmem[i];
           if (!id2elev[stuid]) continue;
+          var elev = id2elev[stuid];
           var txt = '';
           var any = false;
           for (var k in starbdays) {
@@ -665,11 +677,18 @@ function tabular_view(groupid) {
               any = true;
               counting[stuid]++;
               tot++;
+            } else if (!allattend.daycount[j+kk] || allattend.daycount[j+kk] < 60) {
+              txt += '<div class="notabsent"></div>';
+            } else if (!allattend.klass[elev.department][j+kk] || allattend.klass[elev.department][j+kk] < 3) {
+              txt += '<div class="freeabsent"></div>';
+            } else if (allattend.klass[elev.department][j+kk] < antall*0.2) {
+              txt += '<div class="someabsent"></div>';
             } else {
               txt += '<div class="notpresent"></div>';
+              stuabs[stuid]++;
             }
           }
-          if (!any) txt = '';
+          //if (!any) txt = '';
           s += '<td>' + txt + "</td>";
       }
       s += "</tr>";
@@ -681,7 +700,7 @@ function tabular_view(groupid) {
         elev = id2elev[stuid];
         if (elev)  {
           var tdclass = (counting[stuid] > avg) ? 'greenfont' : 'redfont';
-          s += '<td class="'+tdclass+'">'+counting[stuid]+'</td>';
+          s += '<td class="'+tdclass+'">'+counting[stuid]+'-'+stuabs[stuid]+'</td>';
         }
     }
     s += "</tr>";
@@ -689,6 +708,9 @@ function tabular_view(groupid) {
     $j("#main").html(s);
     $j("#toggleview").click(function() {
             weekattend(groupid);
+        });
+    $j(".stud").click(function() {
+            myattend(+this.id.substring(3));
         });
 }
 

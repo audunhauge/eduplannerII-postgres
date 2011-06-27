@@ -307,7 +307,8 @@ function build_plantable(jd,uid,username,timeplan,xtraplan,filter) {
         // show members as a list in caption (on hover)
         var userlist = memberlist[username];
         members = makepop(members,userlist,username,'','');
-        members = '<ul id="members" class="gui nav">' + members + '</ul>';
+        members = '<ul id="members" class="gui nav">' + members + '</ul>'
+                  + '<div id="starb" class="button gui">Starb</div>';
     }
     var numslots = 10;
     if (database.roomdata.roominfo[uid]) {
@@ -552,6 +553,9 @@ function vis_timeplan_helper(userplan,uid,filter,isuser,visfagplan,delta) {
     }
   }
   $j("#timeplan").html(s);
+  $j("#starb").click(function() {
+            tabular_view(uid);
+        });
   //console.log(tpath+uid);
   $j(".totip").tooltip({position:"bottom right" } );
   $j(".goto").click(function() {
