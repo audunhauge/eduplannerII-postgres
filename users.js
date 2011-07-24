@@ -15,6 +15,7 @@ var crypto = require('crypto');
 module.exports.authenticate = function(client, login, password, callback) {
 
   var username = alias[login] || login;
+  console.log(client);
   client.query(
       'select * from mdl_user where username = "' + username + '"',
       function (err, results, fields) {

@@ -337,16 +337,21 @@ app.configure(function() {
 	app.set('views', __dirname + '/views');
 });
 
+//var RedisStore = require('connect-redis')(express);
+
+var oneYear = 31557600000;
 app.configure(function() {
-	app.use(connect.conditionalGet());
-	app.use(connect.bodyDecoder());
+	//app.use(connect.conditionalGet());
+	//app.use(connect.bodyDecoder());
+        app.use(express.bodyParser());
+        app.use(express.cookieParser());
+        //app.use(express.session({ secret: "keyboard cat", store: new RedisStore }));
 	app.use(connect.logger({ format: ':req[x-real-ip]\t:status\t:method\t:url\t' }));
-        app.use(express.cookieDecoder());
-        app.use(express.session({store: new MemoryStore( {
-            reapInterval: 60000 * 10
-          }),secret:"jalla"}));
+        //app.use(express.cookieDecoder());
+        app.use(express.session({store: new MemoryStore( { reapInterval: 60000 * 10 }),secret:"jalla"}));
 	app.use(assets);
-	app.use(connect.staticProvider(__dirname + '/public'));
+    app.use(express.static(__dirname + '/public', { maxAge: oneYear }));
+	//app.use(connect.staticProvider(__dirname + '/public'));
 });
 
 app.dynamicHelpers({
@@ -393,6 +398,8 @@ app.get('/logout', function(req, res) {
 });
 
 app.get('/login', function(req, res) {
+  console.log("get login");
+  console.log(client);
   if (!req.query.username && req.session.user) {
       res.send(req.session.user);
       return;
@@ -948,7 +955,7 @@ app.get('/basic', function(req, res) {
           var fn = nameparts.join(' ');
           if (fn == '') { fn = ln; ln = '' };
           var ulist = findUser(fn,ln);
-          //console.log(ulist);
+          console.log(ulist);
           db_copy.userinfo = (ulist.length == 1) ? ulist[0] : { uid:0 };
           db_copy.ulist = ulist;
           //console.log(db_copy.userinfo);
@@ -958,6 +965,7 @@ app.get('/basic', function(req, res) {
           }
           req.userinfo = db_copy.userinfo; 
         }
+          console.log("came here");
         res.send(db_copy);
 });
 

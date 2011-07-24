@@ -851,6 +851,9 @@ function check_heldag(value,settings) {
         var kl = $j("#"+this.id).parent().attr("id").substr(0,2);
         var klass = (kl == 'md') ? 1 : 0;
         if (klass == 1) {
+          // this is a half-day  whole day test (silly but so it goes)
+          // it should block for all other tests this day
+          // but lessons that are not touched should go as normal
           var timer = beskrivelse.match(/\((.+)\)/);
           if (timer && timer[1]) {
             var tt = timer[1].split(/[,+]/);

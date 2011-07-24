@@ -1,9 +1,18 @@
-var Client = require('mysql').Client;
-var creds  = require('./creds');
+var pg = require('pg');
+var sys = require('sys');
+var connectionString = "postgres://admin:123simple@localhost/planner";
+
 var lev    = require('./levenshtein');
 
-var client = new Client();
-creds.setup(client);
+var after = function(callback) {
+    return function(err, queryResult) {
+      if(err) {
+        console.log("Error! " + sys.inspect(err));
+      }
+      callback(queryResult)
+    }
+  }
+  
 
 var julian = require('./julian');
 
@@ -58,46 +67,35 @@ function sqlrunner(sql,params,callback) {
       });
 }
 
-client.connect(function(err, results) {
-    if (err) {
-        console.log("ERROR: " + err.message);
-        throw err;
-    }
-    console.log("connected.");
-    // client.query('USE skeisvangmoodle3', function(err, results) {
-    client.query('USE skeisvangmoodle3', function(err, results) {
-                if (err) {
-                        console.log("ERROR: " + err.message);
-                        throw err;
-                }
-                getBasicData(client);
-        });
+var client;
+pg.connect(connectionString, after(function(cli) {
+    client = cli;
+    console.log("connected");
+    getBasicData(client);
+  }));
 
-});
 
 var getCoursePlans = function(callback) {
+        console.log("getCoursePlans");
+        //console.log(client);
   client.query(
-            'SELECT u.id as uid, u.username, c.id, u.institution, p.start '
-          + ' ,c.startdate,c.shortname,c.numsections,w.sequence as section,w.plantext as summary,c.cost '
-          + '   FROM mdl_user u  '
-          + '        INNER JOIN plan p ON p.userid = u.id '
-          + '        INNER JOIN mdl_course c ON c.planid = p.id '
-          + '        INNER JOIN weekplan w ON p.id = w.planid '
-          + ' WHERE u.department = "undervisning" order by w.sequence ',
+            'SELECT u.id, u.username, c.id as cid, u.institution '
+          + ' ,c.shortname,w.sequence as section,w.plantext as summary '
+          + '   FROM users u  '
+          + '        INNER JOIN plan p ON (p.userid = u.id) '
+          + '        INNER JOIN course c ON (c.planid = p.id) '
+          + '        INNER JOIN weekplan w ON (p.id = w.planid) '
+          + " WHERE u.department = 'undervisning' order by w.sequence ",
           //+ '   ORDER BY u.institution,u.username,c.shortname,w.sequence ' ,
-      function (err, results, fields) {
-          if (err) {
-              console.log("ERROR: " + err.message);
-              throw err;
-          }
+      after(function(results) {
           console.log("came here allplans");
           var fliste = {}; 
           var compliance = {};  // is this a compliant teacher?
           var startdate   = 0;
           var numsections = 0;
           var prevsum = '';  // used to calc lev distance
-          for (var i=0,k= results.length; i < k; i++) {
-            fag = results[i];
+          for (var i=0,k= results.rows.length; i < k; i++) {
+            fag = result.rowss[i];
             summary = (fag.summary) ? fag.summary : '';
             summary = summary.replace("\n",'<br>');
             summary = summary.replace("\r",'<br>');
@@ -105,8 +103,8 @@ var getCoursePlans = function(callback) {
             shortname = fag.shortname;
             username = fag.username;
             institution = fag.institution;
-            if (startdate == 0) startdate = fag.startdate;
-            if (numsections == 0) numsections = fag.numsections;
+            //if (startdate == 0) startdate = fag.startdate;
+            //if (numsections == 0) numsections = fag.numsections;
             if (!compliance[username]) {
                 compliance[username] = {};
             }
@@ -132,7 +130,7 @@ var getCoursePlans = function(callback) {
           var allplans = { courseplans:fliste, compliance:compliance, startdate:startdate, numsections:numsections };
           callback(allplans);
           console.log("got allplans");
-      });
+      }));
 }
 
 var updateTotCoursePlan = function(query,callback) {
@@ -154,21 +152,18 @@ var updateTotCoursePlan = function(query,callback) {
   var sql;
   if (query.planid) {
     sql = 'select w.*,p.id as pid from plan p inner join weekplan w on (p.id = w.planid) '
-        + ' where p.id = ? '; 
+        + ' where p.id = $1 '; 
     param = query.planid;
   } else {
     sql = 'select w.*,p.id as pid from plan p inner join weekplan w on (p.id = w.planid) '
-        + ' inner join mdl_course c on (c.planid = p.id) '
-        + ' where c.id = ? '; 
+        + ' inner join course c on (c.planid = p.id) '
+        + ' where c.id = $1 '; 
     param = query.courseid;
   }
   client.query( sql , [ param ] ,
-      function (err, sections, fields) {
-          if (err) {
-              callback( { ok:false, msg:err.message } );
-              return;
-          }
+      after(function(results) {
           var planid = 0;
+          var sections = (results) ? results.rows : [] ;
           for (var sid in sections) {
               var s = sections[sid];
               if (planid == 0) planid = s.pid
@@ -177,20 +172,14 @@ var updateTotCoursePlan = function(query,callback) {
                       // there is an update for this section and it differs from dbase
                       // we must update this section
                       client.query(
-                          //'update mdl_course_sections set summary=? where id=?',[ usects[s.section], s.id ],
-                          'update weekplan set plantext=? where id=?',[ usects[s.sequence], s.id ],
-                          function (err, results, fields) {
-                              if (err) {
-                                  ok = false;
-                                  msg = err.message;
-                              }
-                              //console.log('update weekplan set plantext=? where id=?', usects[s.sequence], s.id );
-                          });
+                          'update weekplan set plantext=$1 where id=$2',[ usects[s.sequence], s.id ],
+                          after(function(results) {
+                          }));
                   }
               }
           }
           callback( { ok:ok, msg:msg } );
-      });
+      }));
 }
 
 var saveabsent = function(user,query,callback) {
@@ -201,64 +190,45 @@ var saveabsent = function(user,query,callback) {
   var text = query.value;
   var name = query.name;
   var userid = query.userid;
-  var klass = query.klass;
+  var klass = query.klass;   // this will be userid or 0
   console.log("Saving:",jd,text,name,userid,klass);
-          console.log('delete from mdl_bookings_calendar'
-      + ' where name = ? and (class=? or class=0 ) and userid= ? and eventtype="absent" and julday= ? ' , [ name,klass,userid, jd ]);
   if (text == '') client.query(
-          'delete from mdl_bookings_calendar'
-      + ' where name = ? and (? or (class=? or class=0 ) and userid= ?) and eventtype="absent" and julday= ? ' , [ name,user.isadmin,klass,userid, jd ],
-          function (err, results, fields) {
-              if (err) {
-                  callback( { ok:false, msg:err.message } );
-                  return;
-              }
+          'delete from calendar'
+      + " where name = $1 and ($2 or (class=$3 or class=0 ) and userid= $4) and eventtype='absent' and julday= $5 " , [ name,user.isadmin,klass,userid, jd ],
+          after(function(results) {
               callback( {ok:true, msg:"deleted"} );
-          });
+          }));
   else client.query(
-        'select * from mdl_bookings_calendar '
-      + ' where name = ? and (class=? or class=0) and eventtype="absent" and userid= ? and julday= ? ' , [ name,klass, userid,  jd ],
-      function (err, results, fields) {
-          if (err) {
-              callback( { ok:false, msg:err.message } );
-              return;
-          }
-          var abs = results.pop();
+        'select * from calendar '
+      + ' where name = $1 and (class=$2 or class=0) and eventtype=\'absent\' and userid= $3 and julday= $4 ' , [ name,klass, userid,  jd ],
+      after(function(results) {
+          var abs ;
+          if (results) abs = results.rows[0];
           if (abs) {
-              //console.log(abs);
               if (abs.value != text || abs.name != name) {
               client.query(
-                  'update mdl_bookings_calendar set class=?, name=?,value=? where id=?',[ klass,name,text, abs.id ],
-                  function (err, results, fields) {
-                      if (err) {
-                          callback( { ok:false, msg:err.message } );
-                          return;
-                      }
+                  'update calendar set class=$1, name=$2,value=$3 where id=$4',[ klass,name,text, abs.id ],
+                  after(function(results) {
                       callback( {ok:true, msg:"updated"} );
-                  });
+                  }));
               } else {
                 callback( {ok:true, msg:"unchanged"} );
               }
           } else {
-            console.log('insert into mdl_bookings_calendar (courseid,userid,julday,eventtype,value,name,class) values (0,?,?,"absent",?,?,?)',[userid,jd,text,name,klass]); 
             client.query(
-                'insert into mdl_bookings_calendar (courseid,userid,julday,eventtype,value,name,class) values (0,?,?,"absent",?,?,?)',[userid,jd,text,name,klass],
-                function (err, results, fields) {
-                    if (err) {
-                        callback( { ok:false, msg:err.message } );
-                        return;
-                    }
+                'insert into calendar (courseid,userid,julday,eventtype,value,name,class) values (0,$1,$2,\'absent\',$3,$4,$5)',[userid,jd,text,name,klass],
+                after(function(results) {
                     callback( {ok:true, msg:"inserted"} );
-                });
+                }));
           }
-      });
+      }));
 }
 
 var getabsent = function(callback) {
   // returns a hash of all absent teach/stud
   //  {  julday:{ uid:{value:"1,2",name:"Kurs"}, uid:"1,2,3,4,5,6,7,8,9", ... }
   client.query(
-      'select id,userid,julday,name,value,class as klass from mdl_bookings_calendar where eventtype = "absent" and julday >= ?',[ db.startjd ],
+      'select id,userid,julday,name,value,class as klass from calendar where eventtype = "absent" and julday >= ?',[ db.startjd ],
       function (err, results, fields) {
           if (err) {
               console.log("ERROR: " + err.message);
@@ -292,7 +262,7 @@ var savesimple = function(query,callback) {
   var jd  = query.myid.substring(4);
   var text = query.value;
   if (text == '') client.query(
-          'delete from mdl_bookings_calendar'
+          'delete from calendar'
       + ' where eventtype=? and julday= ? ' , [ eventtype, jd ],
           function (err, results, fields) {
               if (err) {
@@ -302,7 +272,7 @@ var savesimple = function(query,callback) {
               callback( {ok:true, msg:"deleted"} );
           });
   else client.query(
-        'select * from mdl_bookings_calendar '
+        'select * from calendar '
       + ' where eventtype= ? and julday= ? ' , [ eventtype,  jd ],
       function (err, results, fields) {
           if (err) {
@@ -314,7 +284,7 @@ var savesimple = function(query,callback) {
               console.log(free);
               if (free.value != text) {
               client.query(
-                  'update mdl_bookings_calendar set value=? where id=?',[ text, free.id ],
+                  'update calendar set value=? where id=?',[ text, free.id ],
                   function (err, results, fields) {
                       if (err) {
                           callback( { ok:false, msg:err.message } );
@@ -326,9 +296,9 @@ var savesimple = function(query,callback) {
                 callback( {ok:true, msg:"unchanged"} );
               }
           } else {
-            console.log( 'insert into mdl_bookings_calendar (courseid,userid,julday,eventtype,value) values (0,2,?,?,?)',[jd,eventtype,text]);
+            console.log( 'insert into calendar (courseid,userid,julday,eventtype,value) values (0,2,?,?,?)',[jd,eventtype,text]);
             client.query(
-                'insert into mdl_bookings_calendar (courseid,userid,julday,eventtype,value) values (0,2,?,?,?)',[jd,eventtype,text],
+                'insert into calendar (courseid,userid,julday,eventtype,value) values (0,2,?,?,?)',[jd,eventtype,text],
                 function (err, results, fields) {
                     if (err) {
                         callback( { ok:false, msg:err.message } );
@@ -351,7 +321,7 @@ var saveTimetableSlot = function(user,query,callback) {
   if (value == '')  { 
     // dont actually delete anything from timetable
     /*client.query(
-          'delete from mdl_bookings_calendar'
+          'delete from calendar'
       + ' where day = ? and slot = ? and userid = ? and eventtype="timetable" ' , [ courseid,  user.id, julday ],
           function (err, results, fields) {
               if (err) {
@@ -361,7 +331,7 @@ var saveTimetableSlot = function(user,query,callback) {
               callback( {ok:true, msg:"deleted"} );
           }); */
   } else client.query(
-        'select * from mdl_bookings_calendar '
+        'select * from calendar '
       + ' where userid = ? and day = ? and slot = ? and eventtype="timetable" ' , [ teachid,  day, slot ],
       function (err, results, fields) {
           if (err) {
@@ -373,7 +343,7 @@ var saveTimetableSlot = function(user,query,callback) {
               console.log(time);
               if (time.value != value) {
               client.query(
-                  'update mdl_bookings_calendar set value=?,name=? where id=?',[ value,value, time.id ],
+                  'update calendar set value=?,name=? where id=?',[ value,value, time.id ],
                   function (err, results, fields) {
                       if (err) {
                           callback( { ok:false, msg:err.message } );
@@ -388,7 +358,7 @@ var saveTimetableSlot = function(user,query,callback) {
             /*
             console.log("inserting new");
             client.query(
-                'insert into mdl_bookings_calendar (courseid,userid,julday,eventtype,value) values (?,?,?,"prove",?)',[courseid, user.id, julday,tlist],
+                'insert into calendar (courseid,userid,julday,eventtype,value) values (?,?,?,"prove",?)',[courseid, user.id, julday,tlist],
                 function (err, results, fields) {
                     if (err) {
                         callback( { ok:false, msg:err.message } );
@@ -427,8 +397,8 @@ var saveTest = function(user,query,callback) {
   var tlist = (query.timer) ? query.timer : '';
   console.log(tlist,julday,courseid,user);
   if (tlist == '') client.query(
-          'delete from mdl_bookings_calendar'
-      + ' where courseid = ? and userid = ? and eventtype="prove" and julday= ? ' , [ courseid,  user.id, julday ],
+          'delete from calendar'
+      + " where courseid = ? and userid = ? and eventtype='prove' and julday= ? " , [ courseid,  user.id, julday ],
           function (err, results, fields) {
               if (err) {
                   callback( { ok:false, msg:err.message } );
@@ -437,8 +407,8 @@ var saveTest = function(user,query,callback) {
               callback( {ok:true, msg:"deleted"} );
           });
   else client.query(
-        'select * from mdl_bookings_calendar '
-      + ' where courseid = ? and userid = ? and eventtype="prove" and julday= ? ' , [ courseid,  user.id, julday ],
+        'select * from calendar '
+      + " where courseid = ? and userid = ? and eventtype='prove' and julday= ? " , [ courseid,  user.id, julday ],
       function (err, results, fields) {
           if (err) {
               callback( { ok:false, msg:err.message } );
@@ -449,7 +419,7 @@ var saveTest = function(user,query,callback) {
               console.log(test);
               if (test.value != tlist) {
               client.query(
-                  'update mdl_bookings_calendar set value=? where id=?',[ tlist, test.id ],
+                  'update calendar set value=? where id=?',[ tlist, test.id ],
                   function (err, results, fields) {
                       if (err) {
                           callback( { ok:false, msg:err.message } );
@@ -463,7 +433,7 @@ var saveTest = function(user,query,callback) {
           } else {
             console.log("inserting new");
             client.query(
-                'insert into mdl_bookings_calendar (courseid,userid,julday,eventtype,value) values (?,?,?,"prove",?)',[courseid, user.id, julday,tlist],
+                'insert into calendar (courseid,userid,julday,eventtype,value) values (?,?,?,"prove",?)',[courseid, user.id, julday,tlist],
                 function (err, results, fields) {
                     if (err) {
                         callback( { ok:false, msg:err.message } );
@@ -482,9 +452,9 @@ var saveblokk = function(user,query,callback) {
     var blokk = query.blokk;
     var kill = query.kill;
     if (kill) {
-      console.log('delete from mdl_bookings_calendar where eventtype="blokk" and name="'+blokk+'" and julday='+jd);
+      console.log('delete from calendar where eventtype="blokk" and name="'+blokk+'" and julday='+jd);
     }
-    client.query( 'delete from mdl_bookings_calendar'
+    client.query( 'delete from calendar'
       + ' where eventtype="blokk" and name=? and julday= ? ' , [ blokk , jd ],
           function (err, results, fields) {
               if (err) {
@@ -499,7 +469,7 @@ var saveblokk = function(user,query,callback) {
        return;
     }
     client.query(
-        'insert into mdl_bookings_calendar (julday,name,value,itemid,courseid,userid,eventtype)'
+        'insert into calendar (julday,name,value,roomid,courseid,userid,eventtype)'
         + ' values (?,?,?,0,3745,2,"blokk")' , [jd,blokk,val],
         function (err, results, fields) {
             if (err) {
@@ -515,7 +485,7 @@ var savehd = function(user,query,callback) {
     var jd = query.myid;
     var val = query.value;
     var fag = query.fag;
-    var klass = query.klass || 0;
+    var klass = query.klass || 0;  // save whole day test as half day test if != 0
     var kill = query.kill;
     var pid = query.pid;
     if (kill) {
@@ -523,9 +493,9 @@ var savehd = function(user,query,callback) {
       fag = elm[1];
       jd = elm[0].substr(2);
       console.log(fag,jd);
-      console.log('delete from mdl_bookings_calendar where eventtype="heldag" and name="'+fag+'" and julday='+jd);
+      console.log("delete from calendar where eventtype='heldag' and name='"+fag+"' and julday="+jd);
     }
-    client.query( 'delete from mdl_bookings_calendar'
+    client.query( 'delete from calendar'
       + ' where eventtype="heldag" and name=? and julday= ? ' , [ fag , jd ],
           function (err, results, fields) {
               if (err) {
@@ -554,8 +524,8 @@ var savehd = function(user,query,callback) {
       }
     }
     client.query(
-        'insert into mdl_bookings_calendar (julday,name,value,itemid,courseid,userid,eventtype,class)'
-        + ' values (?,?,?,?,3745,2,"heldag",?)' , [jd,fag,val,itemid,klass],
+        'insert into calendar (julday,name,value,roomid,courseid,userid,eventtype,class)'
+        + " values (?,?,?,?,3745,2,'heldag',?)" , [jd,fag,val,itemid,klass],
         function (err, results, fields) {
             if (err) {
                 callback( { ok:false, msg:err.message } );
@@ -586,9 +556,9 @@ var selltickets = function(user,query,callback) {
         values.push('('+showid+',"'+elm[0]+'",'+elm[1]+',"'+type+'",'+elm[2]+','+jn+','+julday+','+user.id+')' );
     }
     var valuelist = values.join(',');
-    //console.log('insert into mdl_show_tickets (showid,showtime,price,kk,ant,saletime,jd,userid) values ' + values);
+    //console.log('insert into show_tickets (showid,showtime,price,kk,ant,saletime,jd,userid) values ' + values);
     client.query(
-        'insert into mdl_show_tickets (showid,showtime,price,kk,ant,saletime,jd,userid) values ' + values,
+        'insert into show_tickets (showid,showtime,price,kk,ant,saletime,jd,userid) values ' + values,
         function (err, results, fields) {
             if (err) {
                 callback( { ok:false, msg:err.message } );
@@ -609,7 +579,7 @@ var updateCoursePlan = function(query,callback) {
     param = query.planid;
   } else {
     sql = 'select w.*,p.id as pid from plan p inner join weekplan w on (p.id = w.planid) '
-        + ' inner join mdl_course c on (c.planid = p.id) '
+        + ' inner join course c on (c.planid = p.id) '
         + ' where c.id = ? '; 
     param = query.courseid;
   }
@@ -724,10 +694,10 @@ var modifyPlan = function(user,query,callback) {
     case 'connect':
           if (connect) {
             //cidlist = connect.split(',');
-            //console.log('update mdl_course set planid = '+planid+' where id in ('+connect+')');
+            //console.log('update course set planid = '+planid+' where id in ('+connect+')');
             //*
             client.query(
-            'update mdl_course set planid = ? where id in ('+connect+')' , [planid ],
+            'update course set planid = ? where id in ('+connect+')' , [planid ],
             function (err, info) {
                 if (err) {
                     console.log("ERROR: " + err.message);
@@ -809,6 +779,7 @@ var getAplan = function(planid,callback) {
 
 var getAttend = function(user,params,callback) {
   // returns a hash of attendance
+  console.log("getAttend");
   var uid = user.id || 0;
   var all = params.all || false;
   if (all) { client.query(
@@ -865,7 +836,7 @@ var getAttend = function(user,params,callback) {
           callback( { studs:studs, daycount:daycount, rooms:rooms, teach:teach, klass:klass } );
       });
   } else client.query(
-      'select s.*, i.name from starbreg s inner join mdl_bookings_item i '
+      'select s.*, i.name from starbreg s inner join room i '
       + ' on (s.room = i.id) where userid=? order by julday ' ,[uid ],
       function (err, results, fields) {
           if (err) {
@@ -881,16 +852,17 @@ var getAllPlans = function(state,callback) {
   // 0 == active plans
   // 1 == new plans (editing mode)
   // 2 == oldplans - for copying
+  console.log("getAllPlans");
   client.query(
-        'select p.*,c.shortname from plan p left outer join mdl_course c '
-      + ' on (c.planid = p.id) where p.state = ? order by name',[ state ],
-      function (err, results, fields) {
-          if (err) {
-              console.log("ERROR: " + err.message);
-              throw err;
-          }
-          callback(results);
-      });
+        'select p.*,c.shortname from plan p left outer join course c '
+      + ' on (c.planid = p.id) where p.state = $1 order by name',[ state ],
+      after(function(results) {
+        if (results) {
+          callback(results.rows);
+        } else {
+          callback(null);
+        }
+      }));
 }
 
 var getMyPlans = function(user,callback) {
@@ -898,7 +870,7 @@ var getMyPlans = function(user,callback) {
   client.query(
       'select p.*, c.id as cid, c.shortname from plan p  '
       // + ' inner join weekplan w on (w.planid = p.id) '
-      + ' left outer join mdl_course c on (c.planid = p.id) '
+      + ' left outer join course c on (c.planid = p.id) '
       + ' where p.userid = ? ' , [user.id ],
       function (err, results, fields) {
           if (err) {
@@ -914,7 +886,7 @@ var getBlocks = function(callback) {
   // the first to digits in groupname gives the block
   // this should be changed to a property of a course
   client.query(
-      'select id,julday,name,value from mdl_bookings_calendar where value != " " and eventtype = "blokk" ',
+      'select id,julday,name,value from calendar where value != " " and eventtype = "blokk" ',
       function (err, results, fields) {
           if (err) {
               console.log("ERROR: " + err.message);
@@ -948,11 +920,11 @@ var makereserv = function(user,query,callback) {
     switch(action) {
       case 'kill':
         //console.log("delete where id="+myid+" and uid="+user.id);
-        sqlrunner('delete from mdl_bookings_calendar where eventtype="reservation" and id=? and userid=? ',[myid,user.id],callback);
+        sqlrunner('delete from calendar where eventtype="reservation" and id=? and userid=? ',[myid,user.id],callback);
         break;
       case 'update':
-        console.log( 'update mdl_bookings_calendar set value = '+message+'where id='+myid+' and ('+user.isadmin+' or userid='+user.id+')' );
-        sqlrunner( 'update mdl_bookings_calendar set value = ? where eventtype="reservation" and id=? and (? or userid=?) ',
+        console.log( 'update calendar set value = '+message+'where id='+myid+' and ('+user.isadmin+' or userid='+user.id+')' );
+        sqlrunner( 'update calendar set value = ? where eventtype="reservation" and id=? and (? or userid=?) ',
              [message,myid,user.isadmin,user.id],callback);
         break;
       case 'insert':
@@ -963,9 +935,9 @@ var makereserv = function(user,query,callback) {
             values.push('("reservation",3745,'+user.id+','+(current+day)+','+day+','+slot+','+itemid+',"'+room+'","'+message+'")' );
         }
         var valuelist = values.join(',');
-        console.log( 'insert into mdl_bookings_calendar (eventtype,courseid,userid,julday,day,slot,itemid,name,value) values ' + values);
+        console.log( 'insert into calendar (eventtype,courseid,userid,julday,day,slot,roomid,name,value) values ' + values);
         client.query(
-          'insert into mdl_bookings_calendar (eventtype,courseid,userid,julday,day,slot,itemid,name,value) values ' + values,
+          'insert into calendar (eventtype,courseid,userid,julday,day,slot,roomid,name,value) values ' + values,
           function (err, results, fields) {
               if (err) {
                   callback( { ok:false, msg:err.message } );
@@ -980,8 +952,8 @@ var makereserv = function(user,query,callback) {
 var getReservations = function(callback) {
   // returns a hash of all reservations 
   client.query(
-      'select id,userid,day,slot,itemid,name,value,julday,eventtype from mdl_bookings_calendar cal '
-       + '      WHERE itemid > 0 and eventtype in ("heldag", "reservation") and julday >= ' + db.startjd ,
+      'select id,userid,day,slot,roomid,name,value,julday,eventtype from calendar cal '
+       + "      WHERE roomid > 0 and eventtype in ('heldag', 'reservation') and julday >= " + db.startjd ,
       function (err, results, fields) {
           if (err) {
               console.log("ERROR: " + err.message);
@@ -997,13 +969,13 @@ var getReservations = function(callback) {
               }
               if (res.eventtype == 'heldag') {
                 res.day = julday % 7;
-                var roomname = db.roomnames[res.itemid];
+                var roomname = db.roomnames[res.roomid];
                 var repl = new RegExp(",? *"+roomname);
                 var vvalue = (res.name+' '+res.value).replace(repl,'');
                 for (var j=0;j<9;j++) {
                   res.slot = j;
                   reservations[julday].push({id: res.id, userid: res.userid, day: res.day, 
-                                 slot: j, itemid: res.itemid, name:roomname , value:vvalue, eventtype:'hd' });
+                                 slot: j, itemid: res.roomid, name:roomname , value:vvalue, eventtype:'hd' });
                 }
               } else {
                 reservations[julday].push(res);
@@ -1018,8 +990,8 @@ var gettickets = function(user,query,callback) {
   // assumes you give it a callback that assigns the hash
   client.query(
       // fetch all shows
-       'SELECT u.firstname,u.lastname,u.department,sho.name,ti.* from mdl_show_tickets ti inner join mdl_show sho '
-       + 'on (sho.idx = ti.showid) inner join mdl_user u on (u.id = ti.userid)',
+       'SELECT u.firstname,u.lastname,u.department,sho.name,ti.* from show_tickets ti inner join show sho '
+       + 'on (sho.idx = ti.showid) inner join users u on (u.id = ti.userid)',
       function (err, results, fields) {
           if (err) {
               console.log("ERROR: " + err.message);
@@ -1044,7 +1016,7 @@ var getshow = function(callback) {
   // assumes you give it a callback that assigns the hash
   client.query(
       // fetch all shows
-       'SELECT * from mdl_show',
+       'SELECT * from show',
       function (err, results, fields) {
           if (err) {
               console.log("ERROR: " + err.message);
@@ -1078,10 +1050,10 @@ var getAllTests = function(callback) {
   // assumes you give it a callback that assigns the hash
   client.query(
       // fetch all tests
-       'SELECT julday,shortname,cl.value, u.username FROM mdl_bookings_calendar cl '
-       + '      INNER JOIN mdl_course c ON (c.id = cl.courseid) '
-       + '      INNER JOIN mdl_user u ON (u.id = cl.userid) '
-       + '      WHERE eventtype = "prove" and julday >= ' + db.firstweek + ' ORDER BY julday,value,shortname',
+       'SELECT julday,shortname,cl.value, u.username FROM calendar cl '
+       + '      INNER JOIN course c ON (c.id = cl.courseid) '
+       + '      INNER JOIN users u ON (u.id = cl.userid) '
+       + "      WHERE eventtype = 'prove' and julday >= " + db.firstweek + ' ORDER BY julday,value,shortname',
       function (err, results, fields) {
           if (err) {
               console.log("ERROR: " + err.message);
@@ -1111,19 +1083,15 @@ var getTimetables = function(callback) {
   // the inner array is [day,slot,room,changed-room,teachid]
   // assumes you give it a callback that assigns the hash
   client.query(
-      'select userid,cal.day,cal.slot,r.name as room,cal.name from mdl_bookings_calendar cal inner join mdl_bookings_item r '
-       +     ' on cal.itemid = r. id where eventtype = "timetable" and julday = ? order by cal.name,day,slot', [ db.firstweek ],
-      function (err, results, fields) {
-          if (err) {
-              console.log("ERROR: " + err.message);
-              throw err;
-          }
+      "select userid,cal.day,cal.slot,r.name as room,cal.name from calendar cal inner join room r "
+       +     " on cal.roomid = r. id where eventtype = 'timetable' and julday = $1 order by cal.name,day,slot", [ db.firstweek ],
+      after(function(results) {
           var coursetimetable = {};
           var roomtimetable = {};
           var grouptimetable = {};
           var teachtimetable = {};
-          for (var i=0,k= results.length; i < k; i++) {
-              var lesson = results[i];
+          for (var i=0,k= results.rows.length; i < k; i++) {
+              var lesson = results.rows[i];
               var course = lesson.name;
               var room = lesson.room;
               var elm = course.split('_');
@@ -1157,7 +1125,7 @@ var getTimetables = function(callback) {
           }
           //console.log(teachtimetable);
           callback( { course:coursetimetable, room:roomtimetable, group:grouptimetable, teach:teachtimetable  } );
-      });
+      }));
 }
 
 var getstudents = function() {
@@ -1168,15 +1136,11 @@ var getstudents = function() {
   // list of all rooms, array of coursenames (for autocomplete)
   client.query(
       // fetch students and teachers
-      'SELECT id,username,firstname,lastname,department,institution,skype from mdl_user where'
-            + ' department not in ("old","system","") order by department,institution,lastname,firstname',
-      function selectCb(err, results, fields) {
-            if (err) {
-                console.log("ERROR: " + err.message);
-                throw err;
-            }
-            for (var i=0,k= results.length; i < k; i++) {
-                var user = results[i];
+      'SELECT id,username,firstname,lastname,department,institution from users order by department,institution,lastname,firstname',
+            after(function(results) {
+            //console.log(results.rows);
+            for (var i=0,k= results.rows.length; i < k; i++) {
+                var user = results.rows[i];
                 if (user.department == 'Undervisning') {
                   db.teachIds.push(user.id);
                   db.teachers[user.id] = user;
@@ -1185,24 +1149,21 @@ var getstudents = function() {
                   db.students[user.id] = user;
                 }
             }
-      });
+      }));
 }
 
 var getcourses = function() {
   client.query(
-      // fetch courses, groups and course:categories
-      'select c.id,c.shortname,c.category,c.cost,count(ra.id) as cc from mdl_role_assignments ra inner join mdl_context x'
-        + '  ON (x.id=ra.contextid and ra.roleid  = 5) inner join mdl_course c ON x.instanceid=c.id '
-        + '                        group by c.id having cc > 2 order by cc',
-      function (err, results, fields) {
-          if (err) {
-              console.log("ERROR: " + err.message);
-              throw err;
-          }
+      // fetch courses, groups and course:catoegories
+      'select c.id,c.shortname,c.category,me.groupid, count(me.id) as cc from course c inner join enrol en on (en.courseid=c.id) '
+      + ' inner join members me on (me.groupid = en.groupid) group by c.id,c.shortname,c.category,me.groupid having count(me.id) > 1 order by count(me.id)',
+      after(function (results) {
+          //console.log(results.rows);
           var ghash = {}; // only push group once
           var courselist = []; 
-          for (var i=0,k= results.length; i < k; i++) {
-              var course = results[i];
+          for (var i=0,k= results.rows.length; i < k; i++) {
+              var course = results.rows[i];
+              //if (course.cc <1) continue;
               courselist.push(course.id);
               var elm = course.shortname.split('_');
               var cname = elm[0];
@@ -1225,20 +1186,17 @@ var getcourses = function() {
               db.coursesgr[cname].push(group);
           }
           var str_courselist = courselist.join(',');
+          //('select c.id, c.shortname,en.userid,en.roleid as role from course c inner join enrol en on (c.id = en.courseid) where c.id in ( ' + str_courselist + ' )');
           client.query(
               // fetch memberlist for all courses
-              'select c.id, c.shortname,ra.userid,ra.roleid as role from mdl_role_assignments ra inner join mdl_context x '
-                   + ' ON (x.id=ra.contextid and ra.roleid in (3,5)) inner join '
-                   + ' mdl_course c ON x.instanceid=c.id where c.id in ( ' + str_courselist + ' )',
-              function (err, results, fields) {
-                  if (err) {
-                    console.log("ERROR: " + err.message);
-                    throw err;
-                  }
+              //'select c.id, c.shortname,en.userid,en.roleid as role from course c inner join enrol en on (c.id = en.courseid) where c.id in ( ' + str_courselist + ' )',
+              'select c.id,c.shortname,me.userid from course c inner join enrol en on (en.courseid=c.id) '
+              + ' inner join members me on (me.groupid = en.groupid) group by c.id,c.shortname,me.userid ',
+              after( function (results) {
                   var blokkgr = {};
                   var blokkmem = {};  // used to prevent duplicates
-                  for (var i=0,k=results.length; i<k; i++) {
-                    var amem = results[i];
+                  for (var i=0,k=results.rows.length; i<k; i++) {
+                    var amem = results.rows[i];
                     var elm = amem.shortname.split('_');
                     var cname = elm[0];
                     var group = elm[1];
@@ -1248,25 +1206,10 @@ var getcourses = function() {
                         blokkmem[group] = {}
                       }
                       // only students in memlist
-                      if (amem.role == 5 && ! blokkmem[group][amem.userid]) {
+                      if (!blokkmem[group][amem.userid]) {
                         db.memlist[group].push(amem.userid);
                         blokkmem[group][amem.userid] = 1;
                       } 
-
-                    // build courseteach
-                    // and teachcourse
-                      // only teachers in courseteach
-                      if (amem.role == 3) {
-                        if (!db.courseteach[amem.shortname]) {
-                          db.courseteach[amem.shortname] = {teach:[],id:amem.id};
-                        }
-                        if (!db.teachcourse[amem.userid]) {
-                          db.teachcourse[amem.userid] = [];
-                        }
-                        db.teachcourse[amem.userid].push(amem.shortname);
-                        db.courseteach[amem.shortname].teach.push(amem.userid);
-                      } 
-
                     // build person : grouplist
                       if (!db.memgr[amem.userid]) {
                         db.memgr[amem.userid] = [];
@@ -1275,93 +1218,115 @@ var getcourses = function() {
                       if (! blokkgr[amem.userid][group]) {
                         db.memgr[amem.userid].push(group);
                         blokkgr[amem.userid][group] = 1;
-                    }
-                  }
-                  //console.log(db.memgr);
-                  //console.log(db.memlist);
-                  //console.log(db.courseteach);
-              });
-      });
+                      }
+                  } 
+                  client.query(
+                      'select c.id,c.shortname,t.userid from teacher t inner join course c on (c.id = t.courseid)',
+                      after( function (results) {
+                          // build courseteach
+                          // and teachcourse
+                          for (var i=0,k=results.rows.length; i<k; i++) {
+                                var amem = results.rows[i];
+                                var elm = amem.shortname.split('_');
+                                var cname = elm[0];
+                                var group = elm[1];
+                                if (!db.courseteach[amem.shortname]) {
+                                  db.courseteach[amem.shortname] = {teach:[],id:amem.id};
+                                }
+                                if (!db.teachcourse[amem.userid]) {
+                                  db.teachcourse[amem.userid] = [];
+                                }
+                                db.teachcourse[amem.userid].push(amem.shortname);
+                                db.courseteach[amem.shortname].teach.push(amem.userid);
+
+                            // build person : grouplist
+                              if (!db.memgr[amem.userid]) {
+                                db.memgr[amem.userid] = [];
+                                blokkgr[amem.userid] = {};
+                              }
+                              if (! blokkgr[amem.userid][group]) {
+                                db.memgr[amem.userid].push(group);
+                                blokkgr[amem.userid][group] = 1;
+                              }
+                          }
+                          //console.log(db.memgr);
+                          //console.log(db.memlist);
+                          //console.log(db.courseteach);
+                      }));
+              }));
+      }));
 }
 
 var getfreedays = function(callback) {
   client.query(
       // fetch free-days
-      'select * from mdl_bookings_calendar where eventtype="fridager"',
-      function (err, results, fields) {
-          if (err) {
-              console.log("ERROR: " + err.message);
-              throw err;
-          }
+      "select * from calendar where eventtype='fridager'",
+      after(function(results) {
           db.freedays = {};
-          for (var i=0,k= results.length; i < k; i++) {
-              var free = results[i];
+          if (results) {
+            for (var i=0,k= results.rows.length; i < k; i++) {
+              var free = results.rows[i];
               db.freedays[free.julday] = free.value;
+            }
           }
           //console.log("fetched freedays");
           if (callback) callback(db.freedays);
-      });
+      }));
 }
 
 var getyearplan = function(callback) {
   client.query(
       // fetch yearplan events
-      'select id,julday,value from mdl_bookings_calendar where eventtype="aarsplan"',
-      function (err, results, fields) {
-          if (err) {
-              console.log("ERROR: " + err.message);
-              throw err;
-          }
+      "select id,julday,value from calendar where eventtype='aarsplan'",
+      after(function(results) {
           db.yearplan = {};
-          for (var i=0,k= results.length; i < k; i++) {
-              var plan = results[i];
+          if (results) {
+          for (var i=0,k= results.rows.length; i < k; i++) {
+              var plan = results.rows[i];
               if (!db.yearplan[Math.floor(plan.julday/7)]) {
                 db.yearplan[Math.floor(plan.julday/7)] = { week:julian.week(plan.julday), pr:[], days:[] };
               }
               db.yearplan[Math.floor(plan.julday/7)].days[Math.floor(plan.julday%7)] =  plan.value;
           }
+          }
           if (callback) callback(db.yearplan);
           //console.log(db.yearplan);
-      });
+      }));
 }
 
 var getexams = function(callback) {
   client.query(
       // fetch big tests (exams and other big tests - they block a whold day )
-      'select id,julday,name,value,class from mdl_bookings_calendar where eventtype="heldag"',
-      function (err, results, fields) {
-          if (err) {
-              console.log("ERROR: " + err.message);
-              throw err;
-          }
-          for (var i=0,k= results.length; i < k; i++) {
-              var free = results[i];
+      "select id,julday,name,value,class from calendar where eventtype='heldag'",
+      after(function(results) {
+          if (results) {
+          for (var i=0,k= results.rows.length; i < k; i++) {
+              var free = results.rows[i];
               if (!db.heldag[free.julday]) {
                 db.heldag[free.julday] = {};
               }
               db.heldag[free.julday][free.name.toUpperCase()] = { value:free.value, klass:free.class };
           }
+          }
           if (callback) callback(db.heldag);
           //console.log(db.heldag);
-      });
+      }));
 }
 
 var getroomids = function() {
   client.query(
-      'select id,name from mdl_bookings_item where type="room"',
-      function (err, results, fields) {
-          if (err) {
-              console.log("ERROR: " + err.message);
-              throw err;
-          }
+      "select id,name from room ",
+      after(function(results) {
           db.roomids   = {};
           db.roomnames = {};
-          for (var i=0,k= results.length; i < k; i++) {
-              var room = results[i];
+          if (results) {
+          for (var i=0,k= results.rows.length; i < k; i++) {
+              var room = results.rows[i];
               db.roomids[""+room.name] = ""+room.id;
               db.roomnames[room.id] = room.name;
           }
-      });
+          }
+      }));
 }
 
 var getBasicData = function(client) {
